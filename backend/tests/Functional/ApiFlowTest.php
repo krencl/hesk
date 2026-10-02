@@ -1,0 +1,121 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Tests\Functional;
+
+use Doctrine\ORM\EntityManagerInterface;
+use Doctrine\ORM\Tools\SchemaTool;
+use Symfony\Bundle\FrameworkBundle\KernelBrowser;
+use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
+
+/** End-to-end průchod API nad SQLite databází (viz docs/adr/0003). */
+final class ApiFlowTest extends WebTestCase
+{
+    private KernelBrowser $client;
+
+    protected function setUp(): void
+    {
+        $this->client = static::createClient();
+        $em = static::getContainer()->get(EntityManagerInterface::class);
+        $tool = new SchemaTool($em);
+        $tool->dropSchema($em->getMetadataFactory()->getAllMetadata());
+        $tool->createSchema($em->getMetadataFactory()->getAllMetadata());
+    }
+
+    /** @return array<mixed> */
+    private function api(string $method, string $uri, ?array $body = null, int $expected = 200): array
+    {
+        $this->client->request($method, $uri, server: ['CONTENT_TYPE' => 'application/json'], content: null === $body ? null : json_encode($body, \JSON_THROW_ON_ERROR));
+        self::assertSame($expected, $this->client->getResponse()->getStatusCode(), $this->client->getResponse()->getContent());
+        $content = $this->client->getResponse()->getContent();
+
+        return $content ? json_decode($content, true, flags: \JSON_THROW_ON_ERROR) : [];
+    }
+
+    private function login(string $email, string $nick): array
+    {
+        $this->client->getCookieJar()->clear();
+
+        return $this->api('POST', '/api/auth/dev-login', ['email' => $email, 'nickname' => $nick]);
+    }
+
+    public function testRequiresAuthentication(): void
+    {
+        $this->api('GET', '/api/parties', expected: 401);
+        $this->api('GET', '/api/health');
+    }
+
+    public function testPartyGamePlayAndStatsFlow(): void
+    {
+        $anna = $this->login('anna@example.com', 'Anna');
+        $party = $this->api('POST', '/api/parties', ['name' => 'Pátek'], 201);
+        self::assertSame('admin', $party['role']);
+
+        // druhý hráč se připojí přes pozvánku
+        $invite = $this->api('POST', "/api/parties/{$party['id']}/invitations", null, 201);
+        $bob = $this->login('bob@example.com', 'Bob');
+        $this->api('GET', "/api/parties/{$party['id']}", expected: 403);
+        $this->api('POST', "/api/invitations/{$invite['token']}/accept");
+        $this->api('POST', "/api/parties/{$party['id']}/invitations", null, 403);
+
+        $game = $this->api('POST', "/api/parties/{$party['id']}/games", [
+            'name' => 'Carcassonne', 'scoreType' => 'most_points', 'addons' => ['Rivers'],
+        ], 201);
+
+        $payload = fn (string $start, int $annaScore, int $bobScore): array => [
+            'gameId' => $game['id'],
+            'startedAt' => $start.'T18:00:00+00:00',
+            'endedAt' => $start.'T19:00:00+00:00',
+            'place' => 'Doma',
+            'tags' => ['víkend'],
+            'addonIds' => [$game['addons'][0]['id']],
+            'players' => [['userId' => $anna['id'], 'score' => $annaScore], ['userId' => $bob['id'], 'score' => $bobScore]],
+        ];
+
+        $p1 = $this->api('POST', "/api/parties/{$party['id']}/plays", $payload('2026-03-01', 80, 90), 201);
+        $p2 = $this->api('POST', "/api/parties/{$party['id']}/plays", $payload('2026-03-02', 70, 60), 201);
+        $p3 = $this->api('POST', "/api/parties/{$party['id']}/plays", $payload('2026-03-20', 70, 60), 201);
+
+        self::assertSame($p1['sessionId'], $p2['sessionId'], 'plays within 24h share a session');
+        self::assertNotSame($p1['sessionId'], $p3['sessionId']);
+        self::assertSame('Bob', $p1['results'][0]['nickname']);
+        self::assertTrue($p1['results'][0]['winner']);
+
+        $list = $this->api('GET', "/api/parties/{$party['id']}/plays");
+        self::assertSame([$p3['id'], $p2['id'], $p1['id']], array_column($list, 'id'));
+
+        $stats = $this->api('GET', "/api/parties/{$party['id']}/stats");
+        self::assertSame(['Anna' => 2, 'Bob' => 1], array_column($stats['wins'], 'wins', 'nickname'));
+        self::assertSame(3, $stats['topGames'][0]['plays']);
+
+        $this->api('DELETE', "/api/games/{$game['id']}", expected: 422);
+        $this->api('DELETE', "/api/plays/{$p3['id']}", expected: 204);
+        $this->api('DELETE', "/api/plays/{$p3['id']}", expected: 404);
+    }
+
+    public function testInvalidPlayIsRejected(): void
+    {
+        $anna = $this->login('anna@example.com', 'Anna');
+        $party = $this->api('POST', '/api/parties', ['name' => 'Pátek'], 201);
+        $game = $this->api('POST', "/api/parties/{$party['id']}/games", ['name' => 'Dixit', 'scoreType' => 'most_points'], 201);
+
+        $this->api('POST', "/api/parties/{$party['id']}/plays", [
+            'gameId' => $game['id'], 'startedAt' => '2026-03-01T18:00:00+00:00', 'endedAt' => '2026-03-01T19:00:00+00:00',
+            'players' => [['userId' => $anna['id']]],
+        ], 422);
+        $this->api('POST', "/api/parties/{$party['id']}/plays", [
+            'gameId' => $game['id'], 'startedAt' => '2026-03-01T19:00:00+00:00', 'endedAt' => '2026-03-01T18:00:00+00:00',
+            'players' => [['userId' => $anna['id'], 'score' => 1]],
+        ], 422);
+    }
+
+    public function testNicknameIsRequiredToBeSet(): void
+    {
+        $this->client->request('POST', '/api/auth/dev-login', server: ['CONTENT_TYPE' => 'application/json'], content: '{"email":"x@example.com"}');
+        $me = $this->api('GET', '/api/me');
+        self::assertFalse($me['hasNickname']);
+        $me = $this->api('PATCH', '/api/me', ['nickname' => 'Xena']);
+        self::assertTrue($me['hasNickname']);
+    }
+}

@@ -1,0 +1,5 @@
+# Reference-only code of the earlier prototype, not part of the new app
+hesk-tmp/
+.idea/
+.vscode/
+.DS_Store

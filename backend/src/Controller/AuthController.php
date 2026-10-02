@@ -1,0 +1,87 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Controller;
+
+use App\Dto\NicknameRequest;
+use App\Entity\User;
+use App\Service\Presenter;
+use Doctrine\ORM\EntityManagerInterface;
+use KnpU\OAuth2ClientBundle\Client\ClientRegistry;
+use League\OAuth2\Client\Provider\GoogleUser;
+use Symfony\Component\DependencyInjection\Attribute\Autowire;
+use Symfony\Component\HttpFoundation\JsonResponse;
+use Symfony\Component\HttpFoundation\RedirectResponse;
+use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpKernel\Attribute\MapRequestPayload;
+use Symfony\Component\Routing\Attribute\Route;
+use Symfony\Bundle\SecurityBundle\Security;
+
+final class AuthController extends ApiController
+{
+    public function __construct(
+        Presenter $presenter,
+        private readonly EntityManagerInterface $em,
+        private readonly Security $security,
+        #[Autowire('%env(FRONTEND_URL)%')]
+        private readonly string $frontendUrl,
+    ) {
+        parent::__construct($presenter);
+    }
+
+    #[Route('/api/auth/google', name: 'auth_google', methods: ['GET'])]
+    public function google(ClientRegistry $clients): RedirectResponse
+    {
+        return $clients->getClient('google')->redirect(['openid', 'email', 'profile'], []);
+    }
+
+    #[Route('/api/auth/google/callback', name: 'auth_google_callback', methods: ['GET'])]
+    public function googleCallback(ClientRegistry $clients): RedirectResponse
+    {
+        /** @var GoogleUser $google */
+        $google = $clients->getClient('google')->fetchUser();
+        $user = $this->em->getRepository(User::class)->findOneBy(['googleId' => $google->getId()])
+            ?? new User((string) $google->getId(), (string) $google->getEmail());
+        $this->em->persist($user);
+        $this->em->flush();
+        $this->security->login($user, null, 'main');
+
+        return new RedirectResponse($this->frontendUrl);
+    }
+
+    /** Pouze pro vývoj a testy: přihlášení bez Googlu. */
+    #[Route('/api/auth/dev-login', methods: ['POST'])]
+    public function devLogin(#[MapRequestPayload] \App\Dto\DevLoginRequest $req): Response
+    {
+        if (!\in_array($this->getParameter('kernel.environment'), ['dev', 'test'], true)) {
+            throw $this->createNotFoundException();
+        }
+        $user = $this->em->getRepository(User::class)->findOneBy(['googleId' => 'dev-'.$req->email])
+            ?? new User('dev-'.$req->email, $req->email);
+        if (!$user->hasNickname() && $req->nickname) {
+            $user->setNickname($req->nickname);
+        }
+        $this->em->persist($user);
+        $this->em->flush();
+        $this->security->login($user, null, 'main');
+
+        return new JsonResponse($this->presenter->me($user));
+    }
+
+    #[Route('/api/me', methods: ['GET'])]
+    public function me(): JsonResponse
+    {
+        return new JsonResponse($this->presenter->me($this->currentUser()));
+    }
+
+    #[Route('/api/me', methods: ['PATCH'])]
+    public function updateMe(#[MapRequestPayload] NicknameRequest $req): JsonResponse
+    {
+        $user = $this->currentUser();
+        $user->setNickname(trim($req->nickname));
+        $this->em->flush();
+
+        return new JsonResponse($this->presenter->me($user));
+    }
+}

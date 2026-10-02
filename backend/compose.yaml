@@ -1,0 +1,19 @@
+services:
+  database:
+    image: mysql:8.4
+    environment:
+      MYSQL_DATABASE: hesk
+      MYSQL_USER: hesk
+      MYSQL_PASSWORD: hesk
+      MYSQL_ROOT_PASSWORD: root
+    ports:
+      - "3306:3306"
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1"]
+      timeout: 5s
+      retries: 10
+    volumes:
+      - database_data:/var/lib/mysql
+
+volumes:
+  database_data:

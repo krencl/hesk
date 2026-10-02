@@ -1,0 +1,148 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Service;
+
+use App\Domain\Exception\DomainException;
+use App\Domain\PlayerInput;
+use App\Domain\ResultCalculator;
+use App\Dto\PlayRequest;
+use App\Entity\Game;
+use App\Entity\Party;
+use App\Entity\Place;
+use App\Entity\Play;
+use App\Entity\PlayResult;
+use App\Entity\Tag;
+use App\Entity\User;
+use App\Repository\PlayRepository;
+use Doctrine\ORM\EntityManagerInterface;
+
+/** Vytváření, úprava a mazání zápisů včetně přiřazení do seancí. */
+final class PlayService
+{
+    public function __construct(
+        private readonly EntityManagerInterface $em,
+        private readonly ResultCalculator $calculator,
+        private readonly SessionAssigner $sessions,
+        private readonly PlayRepository $plays,
+    ) {
+    }
+
+    public function create(Party $party, PlayRequest $req): Play
+    {
+        $game = $this->resolveGame($party, $req);
+        $session = $this->sessions->assign($party, $req->startedAt, $req->endedAt);
+        $play = new Play($party, $game, $req->startedAt, $req->endedAt, $session);
+        $this->em->persist($session);
+        $this->fill($play, $party, $game, $req);
+        $this->em->persist($play);
+        $this->em->flush();
+
+        return $play;
+    }
+
+    public function update(Play $play, PlayRequest $req): Play
+    {
+        $party = $play->getParty();
+        $game = $this->resolveGame($party, $req);
+        $oldSession = $play->getSession();
+
+        $play->setTimes($req->startedAt, $req->endedAt);
+        $this->fill($play, $party, $game, $req);
+        $this->em->flush();
+
+        // Seance přepočítáme z jejích zápisů (bez upravovaného) a upravený zápis zařadíme znovu.
+        $others = array_filter($this->plays->findBySession($oldSession), static fn (Play $p): bool => $p !== $play);
+        $emptied = $this->sessions->recalculate($oldSession, $others);
+        $newSession = $this->sessions->assign($party, $req->startedAt, $req->endedAt);
+        $this->em->persist($newSession);
+        $play->setSession($newSession);
+        $this->em->flush();
+        if ($emptied && $oldSession !== $newSession) {
+            $this->em->remove($oldSession);
+            $this->em->flush();
+        }
+
+        return $play;
+    }
+
+    public function delete(Play $play): void
+    {
+        $session = $play->getSession();
+        $this->em->remove($play);
+        $this->em->flush();
+        $remaining = $this->plays->findBySession($session);
+        if ($this->sessions->recalculate($session, $remaining)) {
+            $this->em->remove($session);
+        }
+        $this->em->flush();
+    }
+
+    private function resolveGame(Party $party, PlayRequest $req): Game
+    {
+        $game = $this->em->find(Game::class, $req->gameId);
+        if (!$game || $game->getParty() !== $party) {
+            throw new DomainException('Hra neexistuje v této skupině.');
+        }
+
+        return $game;
+    }
+
+    private function fill(Play $play, Party $party, Game $game, PlayRequest $req): void
+    {
+        $outcomes = $this->calculator->calculate(
+            $game->getScoreType(),
+            array_map(static fn ($p): PlayerInput => new PlayerInput($p->userId, $p->score, $p->rank, $p->winner), $req->players),
+        );
+
+        $results = [];
+        foreach ($outcomes as $o) {
+            $user = $this->em->find(User::class, $o->userId);
+            if (!$user || !$party->isMember($user)) {
+                throw new DomainException('Hráč není členem skupiny.');
+            }
+            $results[] = new PlayResult($play, $user, $o->score, $o->rank, $o->winner);
+        }
+
+        $addons = [];
+        foreach (array_unique($req->addonIds) as $addonId) {
+            $match = $game->getAddons()->filter(static fn ($a): bool => $a->getId() === $addonId)->first();
+            if (!$match) {
+                throw new DomainException('Přídavek nepatří k vybrané hře.');
+            }
+            $addons[] = $match;
+        }
+
+        $play->setGame($game);
+        $play->replaceResults($results);
+        $play->setAddons($addons);
+        $play->setTags(array_map(fn (string $n): Tag => $this->findOrCreate(Tag::class, $party, $n), $this->cleanNames($req->tags)));
+        $play->setPlace($req->place && '' !== trim($req->place) ? $this->findOrCreate(Place::class, $party, trim($req->place)) : null);
+        $play->setNotes($req->notes);
+    }
+
+    /** @return list<string> */
+    private function cleanNames(array $names): array
+    {
+        return array_values(array_unique(array_filter(array_map('trim', $names), static fn (string $n): bool => '' !== $n)));
+    }
+
+    /**
+     * @template T of Tag|Place
+     *
+     * @param class-string<T> $class
+     *
+     * @return T
+     */
+    private function findOrCreate(string $class, Party $party, string $name): Tag|Place
+    {
+        $entity = $this->em->getRepository($class)->findOneBy(['party' => $party, 'name' => $name]);
+        if (!$entity) {
+            $entity = new $class($party, $name);
+            $this->em->persist($entity);
+        }
+
+        return $entity;
+    }
+}
