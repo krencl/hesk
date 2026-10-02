@@ -41,8 +41,14 @@ final class AuthController extends ApiController
     {
         /** @var GoogleUser $google */
         $google = $clients->getClient('google')->fetchUser();
-        $user = $this->em->getRepository(User::class)->findOneBy(['googleId' => $google->getId()])
-            ?? new User((string) $google->getId(), (string) $google->getEmail());
+        $repo = $this->em->getRepository(User::class);
+        $user = $repo->findOneBy(['googleId' => $google->getId()]);
+        if (!$user && ($existing = $repo->findOneBy(['email' => $google->getEmail()]))) {
+            // účet převzatý ze staré aplikace: Google ID doplníme při prvním přihlášení
+            $existing->linkGoogle((string) $google->getId());
+            $user = $existing;
+        }
+        $user ??= new User((string) $google->getId(), (string) $google->getEmail());
         $this->em->persist($user);
         $this->em->flush();
         $this->security->login($user, null, 'main');
@@ -57,7 +63,7 @@ final class AuthController extends ApiController
         if (!\in_array($this->getParameter('kernel.environment'), ['dev', 'test'], true)) {
             throw $this->createNotFoundException();
         }
-        $user = $this->em->getRepository(User::class)->findOneBy(['googleId' => 'dev-'.$req->email])
+        $user = $this->em->getRepository(User::class)->findOneBy(['email' => $req->email])
             ?? new User('dev-'.$req->email, $req->email);
         if (!$user->hasNickname() && $req->nickname) {
             $user->setNickname($req->nickname);
@@ -80,6 +86,9 @@ final class AuthController extends ApiController
     {
         $user = $this->currentUser();
         $user->setNickname(trim($req->nickname));
+        foreach ($this->em->getRepository(\App\Entity\Party::class)->findByMember($user) as $party) {
+            $party->syncPlayerName($user);
+        }
         $this->em->flush();
 
         return new JsonResponse($this->presenter->me($user));

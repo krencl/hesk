@@ -48,13 +48,13 @@ final class ApiFlowTest extends WebTestCase
 
     public function testPartyGamePlayAndStatsFlow(): void
     {
-        $anna = $this->login('anna@example.com', 'Anna');
+        $this->login('anna@example.com', 'Anna');
         $party = $this->api('POST', '/api/parties', ['name' => 'Pátek'], 201);
         self::assertSame('admin', $party['role']);
 
         // druhý hráč se připojí přes pozvánku
         $invite = $this->api('POST', "/api/parties/{$party['id']}/invitations", null, 201);
-        $bob = $this->login('bob@example.com', 'Bob');
+        $this->login('bob@example.com', 'Bob');
         $this->api('GET', "/api/parties/{$party['id']}", expected: 403);
         $this->api('POST', "/api/invitations/{$invite['token']}/accept");
         $this->api('POST', "/api/parties/{$party['id']}/invitations", null, 403);
@@ -63,6 +63,12 @@ final class ApiFlowTest extends WebTestCase
             'name' => 'Carcassonne', 'scoreType' => 'most_points', 'addons' => ['Rivers'],
         ], 201);
 
+        $players = array_column($this->api('GET', "/api/parties/{$party['id']}/players"), 'id', 'name');
+        self::assertSame(['Anna', 'Bob'], array_keys($players));
+        $guest = $this->api('POST', "/api/parties/{$party['id']}/players", ['name' => 'Host'], 201);
+        $this->api('POST', "/api/parties/{$party['id']}/players", ['name' => 'host'], 422);
+        self::assertFalse($guest['hasAccount']);
+
         $payload = fn (string $start, int $annaScore, int $bobScore): array => [
             'gameId' => $game['id'],
             'startedAt' => $start.'T18:00:00+00:00',
@@ -70,7 +76,7 @@ final class ApiFlowTest extends WebTestCase
             'place' => 'Doma',
             'tags' => ['víkend'],
             'addonIds' => [$game['addons'][0]['id']],
-            'players' => [['userId' => $anna['id'], 'score' => $annaScore], ['userId' => $bob['id'], 'score' => $bobScore]],
+            'players' => [['playerId' => $players['Anna'], 'score' => $annaScore], ['playerId' => $players['Bob'], 'score' => $bobScore]],
         ];
 
         $p1 = $this->api('POST', "/api/parties/{$party['id']}/plays", $payload('2026-03-01', 80, 90), 201);
@@ -79,14 +85,14 @@ final class ApiFlowTest extends WebTestCase
 
         self::assertSame($p1['sessionId'], $p2['sessionId'], 'plays within 24h share a session');
         self::assertNotSame($p1['sessionId'], $p3['sessionId']);
-        self::assertSame('Bob', $p1['results'][0]['nickname']);
+        self::assertSame('Bob', $p1['results'][0]['name']);
         self::assertTrue($p1['results'][0]['winner']);
 
         $list = $this->api('GET', "/api/parties/{$party['id']}/plays");
         self::assertSame([$p3['id'], $p2['id'], $p1['id']], array_column($list, 'id'));
 
         $stats = $this->api('GET', "/api/parties/{$party['id']}/stats");
-        self::assertSame(['Anna' => 2, 'Bob' => 1], array_column($stats['wins'], 'wins', 'nickname'));
+        self::assertSame(['Anna' => 2, 'Bob' => 1], array_column($stats['wins'], 'wins', 'name'));
         self::assertSame(3, $stats['topGames'][0]['plays']);
 
         $this->api('DELETE', "/api/games/{$game['id']}", expected: 422);
@@ -96,17 +102,32 @@ final class ApiFlowTest extends WebTestCase
 
     public function testInvalidPlayIsRejected(): void
     {
-        $anna = $this->login('anna@example.com', 'Anna');
+        $this->login('anna@example.com', 'Anna');
         $party = $this->api('POST', '/api/parties', ['name' => 'Pátek'], 201);
+        $annaPlayer = $this->api('GET', "/api/parties/{$party['id']}/players")[0]['id'];
         $game = $this->api('POST', "/api/parties/{$party['id']}/games", ['name' => 'Dixit', 'scoreType' => 'most_points'], 201);
 
         $this->api('POST', "/api/parties/{$party['id']}/plays", [
             'gameId' => $game['id'], 'startedAt' => '2026-03-01T18:00:00+00:00', 'endedAt' => '2026-03-01T19:00:00+00:00',
-            'players' => [['userId' => $anna['id']]],
+            'players' => [['playerId' => $annaPlayer]],
         ], 422);
         $this->api('POST', "/api/parties/{$party['id']}/plays", [
             'gameId' => $game['id'], 'startedAt' => '2026-03-01T19:00:00+00:00', 'endedAt' => '2026-03-01T18:00:00+00:00',
-            'players' => [['userId' => $anna['id'], 'score' => 1]],
+            'players' => [['playerId' => $annaPlayer, 'score' => 1]],
+        ], 422);
+    }
+
+    public function testPlayerFromAnotherPartyIsRejected(): void
+    {
+        $this->login('anna@example.com', 'Anna');
+        $a = $this->api('POST', '/api/parties', ['name' => 'A'], 201);
+        $b = $this->api('POST', '/api/parties', ['name' => 'B'], 201);
+        $foreign = $this->api('GET', "/api/parties/{$b['id']}/players")[0]['id'];
+        $game = $this->api('POST', "/api/parties/{$a['id']}/games", ['name' => 'G', 'scoreType' => 'most_points'], 201);
+
+        $this->api('POST', "/api/parties/{$a['id']}/plays", [
+            'gameId' => $game['id'], 'startedAt' => '2026-03-01T18:00:00+00:00', 'endedAt' => '2026-03-01T19:00:00+00:00',
+            'players' => [['playerId' => $foreign, 'score' => 1]],
         ], 422);
     }
 

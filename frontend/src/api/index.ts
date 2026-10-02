@@ -1,5 +1,5 @@
 import { del, get, patch, post, put } from './client';
-import type { Game, GameInput, Me, Party, PartyDetail, PartyRole, Play, PlayInput, Stats } from './types';
+import type { Game, Player, GameInput, Me, Party, PartyDetail, PartyRole, Play, PlayInput, Stats } from './types';
 
 export const api = {
   me: () => get<Me>('/me'),
@@ -14,6 +14,9 @@ export const api = {
   acceptInvitation: (token: string) => post<PartyDetail>(`/invitations/${token}/accept`),
   changeRole: (partyId: number, userId: number, role: PartyRole) => patch<PartyDetail>(`/parties/${partyId}/members/${userId}`, { role }),
   removeMember: (partyId: number, userId: number) => del(`/parties/${partyId}/members/${userId}`),
+
+  players: (partyId: number) => get<Player[]>(`/parties/${partyId}/players`),
+  createGuest: (partyId: number, name: string) => post<Player>(`/parties/${partyId}/players`, { name }),
 
   games: (partyId: number) => get<Game[]>(`/parties/${partyId}/games`),
   game: (id: number) => get<Game>(`/games/${id}`),

@@ -12,5 +12,5 @@ Vývojová/ostrá DB je **MariaDB 11.0** (`mariadb:3306`, db `hesk`), ne MySQL, 
 - Produkce: `APP_ENV=prod`, vlastní `APP_SECRET`, `composer install --no-dev -o`, `TRUSTED_PROXIES` za reverzní proxy (dle potřeby).
 
 ## Důsledky / otevřené
-- **Nový doménový model (ADR 0004) kolizně pojmenovává tabulky se stávajícím schématem** (`party`, `game`, `tag`, `user`…). Migrace `Version20261002000000` se proti této DB **nesmí spustit**, dokud není rozhodnuto: (a) přizpůsobit entity stávajícímu schématu, nebo (b) nové schéma do jiné DB/prefixu + jednorázový import dat.
-- Pozor na legacy schéma: `utf8mb3_czech_ci`, `datetime` s defaultem `0000-00-00`, enumy (`highest_score|lowest_score|order|only_winner`), hráči jako samostatná entita `player` (i „herní“ hráči), `session_number` na kole.
+- Kolize názvů tabulek se stávajícím schématem byla vyřešena přejmenováním na `legacy_*` a importem dat (ADR 0007).
+- Pozor na legacy schéma: `utf8mb3_czech_ci`, `datetime` s defaultem `0000-00-00`.

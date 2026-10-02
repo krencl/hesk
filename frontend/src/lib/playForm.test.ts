@@ -10,7 +10,7 @@ const draft = (over: Partial<PlayDraft> = {}): PlayDraft => ({
   gameId: 7,
   startedAt: '2026-03-01T18:00',
   endedAt: '2026-03-01T19:00',
-  players: [{ userId: 1, score: '10,5', rank: '', winner: false }],
+  players: [{ playerId: 1, score: '10,5', rank: '', winner: false }],
   addonIds: [1, 99],
   place: ' Doma ',
   tags: 'víkend, , liga',
@@ -33,7 +33,7 @@ describe('validateDraft', () => {
   });
 
   it('requires scores / ranks / a winner depending on score type', () => {
-    const noScore = draft({ players: [{ userId: 1, score: '', rank: '', winner: false }] });
+    const noScore = draft({ players: [{ playerId: 1, score: '', rank: '', winner: false }] });
     expect(validateDraft(noScore, game('fewest_points'))).toMatch(/skóre/);
     expect(validateDraft(noScore, game('rank_order'))).toMatch(/pořadí/);
     expect(validateDraft(noScore, game('winner_only'))).toMatch(/vítěze/);
@@ -43,7 +43,7 @@ describe('validateDraft', () => {
 describe('toPlayInput', () => {
   it('maps score games, normalises decimals and cleans optional fields', () => {
     const input = toPlayInput(draft(), game('most_points'));
-    expect(input.players).toEqual([{ userId: 1, score: 10.5 }]);
+    expect(input.players).toEqual([{ playerId: 1, score: 10.5 }]);
     expect(input.addonIds).toEqual([1]);
     expect(input.place).toBe('Doma');
     expect(input.tags).toEqual(['víkend', 'liga']);
@@ -52,8 +52,8 @@ describe('toPlayInput', () => {
   });
 
   it('maps rank and winner games', () => {
-    const d = draft({ players: [{ userId: 1, score: '', rank: '2', winner: true }] });
-    expect(toPlayInput(d, game('rank_order')).players).toEqual([{ userId: 1, rank: 2 }]);
-    expect(toPlayInput(d, game('winner_only')).players).toEqual([{ userId: 1, winner: true }]);
+    const d = draft({ players: [{ playerId: 1, score: '', rank: '2', winner: true }] });
+    expect(toPlayInput(d, game('rank_order')).players).toEqual([{ playerId: 1, rank: 2 }]);
+    expect(toPlayInput(d, game('winner_only')).players).toEqual([{ playerId: 1, winner: true }]);
   });
 });

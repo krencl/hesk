@@ -12,7 +12,16 @@ export function NewPlayPage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const games = useQuery({ queryKey: ['games', party.id], queryFn: () => api.games(party.id) });
-  const detail = useQuery({ queryKey: ['party', party.id], queryFn: () => api.party(party.id) });
+  const players = useQuery({ queryKey: ['players', party.id], queryFn: () => api.players(party.id) });
+  const [guestName, setGuestName] = useState('');
+  const addGuest = useMutation({
+    mutationFn: () => api.createGuest(party.id, guestName.trim()),
+    onSuccess: async (p) => {
+      setGuestName('');
+      await queryClient.invalidateQueries({ queryKey: ['players', party.id] });
+      togglePlayer(p.id);
+    },
+  });
 
   const [draft, setDraft] = useState<PlayDraft>(() => {
     const end = new Date();
@@ -40,14 +49,15 @@ export function NewPlayPage() {
   });
 
   const patch = (changes: Partial<PlayDraft>) => setDraft((d) => ({ ...d, ...changes }));
-  const togglePlayer = (userId: number) =>
-    patch({
-      players: draft.players.some((p) => p.userId === userId)
-        ? draft.players.filter((p) => p.userId !== userId)
-        : [...draft.players, { userId, score: '', rank: '', winner: false }],
-    });
-  const patchPlayer = (userId: number, changes: Partial<PlayDraft['players'][number]>) =>
-    patch({ players: draft.players.map((p) => (p.userId === userId ? { ...p, ...changes } : p)) });
+  const togglePlayer = (playerId: number) =>
+    setDraft((d) => ({
+      ...d,
+      players: d.players.some((p) => p.playerId === playerId)
+        ? d.players.filter((p) => p.playerId !== playerId)
+        : [...d.players, { playerId, score: '', rank: '', winner: false }],
+    }));
+  const patchPlayer = (playerId: number, changes: Partial<PlayDraft['players'][number]>) =>
+    patch({ players: draft.players.map((p) => (p.playerId === playerId ? { ...p, ...changes } : p)) });
 
   const submit = (e: FormEvent) => {
     e.preventDefault();
@@ -56,7 +66,7 @@ export function NewPlayPage() {
     if (!problem) save.mutate();
   };
 
-  if (games.isPending || detail.isPending) return <p className="muted">Načítám…</p>;
+  if (games.isPending || players.isPending) return <p className="muted">Načítám…</p>;
   if (games.data?.length === 0) return <p className="empty">Nejdřív přidej nějakou hru v menu → Hry.</p>;
 
   return (
@@ -85,28 +95,33 @@ export function NewPlayPage() {
 
       <fieldset>
         <legend>Hráči</legend>
-        {detail.data?.members.map((m) => {
-          const player = draft.players.find((p) => p.userId === m.userId);
+        {players.data?.map((m) => {
+          const player = draft.players.find((p) => p.playerId === m.id);
           return (
-            <div key={m.userId} className="player-row">
+            <div key={m.id} className="player-row">
               <label className="check">
-                <input type="checkbox" checked={!!player} onChange={() => togglePlayer(m.userId)} />
-                {m.nickname}
+                <input type="checkbox" checked={!!player} onChange={() => togglePlayer(m.id)} />
+                {m.name}
               </label>
               {player && game && (game.scoreType === 'most_points' || game.scoreType === 'fewest_points') && (
-                <input inputMode="decimal" aria-label={`Skóre ${m.nickname}`} placeholder="skóre" value={player.score} onChange={(e) => patchPlayer(m.userId, { score: e.target.value })} />
+                <input inputMode="decimal" aria-label={`Skóre ${m.name}`} placeholder="skóre" value={player.score} onChange={(e) => patchPlayer(m.id, { score: e.target.value })} />
               )}
               {player && game?.scoreType === 'rank_order' && (
-                <input type="number" min={1} aria-label={`Pořadí ${m.nickname}`} placeholder="pořadí" value={player.rank} onChange={(e) => patchPlayer(m.userId, { rank: e.target.value })} />
+                <input type="number" min={1} aria-label={`Pořadí ${m.name}`} placeholder="pořadí" value={player.rank} onChange={(e) => patchPlayer(m.id, { rank: e.target.value })} />
               )}
               {player && game?.scoreType === 'winner_only' && (
                 <label className="check">
-                  <input type="checkbox" checked={player.winner} onChange={(e) => patchPlayer(m.userId, { winner: e.target.checked })} /> vítěz
+                  <input type="checkbox" checked={player.winner} onChange={(e) => patchPlayer(m.id, { winner: e.target.checked })} /> vítěz
                 </label>
               )}
             </div>
           );
         })}
+        <div className="player-row">
+          <input value={guestName} maxLength={100} placeholder="Nový hráč (host)" aria-label="Jméno nového hráče" onChange={(e) => setGuestName(e.target.value)} />
+          <button type="button" className="btn secondary" disabled={!guestName.trim() || addGuest.isPending} onClick={() => addGuest.mutate()}>Přidat</button>
+        </div>
+        <ErrorMessage error={addGuest.error} />
       </fieldset>
 
       <div className="row">

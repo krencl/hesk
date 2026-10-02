@@ -17,7 +17,7 @@ export function winners(play: Pick<Play, 'results'>): PlayResult[] {
 export function winnerSummary(play: Pick<Play, 'results'>): string {
   const w = winners(play);
   if (w.length === 0) return '—';
-  const names = w.map((r) => r.nickname ?? '?').join(', ');
+  const names = w.map((r) => r.name).join(', ');
   const score = w[0].score;
   return score === null ? names : `${names} (${formatScore(score)})`;
 }

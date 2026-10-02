@@ -70,4 +70,45 @@ final class PartyTest extends TestCase
         $this->expectException(DomainException::class);
         $party->removeMember(new User('g9', 'z@example.com'));
     }
+
+    public function testMembersGetPlayersAndLeavingKeepsThemAsGuests(): void
+    {
+        $creator = new User('g1', 'a@example.com');
+        $creator->setNickname('Anna');
+        $other = new User('g2', 'b@example.com');
+        $other->setNickname('Anna');
+        $party = Party::create('Hrajeme', $creator);
+
+        $party->addMember($other);
+
+        self::assertSame(['Anna', 'Anna 2'], array_values(array_map(static fn ($p) => $p->getName(), $party->getPlayers()->toArray())));
+        $player = $party->findPlayerFor($other);
+        $party->removeMember($other);
+        self::assertNull($player?->getUser());
+        self::assertCount(2, $party->getPlayers());
+    }
+
+    public function testGuestNamesAreUniqueCaseInsensitively(): void
+    {
+        $party = Party::create('Hrajeme', new User('g1', 'a@example.com'));
+        $party->addGuest('Honza');
+
+        $this->expectException(DomainException::class);
+        $party->addGuest(' honza ');
+    }
+
+    public function testSyncPlayerNameFollowsNicknameUnlessTaken(): void
+    {
+        $user = new User('g1', 'a@example.com');
+        $party = Party::create('Hrajeme', $user);
+        $party->addGuest('Taken');
+
+        $user->setNickname('Taken');
+        $party->syncPlayerName($user);
+        self::assertSame('a', $party->findPlayerFor($user)?->getName());
+
+        $user->setNickname('Free');
+        $party->syncPlayerName($user);
+        self::assertSame('Free', $party->findPlayerFor($user)?->getName());
+    }
 }

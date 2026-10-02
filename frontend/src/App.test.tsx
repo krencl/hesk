@@ -54,7 +54,7 @@ describe('App gating', () => {
         body: [{
           id: 9, sessionId: 1, game: { id: 1, name: 'Carcassonne', imageUrl: null, scoreType: 'most_points' },
           startedAt: '2026-03-01T18:00:00+00:00', endedAt: '2026-03-01T19:00:00+00:00', place: null, notes: null, addons: [], tags: [],
-          results: [{ userId: 1, nickname: 'Anna', score: 90, rank: 1, winner: true }],
+          results: [{ playerId: 1, name: 'Anna', score: 90, rank: 1, winner: true }],
         }],
       },
     });

@@ -41,6 +41,11 @@ final class Presenter
         ))];
     }
 
+    public function player(\App\Entity\Player $player): array
+    {
+        return ['id' => $player->getId(), 'name' => $player->getName(), 'hasAccount' => null !== $player->getUser()];
+    }
+
     public function game(Game $game): array
     {
         return [
@@ -73,8 +78,8 @@ final class Presenter
             'addons' => array_values(array_map(static fn ($a): array => ['id' => $a->getId(), 'name' => $a->getName()], $play->getAddons()->toArray())),
             'tags' => array_values(array_map(static fn ($t): string => $t->getName(), $play->getTags()->toArray())),
             'results' => array_map(static fn (PlayResult $r): array => [
-                'userId' => $r->getUser()->getId(),
-                'nickname' => $r->getUser()->getNickname(),
+                'playerId' => $r->getPlayer()->getId(),
+                'name' => $r->getPlayer()->getName(),
                 'score' => $r->getScore(),
                 'rank' => $r->getRank(),
                 'winner' => $r->isWinner(),

@@ -8,7 +8,7 @@ namespace App\Domain;
 final readonly class PlayerInput
 {
     public function __construct(
-        public int $userId,
+        public int $playerId,
         public ?float $score = null,
         public ?int $rank = null,
         public ?bool $winner = null,

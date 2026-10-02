@@ -14,7 +14,7 @@ use App\Entity\Place;
 use App\Entity\Play;
 use App\Entity\PlayResult;
 use App\Entity\Tag;
-use App\Entity\User;
+use App\Entity\Player;
 use App\Repository\PlayRepository;
 use Doctrine\ORM\EntityManagerInterface;
 
@@ -93,16 +93,16 @@ final class PlayService
     {
         $outcomes = $this->calculator->calculate(
             $game->getScoreType(),
-            array_map(static fn ($p): PlayerInput => new PlayerInput($p->userId, $p->score, $p->rank, $p->winner), $req->players),
+            array_map(static fn ($p): PlayerInput => new PlayerInput($p->playerId, $p->score, $p->rank, $p->winner), $req->players),
         );
 
         $results = [];
         foreach ($outcomes as $o) {
-            $user = $this->em->find(User::class, $o->userId);
-            if (!$user || !$party->isMember($user)) {
-                throw new DomainException('Hráč není členem skupiny.');
+            $player = $this->em->find(Player::class, $o->playerId);
+            if (!$player || $player->getParty() !== $party) {
+                throw new DomainException('Hráč nepatří do této skupiny.');
             }
-            $results[] = new PlayResult($play, $user, $o->score, $o->rank, $o->winner);
+            $results[] = new PlayResult($play, $player, $o->score, $o->rank, $o->winner);
         }
 
         $addons = [];

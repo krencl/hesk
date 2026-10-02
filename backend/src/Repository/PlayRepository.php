@@ -46,17 +46,17 @@ class PlayRepository extends ServiceEntityRepository
         return $this->findBy(['session' => $session]);
     }
 
-    /** @return list<array{userId: int, nickname: ?string, wins: int, plays: int}> */
+    /** @return list<array{playerId: int, name: string, wins: int, plays: int}> */
     public function winsPerPlayer(Party $party): array
     {
         $rows = $this->getEntityManager()->createQuery(
-            'SELECT u.id AS userId, u.nickname AS nickname, COUNT(r.id) AS plays, SUM(CASE WHEN r.winner = true THEN 1 ELSE 0 END) AS wins
-             FROM App\Entity\PlayResult r JOIN r.play p JOIN r.user u
-             WHERE p.party = :party GROUP BY u.id, u.nickname ORDER BY wins DESC, plays DESC',
+            'SELECT pl.id AS playerId, pl.name AS name, COUNT(r.id) AS plays, SUM(CASE WHEN r.winner = true THEN 1 ELSE 0 END) AS wins
+             FROM App\Entity\PlayResult r JOIN r.play p JOIN r.player pl
+             WHERE p.party = :party GROUP BY pl.id, pl.name ORDER BY wins DESC, plays DESC',
         )->setParameter('party', $party)->getArrayResult();
 
         return array_map(static fn (array $r): array => [
-            'userId' => (int) $r['userId'], 'nickname' => $r['nickname'], 'wins' => (int) $r['wins'], 'plays' => (int) $r['plays'],
+            'playerId' => (int) $r['playerId'], 'name' => $r['name'], 'wins' => (int) $r['wins'], 'plays' => (int) $r['plays'],
         ], $rows);
     }
 

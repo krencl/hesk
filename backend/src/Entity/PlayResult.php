@@ -8,7 +8,7 @@ use Doctrine\ORM\Mapping as ORM;
 
 #[ORM\Entity]
 #[ORM\Table(name: 'play_result')]
-#[ORM\UniqueConstraint(columns: ['play_id', 'user_id'])]
+#[ORM\UniqueConstraint(columns: ['play_id', 'player_id'])]
 class PlayResult
 {
     #[ORM\Id, ORM\GeneratedValue, ORM\Column]
@@ -20,7 +20,7 @@ class PlayResult
         private Play $play,
         #[ORM\ManyToOne]
         #[ORM\JoinColumn(nullable: false)]
-        private User $user,
+        private Player $player,
         #[ORM\Column(nullable: true)]
         private ?float $score,
         #[ORM\Column(name: 'placement')]
@@ -30,9 +30,9 @@ class PlayResult
     ) {
     }
 
-    public function getUser(): User
+    public function getPlayer(): Player
     {
-        return $this->user;
+        return $this->player;
     }
 
     public function getScore(): ?float

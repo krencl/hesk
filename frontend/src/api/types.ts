@@ -48,9 +48,15 @@ export interface GameInput {
   addons: string[];
 }
 
+export interface Player {
+  id: number;
+  name: string;
+  hasAccount: boolean;
+}
+
 export interface PlayResult {
-  userId: number;
-  nickname: string | null;
+  playerId: number;
+  name: string;
   score: number | null;
   rank: number;
   winner: boolean;
@@ -70,7 +76,7 @@ export interface Play {
 }
 
 export interface PlayerInput {
-  userId: number;
+  playerId: number;
   score?: number | null;
   rank?: number | null;
   winner?: boolean | null;
@@ -88,6 +94,6 @@ export interface PlayInput {
 }
 
 export interface Stats {
-  wins: { userId: number; nickname: string | null; wins: number; plays: number }[];
+  wins: { playerId: number; name: string; wins: number; plays: number }[];
   topGames: { gameId: number; name: string; plays: number }[];
 }

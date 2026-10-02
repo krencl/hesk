@@ -6,11 +6,12 @@ namespace App\Entity;
 
 use App\Domain\Exception\DomainException;
 use App\Enum\PartyRole;
+use App\Repository\PartyRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
 
-#[ORM\Entity]
+#[ORM\Entity(repositoryClass: PartyRepository::class)]
 class Party
 {
     #[ORM\Id, ORM\GeneratedValue, ORM\Column]
@@ -23,12 +24,17 @@ class Party
     #[ORM\OneToMany(targetEntity: PartyMember::class, mappedBy: 'party', cascade: ['persist', 'remove'], orphanRemoval: true)]
     private Collection $members;
 
+    /** @var Collection<int, Player> */
+    #[ORM\OneToMany(targetEntity: Player::class, mappedBy: 'party', cascade: ['persist'])]
+    private Collection $players;
+
     private function __construct(
         #[ORM\Column(length: 100)]
         private string $name,
     ) {
         $this->createdAt = new \DateTimeImmutable();
         $this->members = new ArrayCollection();
+        $this->players = new ArrayCollection();
     }
 
     /** Zakladatel se automaticky stává adminem. */
@@ -36,6 +42,7 @@ class Party
     {
         $party = new self($name);
         $party->members->add(new PartyMember($party, $creator, PartyRole::Admin));
+        $party->ensurePlayerFor($creator);
 
         return $party;
     }
@@ -77,6 +84,75 @@ class Party
         return null;
     }
 
+    /** @return Collection<int, Player> */
+    public function getPlayers(): Collection
+    {
+        return $this->players;
+    }
+
+    public function findPlayerFor(User $user): ?Player
+    {
+        foreach ($this->players as $player) {
+            $linked = $player->getUser();
+            if ($linked && ($linked === $user || (null !== $user->getId() && $linked->getId() === $user->getId()))) {
+                return $player;
+            }
+        }
+
+        return null;
+    }
+
+    /** Každý člen skupiny má svého hráče (pod přezdívkou účtu). */
+    public function ensurePlayerFor(User $user): Player
+    {
+        if ($player = $this->findPlayerFor($user)) {
+            return $player;
+        }
+        $this->players->add($player = new Player($this, $this->uniquePlayerName($user->getNickname() ?? strstr($user->getEmail(), '@', true) ?: 'Hráč'), $user));
+
+        return $player;
+    }
+
+    public function addGuest(string $name): Player
+    {
+        $name = trim($name);
+        foreach ($this->players as $player) {
+            if (0 === strcasecmp($player->getName(), $name)) {
+                throw new DomainException('Hráč s tímto jménem už ve skupině existuje.');
+            }
+        }
+        $this->players->add($player = new Player($this, $name));
+
+        return $player;
+    }
+
+    /** Přejmenuje hráče navázaného na účet podle nové přezdívky, pokud je jméno ve skupině volné. */
+    public function syncPlayerName(User $user): void
+    {
+        $player = $this->findPlayerFor($user);
+        $nickname = $user->getNickname();
+        if (!$player || !$nickname || $player->getName() === $nickname) {
+            return;
+        }
+        foreach ($this->players as $other) {
+            if ($other !== $player && 0 === strcasecmp($other->getName(), $nickname)) {
+                return;
+            }
+        }
+        $player->rename($nickname);
+    }
+
+    private function uniquePlayerName(string $base): string
+    {
+        $taken = array_map(static fn (Player $p): string => mb_strtolower($p->getName()), $this->players->toArray());
+        $name = $base;
+        for ($i = 2; \in_array(mb_strtolower($name), $taken, true); ++$i) {
+            $name = $base.' '.$i;
+        }
+
+        return $name;
+    }
+
     public function isMember(User $user): bool
     {
         return null !== $this->findMember($user);
@@ -93,6 +169,7 @@ class Party
             return $member;
         }
         $this->members->add($member = new PartyMember($this, $user, $role));
+        $this->ensurePlayerFor($user);
 
         return $member;
     }
@@ -102,6 +179,8 @@ class Party
         $member = $this->findMember($user) ?? throw new DomainException('Uživatel není členem skupiny.');
         $this->assertStillHasAdminWithout($member);
         $this->members->removeElement($member);
+        // Historie her zůstává: hráč jen přijde o vazbu na účet a stane se z něj host.
+        $this->findPlayerFor($user)?->detachUser();
     }
 
     public function changeRole(User $user, PartyRole $role): void

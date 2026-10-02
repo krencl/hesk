@@ -21,9 +21,9 @@ class User implements UserInterface
     private \DateTimeImmutable $createdAt;
 
     public function __construct(
-        #[ORM\Column(length: 64, unique: true)]
-        private string $googleId,
-        #[ORM\Column(length: 255)]
+        #[ORM\Column(length: 180, unique: true, nullable: true)]
+        private ?string $googleId,
+        #[ORM\Column(length: 180, unique: true)]
         private string $email,
     ) {
         $this->createdAt = new \DateTimeImmutable();
@@ -34,9 +34,15 @@ class User implements UserInterface
         return $this->id;
     }
 
-    public function getGoogleId(): string
+    public function getGoogleId(): ?string
     {
         return $this->googleId;
+    }
+
+    /** Účty převzaté ze staré aplikace nemají Google ID; doplní se při prvním přihlášení. */
+    public function linkGoogle(string $googleId): void
+    {
+        $this->googleId = $googleId;
     }
 
     public function getEmail(): string
@@ -76,6 +82,6 @@ class User implements UserInterface
 
     public function getUserIdentifier(): string
     {
-        return $this->googleId;
+        return $this->email;
     }
 }

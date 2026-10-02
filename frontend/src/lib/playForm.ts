@@ -2,7 +2,7 @@ import type { Game, PlayerInput, PlayInput } from '../api/types';
 import { fromLocalInput } from './datetime';
 
 export interface PlayerDraft {
-  userId: number;
+  playerId: number;
   score: string;
   rank: string;
   winner: boolean;
@@ -38,11 +38,11 @@ export function toPlayInput(draft: PlayDraft, game: Game): PlayInput {
     switch (game.scoreType) {
       case 'most_points':
       case 'fewest_points':
-        return { userId: p.userId, score: Number(p.score.replace(',', '.')) };
+        return { playerId: p.playerId, score: Number(p.score.replace(',', '.')) };
       case 'rank_order':
-        return { userId: p.userId, rank: Number(p.rank) };
+        return { playerId: p.playerId, rank: Number(p.rank) };
       case 'winner_only':
-        return { userId: p.userId, winner: p.winner };
+        return { playerId: p.playerId, winner: p.winner };
     }
   });
   return {

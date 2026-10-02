@@ -10,19 +10,19 @@ Webová aplikace pro zapisování výsledků z hraní deskových her a statistik
 ## Příkazy
 - Backend: `cd backend && composer install && php bin/phpunit` · DB `docker compose up -d database` + `php bin/console doctrine:migrations:migrate`.
 - Frontend: `cd frontend && npm install && npm test` · `npm run dev` (proxy `/api` → :8000) · `npm run build` (včetně `tsc`).
-- Konfigurace: kořenový `/workspace/.env` (git-ignorováno, root-owned, **obsahuje secrets – nikdy necommitovat ani nevypisovat**) je přes symlink `backend/.env.local` načten Symfony (`DB_*`, `OAUTH_GOOGLE_*`). Viz ADR 0006. DB je **MariaDB 11** se **stávajícím schématem prototypu a ostrými daty** – bez výslovného souhlasu na ní nespouštět migrace ani zápisy (jen čtení). Bez Google klíčů lze ve vývoji použít `POST /api/auth/dev-login` (login formulář ve Vite dev módu).
+- Konfigurace: kořenový `/workspace/.env` (git-ignorováno, root-owned, **obsahuje secrets – nikdy necommitovat ani nevypisovat**) je přes symlink `backend/.env.local` načten Symfony (`DB_*`, `OAUTH_GOOGLE_*`). Viz ADR 0006. DB je **MariaDB 11 – dev databáze**, majitel povolil s ní libovolně nakládat (má zálohu). Obsahuje migrovaná data staré aplikace (tabulky `legacy_*` zůstaly pro kontrolu, ADR 0007). Bez Google klíčů lze ve vývoji použít `POST /api/auth/dev-login` (login formulář ve Vite dev módu).
 
 ## Prostředí (tento remote kontejner)
 Není tu PHP ani MySQL ani sudo. PHP 8.4 je statický binár v `~/bin/php` + `~/bin/composer` (`export PATH=$HOME/bin:$PATH`; nepřežije nový kontejner – znovu stáhnout z `dl.static-php.dev`, viz ADR 0001). MySQL tu neběží, proto testy používají SQLite; Chromium nelze spustit (chybí systémové knihovny).
 
 ## Backend – orientace
-- `src/Entity` – `User, Party, PartyMember, PartyInvitation, Game, GameAddon, Place, Tag, GameSession, Play, PlayResult`.
+- `src/Entity` – `User, Party, PartyMember, PartyInvitation, Player (hráč skupiny, i host bez účtu), Game, GameAddon, Place, Tag, GameSession, Play, PlayResult`.
 - `src/Domain` – čistá logika: `ResultCalculator` (pořadí/vítězové dle `ScoreType`), `PlayerInput/Outcome`, `Exception/DomainException` (→ HTTP 422).
 - `src/Service` – `PlayService` (create/update/delete zápisu), `SessionAssigner` (24h seance), `Presenter` (entity → JSON).
 - `src/Controller` – tenké kontrolery (`Party, Game, Play, Stats, Auth, Health`); vstup přes `#[MapRequestPayload]` DTO v `src/Dto`.
 - `src/Security` – `PartyVoter` (`PARTY_VIEW`/`PARTY_ADMIN`), `JsonEntryPoint` (401 JSON), `SessionLoginAuthenticator`.
 - `src/EventListener/ApiExceptionListener` – chyby pod `/api` jako JSON `{error, violations?}`.
-- `migrations/` – ručně složená z `doctrine:schema:create --dump-sql` (MySQL); po změně entit vygenerovat novou migraci proti reálné DB.
+- `migrations/` – `…000000` přejmenuje legacy tabulky, `…000100` schéma, `…000200` import dat ze staré app. Po změně entit vygenerovat novou migraci (`doctrine:migrations:diff`, `schema_filter` ignoruje `legacy_*`).
 - Testy: `tests/Unit` (bez DB), `tests/Functional` (SQLite, `ApiFlowTest`).
 
 ## Frontend – orientace
@@ -37,5 +37,5 @@ Není tu PHP ani MySQL ani sudo. PHP 8.4 je statický binár v `~/bin/php` + `~/
 - Git: větev `master`, commity s trailerem `Co-Authored-By` dle zadání prostředí.
 
 ## Stav (2026-10-02)
-Hotovo: auth (Google + dev login), skupiny/členové/pozvánky, hry (+přídavky), zápisy se seancemi, statistiky (výhry, top hry), mobilní UI.
+Hotovo: dev DB zmigrována na nové schéma s importem dat, hráči-hosté, auth (Google + dev login, spárování starých účtů podle e-mailu), skupiny/členové/pozvánky, hry (+přídavky), zápisy se seancemi, statistiky (výhry, top hry), mobilní UI.
 Nehotovo/nápady: editace zápisu ve UI, vynucení přezdívky na backendu, upload obrázků, WYSIWYG taháček, CI s MySQL, import z původní app, postavy/„začínající hráč“.

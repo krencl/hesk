@@ -11,16 +11,16 @@ const play = (id: number, sessionId: number, results: Play['results'] = []): Pla
 describe('winnerSummary', () => {
   it('lists winners with the top score', () => {
     const p = play(1, 1, [
-      { userId: 1, nickname: 'Anna', score: 90, rank: 1, winner: true },
-      { userId: 2, nickname: 'Bob', score: 70, rank: 2, winner: false },
+      { playerId: 1, name: 'Anna', score: 90, rank: 1, winner: true },
+      { playerId: 2, name: 'Bob', score: 70, rank: 2, winner: false },
     ]);
     expect(winnerSummary(p)).toBe('Anna (90)');
   });
 
   it('joins tied winners and omits missing scores', () => {
     const p = play(1, 1, [
-      { userId: 1, nickname: 'Anna', score: null, rank: 1, winner: true },
-      { userId: 2, nickname: 'Bob', score: null, rank: 1, winner: true },
+      { playerId: 1, name: 'Anna', score: null, rank: 1, winner: true },
+      { playerId: 2, name: 'Bob', score: null, rank: 1, winner: true },
     ]);
     expect(winnerSummary(p)).toBe('Anna, Bob');
   });

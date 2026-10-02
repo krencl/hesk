@@ -28,9 +28,7 @@ final class PartyController extends ApiController
     public function list(): JsonResponse
     {
         $user = $this->currentUser();
-        $parties = $this->em->createQuery(
-            'SELECT p FROM App\Entity\Party p JOIN p.members m WHERE m.user = :u ORDER BY p.name',
-        )->setParameter('u', $user)->getResult();
+        $parties = $this->em->getRepository(Party::class)->findByMember($user);
 
         return new JsonResponse(array_map(fn (Party $p): array => $this->presenter->party($p, $user), $parties));
     }

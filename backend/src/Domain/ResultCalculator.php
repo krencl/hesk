@@ -23,7 +23,7 @@ final class ResultCalculator
         if ([] === $inputs) {
             throw new DomainException('Zápis musí obsahovat alespoň jednoho hráče.');
         }
-        $ids = array_map(static fn (PlayerInput $i): int => $i->userId, $inputs);
+        $ids = array_map(static fn (PlayerInput $i): int => $i->playerId, $inputs);
         if (\count($ids) !== \count(array_unique($ids))) {
             throw new DomainException('Hráč je v zápisu uveden vícekrát.');
         }
@@ -56,11 +56,11 @@ final class ResultCalculator
                     ++$better;
                 }
             }
-            $ranks[$input->userId] = $better + 1;
+            $ranks[$input->playerId] = $better + 1;
         }
 
         return array_map(
-            static fn (PlayerInput $i): PlayerOutcome => new PlayerOutcome($i->userId, $i->score, $ranks[$i->userId], 1 === $ranks[$i->userId]),
+            static fn (PlayerInput $i): PlayerOutcome => new PlayerOutcome($i->playerId, $i->score, $ranks[$i->playerId], 1 === $ranks[$i->playerId]),
             $inputs,
         );
     }
@@ -82,7 +82,7 @@ final class ResultCalculator
         }
 
         return array_map(
-            static fn (PlayerInput $i): PlayerOutcome => new PlayerOutcome($i->userId, null, $i->rank, 1 === $i->rank),
+            static fn (PlayerInput $i): PlayerOutcome => new PlayerOutcome($i->playerId, null, $i->rank, 1 === $i->rank),
             $inputs,
         );
     }
@@ -99,7 +99,7 @@ final class ResultCalculator
         }
 
         return array_map(
-            static fn (PlayerInput $i): PlayerOutcome => new PlayerOutcome($i->userId, null, true === $i->winner ? 1 : 2, true === $i->winner),
+            static fn (PlayerInput $i): PlayerOutcome => new PlayerOutcome($i->playerId, null, true === $i->winner ? 1 : 2, true === $i->winner),
             $inputs,
         );
     }
