@@ -1,6 +1,13 @@
 doctrine:
     dbal:
-        url: '%env(resolve:DATABASE_URL)%'
+        driver: pdo_mysql
+        host: '%env(DB_HOSTNAME)%'
+        port: '%env(int:DB_PORT)%'
+        dbname: '%env(DB_DATABASE)%'
+        user: '%env(DB_USERNAME)%'
+        password: '%env(DB_PASSWORD)%'
+        server_version: '%env(DB_SERVER_VERSION)%'
+        charset: utf8mb4
         profiling_collect_backtrace: '%kernel.debug%'
     orm:
         validate_xml_mapping: true
@@ -13,6 +20,20 @@ doctrine:
                 dir: '%kernel.project_dir%/src/Entity'
                 prefix: 'App\Entity'
                 alias: App
+
+when@test:
+    doctrine:
+        dbal:
+            # Testy běží nad SQLite (viz docs/adr/0003), nikdy proti skutečné DB.
+            driver: pdo_sqlite
+            path: '%kernel.project_dir%/var/test.db'
+            host: null
+            port: null
+            dbname: null
+            user: null
+            password: null
+            server_version: null
+            charset: null
 
 when@prod:
     doctrine:

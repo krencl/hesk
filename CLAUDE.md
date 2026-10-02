@@ -3,14 +3,14 @@
 Webová aplikace pro zapisování výsledků z hraní deskových her a statistiky skupiny hráčů. Komunikace s uživatelem **česky**. Všechny změny commitovat do gitu; architektonická rozhodnutí zapisovat do `docs/adr/` (viz `docs/README.md`).
 
 ## Struktura repa
-- `backend/` – Symfony 7.4 LTS, PHP ≥ 8.4, Doctrine ORM (MySQL 8.4), PHPUnit. REST API pod `/api`.
+- `backend/` – Symfony 7.4 LTS, PHP ≥ 8.4, Doctrine ORM (MariaDB 11), PHPUnit. REST API pod `/api`.
 - `frontend/` – React 19 + TypeScript + Vite, TanStack Query, React Router, Vitest.
 - `docs/` – ADR + poznámky. `hesk-tmp/` (rozpracovaný prototyp, git-ignorováno) a `/hesk-original` (produkce, Node/RethinkDB) jsou **jen vzor**, ne součást nové app.
 
 ## Příkazy
-- Backend: `cd backend && composer install && php bin/phpunit` · dev server `php -S 127.0.0.1:8000 -t public` · DB `docker compose up -d database` + `php bin/console doctrine:migrations:migrate`.
+- Backend: `cd backend && composer install && php bin/phpunit` · DB `docker compose up -d database` + `php bin/console doctrine:migrations:migrate`.
 - Frontend: `cd frontend && npm install && npm test` · `npm run dev` (proxy `/api` → :8000) · `npm run build` (včetně `tsc`).
-- Lokální konfigurace do `backend/.env.local` (`DATABASE_URL`, `GOOGLE_CLIENT_ID/SECRET`, `FRONTEND_URL`). Bez Google klíčů lze ve vývoji použít `POST /api/auth/dev-login` (login formulář ve Vite dev módu).
+- Konfigurace: kořenový `/workspace/.env` (git-ignorováno, root-owned, **obsahuje secrets – nikdy necommitovat ani nevypisovat**) je přes symlink `backend/.env.local` načten Symfony (`DB_*`, `OAUTH_GOOGLE_*`). Viz ADR 0006. DB je **MariaDB 11** se **stávajícím schématem prototypu a ostrými daty** – bez výslovného souhlasu na ní nespouštět migrace ani zápisy (jen čtení). Bez Google klíčů lze ve vývoji použít `POST /api/auth/dev-login` (login formulář ve Vite dev módu).
 
 ## Prostředí (tento remote kontejner)
 Není tu PHP ani MySQL ani sudo. PHP 8.4 je statický binár v `~/bin/php` + `~/bin/composer` (`export PATH=$HOME/bin:$PATH`; nepřežije nový kontejner – znovu stáhnout z `dl.static-php.dev`, viz ADR 0001). MySQL tu neběží, proto testy používají SQLite; Chromium nelze spustit (chybí systémové knihovny).

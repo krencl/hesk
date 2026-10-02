@@ -3,3 +3,7 @@ hesk-tmp/
 .idea/
 .vscode/
 .DS_Store
+
+# Secrets (DB, OAuth) – never commit
+/.env
+/.env.local
