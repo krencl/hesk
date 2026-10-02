@@ -36,6 +36,8 @@ final class AuthController extends ApiController
         return $clients->getClient('google')->redirect(['openid', 'email', 'profile'], []);
     }
 
+    // Redirect URI zaregistrovaná v Google Console je /oauth/google/check (stejná jako u prototypu).
+    #[Route('/oauth/google/check', name: 'auth_google_check', methods: ['GET'])]
     #[Route('/api/auth/google/callback', name: 'auth_google_callback', methods: ['GET'])]
     public function googleCallback(ClientRegistry $clients): RedirectResponse
     {

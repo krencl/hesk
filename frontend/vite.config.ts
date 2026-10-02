@@ -11,7 +11,9 @@ export default defineConfig(({ command }) => ({
   build: { outDir: '../web/static', emptyOutDir: true },
   server: {
     port: 5173,
-    proxy: { '/api': { target: process.env.API_URL ?? 'http://localhost:8000', changeOrigin: false } },
+    proxy: Object.fromEntries(
+      ['/api', '/oauth'].map((p) => [p, { target: process.env.API_URL ?? 'http://localhost:8000', changeOrigin: false }]),
+    ),
   },
   test: {
     environment: 'jsdom',

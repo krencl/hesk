@@ -6,7 +6,7 @@ Stav: přijato (2026-10-02)
 Specifikace: přihlášení přes Google („Google 2FA“ – chápáno jako přihlášení Google účtem, který si 2FA řeší sám). Každý uživatel musí mít přezdívku.
 
 ## Rozhodnutí
-- **Google OAuth 2** přes `knpuniversity/oauth2-client-bundle` + `league/oauth2-google`. Tok: `GET /api/auth/google` → Google → `GET /api/auth/google/callback` → uživatel se najde/založí podle `googleId` → `Security::login()` → redirect na `FRONTEND_URL`.
+- **Google OAuth 2** přes `knpuniversity/oauth2-client-bundle` + `league/oauth2-google`. Tok: `GET /api/auth/google` → Google → `GET /oauth/google/check` → uživatel se najde/založí podle `googleId` → `Security::login()` → redirect na `FRONTEND_URL`.
 - **Stavová session (cookie)**, ne JWT: SPA je na stejné doméně (v dev přes Vite proxy), cookie je `SameSite=Lax`, odpadá správa tokenů na klientu. Neautorizovaný přístup vrací `401` JSON (`JsonEntryPoint`), ne redirect.
 - Pomocný `SessionLoginAuthenticator` se nikdy sám neaktivuje (`supports()` = false); slouží jen tomu, aby `Security::login()` mělo authenticator.
 - **Přezdívka** se nastavuje po prvním přihlášení (`PATCH /api/me`); frontend bez ní nepustí dál. Backend ji zatím nevynucuje na ostatních endpointech (viz otevřené body).

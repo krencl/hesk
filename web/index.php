@@ -5,7 +5,7 @@ use App\Kernel;
 /**
  * Hlavní rozcestník aplikace (front controller v kořeni projektu, vedle backend/ a frontend/):
  *
- *  - /api/*              → Symfony (backend/)
+ *  - /api/*, /oauth/*    → Symfony (backend/)
  *  - /static/*           → statika z web/static/ (jen vestavěný PHP server; v produkci ji servíruje web server)
  *  - cokoli jiného       → SPA (web/static/index.html), routing řeší React Router
  *
@@ -15,7 +15,7 @@ use App\Kernel;
 $staticDir = __DIR__.'/static';
 $path = rawurldecode((string) parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH));
 
-if (!str_starts_with($path, '/api')) {
+if (!str_starts_with($path, '/api') && !str_starts_with($path, '/oauth/')) {
     if ('cli-server' === PHP_SAPI && str_starts_with($path, '/static/') && !str_contains($path, '..') && is_file(__DIR__.$path)) {
         return false;
     }
