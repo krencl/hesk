@@ -7,3 +7,6 @@ hesk-tmp/
 # Secrets (DB, OAuth) – never commit
 /.env
 /.env.local
+
+# Build frontendu (generuje se: cd frontend && npm run build)
+/web/static/

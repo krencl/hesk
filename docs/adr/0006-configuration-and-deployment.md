@@ -9,6 +9,17 @@ Vývojová/ostrá DB je **MariaDB 11.0** (`mariadb:3306`, db `hesk`), ne MySQL, 
 - Doctrine DBAL se konfiguruje z jednotlivých `DB_*` proměnných (ne `DATABASE_URL`, kvůli speciálním znakům v hesle); `server_version: mariadb-11.0.2` (`DB_SERVER_VERSION`).
 - `backend/.env` obsahuje jen prázdné/vývojové defaulty. Skutečné hodnoty se načtou z `backend/.env.local`, což je v dev **symlink na `../.env`** (git-ignorováno; na serveru stačí položit soubor). Symfony `.env.local` v prostředí `test` nečte, takže testy nikdy nesahají na skutečnou DB (SQLite, ADR 0003).
 - Google OAuth proměnné se jmenují `OAUTH_GOOGLE_ID/SECRET` (shodně s prototypem). Callback je `/api/auth/google/callback` → tuto **redirect URI je nutné povolit v Google Console** (prototyp používal `/oauth/google/check`).
+- **Struktura kořene projektu:** `web/index.php` (front controller, v kořeni vedle `backend/` a `frontend/`) a `web/static/` (statické soubory uvnitř `web/` – výstup `npm run build`, git-ignorováno). `web/index.php` nastaví `project_dir` Symfony Runtime na `backend/` a načte `backend/vendor/autoload_runtime.php`; cache a logy zůstávají v `backend/var/`. Backend obsluhuje jen `/api/*`, ostatní cesty patří SPA (`web/static/index.html`).
+- **`web/index.php` je hlavní rozcestník** (`.route.php` z prototypu se nepoužívá): `/api/*` → Symfony, ostatní cesty → `web/static/index.html` (SPA fallback); při běhu pod vestavěným PHP serverem navíc vrací existující soubory pod `/static/` jako statiku. Dev: `php -S 127.0.0.1:8000 -t web web/index.php` z kořene. Pro vývoj frontendu stačí `npm run dev` ve `frontend/` (Vite proxy `/api` → :8000). V produkci statiku servíruje web server.
+- Ukázka nginx (document root = `web/`; build odkazuje na assety jako `/static/assets/…` díky `base: '/static/'` ve `vite.config.ts`):
+
+```nginx
+root /var/www/hesk/web;
+location /static/ { }
+location /api/ { fastcgi_pass php; include fastcgi_params;
+  fastcgi_param SCRIPT_FILENAME /var/www/hesk/web/index.php; }
+location / { try_files /static/index.html =404; }
+```
 - Produkce: `APP_ENV=prod`, vlastní `APP_SECRET`, `composer install --no-dev -o`, `TRUSTED_PROXIES` za reverzní proxy (dle potřeby).
 
 ## Důsledky / otevřené

@@ -3,13 +3,14 @@
 Webová aplikace pro zapisování výsledků z hraní deskových her a statistiky skupiny hráčů. Komunikace s uživatelem **česky**. Všechny změny commitovat do gitu; architektonická rozhodnutí zapisovat do `docs/adr/` (viz `docs/README.md`).
 
 ## Struktura repa
+- `web/index.php` – hlavní rozcestník v kořeni (`/api` → Symfony s project_dir `backend/`, jinak SPA `web/static/index.html`); `web/static/` – statika = build frontendu (git-ignorováno).
 - `backend/` – Symfony 7.4 LTS, PHP ≥ 8.4, Doctrine ORM (MariaDB 11), PHPUnit. REST API pod `/api`.
 - `frontend/` – React 19 + TypeScript + Vite, TanStack Query, React Router, Vitest.
 - `docs/` – ADR + poznámky. `hesk-tmp/` (rozpracovaný prototyp, git-ignorováno) a `/hesk-original` (produkce, Node/RethinkDB) jsou **jen vzor**, ne součást nové app.
 
 ## Příkazy
-- Backend: `cd backend && composer install && php bin/phpunit` · DB `docker compose up -d database` + `php bin/console doctrine:migrations:migrate`.
-- Frontend: `cd frontend && npm install && npm test` · `npm run dev` (proxy `/api` → :8000) · `npm run build` (včetně `tsc`).
+- Backend: `cd backend && composer install && php bin/phpunit` · dev server z kořene: `php -S 127.0.0.1:8000 -t web web/index.php` (API + statika + SPA fallback) · DB `docker compose up -d database` + `php bin/console doctrine:migrations:migrate`.
+- Frontend: `cd frontend && npm install && npm test` · `npm run dev` (proxy `/api` → :8000) · `npm run build` (včetně `tsc`, výstup do `/web/static`).
 - Konfigurace: kořenový `/workspace/.env` (git-ignorováno, root-owned, **obsahuje secrets – nikdy necommitovat ani nevypisovat**) je přes symlink `backend/.env.local` načten Symfony (`DB_*`, `OAUTH_GOOGLE_*`). Viz ADR 0006. DB je **MariaDB 11 – dev databáze**, majitel povolil s ní libovolně nakládat (má zálohu). Obsahuje migrovaná data staré aplikace (tabulky `legacy_*` zůstaly pro kontrolu, ADR 0007). Bez Google klíčů lze ve vývoji použít `POST /api/auth/dev-login` (login formulář ve Vite dev módu).
 
 ## Prostředí (tento remote kontejner)
