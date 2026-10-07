@@ -8,7 +8,7 @@ Nová verze HESK (zápisy z deskových her). Zadání: React + TypeScript fronte
 ## Rozhodnutí
 - **Backend: Symfony 7.4 LTS** (PHP ≥ 8.4), Doctrine ORM + Migrations, Symfony Security, Validator, Serializer (`#[MapRequestPayload]`), PHPUnit.
   - Zvolena **LTS 7.4**, ne 8.1: 8.1 není LTS (podpora končí 01/2027), 7.4 je podporována do 11/2028.
-  - Alternativa Laravel/Slim zvážena; Symfony zůstává, protože ho zadavatel preferuje a prototyp (`hesk-tmp`) už Symfony používal. Dibi z prototypu nahrazuje Doctrine (mapování, migrace, testovatelnost).
+  - Alternativa Laravel/Slim zvážena; Symfony zůstává, protože ho zadavatel preferuje a prototyp (`hesk-dev-old`) už Symfony používal. Dibi z prototypu nahrazuje Doctrine (mapování, migrace, testovatelnost).
 - **Frontend: React 19 + TypeScript + Vite**, React Router, TanStack Query (server state), Vitest + Testing Library. Žádná globální state knihovna navíc.
 - **DB: MariaDB 11** (stávající dev/prod server; `backend/compose.yaml` pro lokální MySQL/MariaDB), schéma verzováno Doctrine migracemi.
 - **Struktura repa:** monorepo – `backend/`, `frontend/`, `docs/`. Frontend a backend se nasazují nezávisle, komunikují jen přes `/api`.

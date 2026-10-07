@@ -2,7 +2,7 @@
 
 Stav: přijato (2026-10-02)
 
-Vychází z `hesk-tmp/SPECIFICATION.md`; terminologie: v kódu *Play* = „game play entry“ (zápis), *GameSession* = seance, *Party* = skupina.
+Vychází z `/hesk-dev-old/SPECIFICATION.md`; terminologie: v kódu *Play* = „game play entry“ (zápis), *GameSession* = seance, *Party* = skupina.
 
 ## Entity
 `User` · `Party` + `PartyMember(role)` + `PartyInvitation` · `Player` · `Game` + `GameAddon` · `Place`, `Tag` · `GameSession` · `Play` + `PlayResult`.

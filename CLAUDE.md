@@ -6,7 +6,7 @@ Webová aplikace pro zapisování výsledků z hraní deskových her a statistik
 - `web/index.php` – hlavní rozcestník v kořeni (`/api` → Symfony s project_dir `backend/`, jinak SPA `web/static/index.html`); `web/static/` – statika = build frontendu (git-ignorováno).
 - `backend/` – Symfony 7.4 LTS, PHP ≥ 8.4, Doctrine ORM (MariaDB 11), PHPUnit. REST API pod `/api`.
 - `frontend/` – React 19 + TypeScript + Vite, TanStack Query, React Router, Vitest.
-- `docs/` – ADR + poznámky. `hesk-tmp/` (rozpracovaný prototyp, git-ignorováno) a `/hesk-original` (produkce, Node/RethinkDB) jsou **jen vzor**, ne součást nové app.
+- `docs/` – ADR + poznámky. `/hesk-dev-old` (rozpracovaný prototyp, mimo repo) a `/hesk-original` (produkce, Node/RethinkDB) jsou **jen vzor**, ne součást nové app.
 
 ## Příkazy
 - Backend: `cd backend && composer install && php bin/phpunit` · dev server z kořene: `php -S 127.0.0.1:8000 -t web web/index.php` (API + statika + SPA fallback) · DB `docker compose up -d database` + `php bin/console doctrine:migrations:migrate`.

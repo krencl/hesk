@@ -3,8 +3,8 @@
 ## `/hesk-original` (produkce)
 Node.js + Express + RethinkDB + AngularJS. Globální katalog her, role admin přes heslo, „rounds“ s `scoring` typy `score | lowestScore | order | check`, verze hry, postavy, „první hráč“, tagy. Z toho nové zadání přebírá typy bodování (mapování: `score`→`most_points`, `lowestScore`→`fewest_points`, `order`→`rank_order`, `check`→`winner_only`).
 
-## `/workspace/hesk-tmp` (rozpracovaný prototyp)
-Symfony 5 + Dibi + Vue 3. Koncept „Party“, mobilní GUI (max. šířka 400 px, hlavní barva `#277bda`, font Signika, kulatý přepínač skupiny v hlavičce), `SPECIFICATION.md`. Adresář je v `.gitignore` (jen referenční, necommituje se).
+## `/hesk-dev-old` (rozpracovaný prototyp)
+Symfony 5 + Dibi + Vue 3. Koncept „Party“, mobilní GUI (max. šířka 400 px, hlavní barva `#277bda`, font Signika, kulatý přepínač skupiny v hlavičce), `SPECIFICATION.md`. Adresář leží mimo repozitář (jen referenční).
 
 ## Převzato / změněno
 - Převzato: koncept skupin a rolí, mobile-first, top bar s přepínačem skupiny, statistiky (výhry, nejhranější hry), barvy a font.

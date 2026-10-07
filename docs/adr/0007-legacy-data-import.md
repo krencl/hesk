@@ -3,7 +3,7 @@
 Stav: přijato (2026-10-03)
 
 ## Kontext
-Dev DB (MariaDB 11) obsahovala schéma prototypu `hesk-tmp` s reálnými daty (2013–2022: 544 kol, 2071 výsledků, 5 skupin, 4 uživatelé, 36 hráčů). Majitel povolil s DB nakládat libovolně (má zálohu). Data ukázala, že ~17 % výsledků patří hráčům **bez uživatelského účtu** (hosté) – model „výsledek = uživatel“ (ADR 0004) nestačí.
+Dev DB (MariaDB 11) obsahovala schéma prototypu `hesk-dev-old` s reálnými daty (2013–2022: 544 kol, 2071 výsledků, 5 skupin, 4 uživatelé, 36 hráčů). Majitel povolil s DB nakládat libovolně (má zálohu). Data ukázala, že ~17 % výsledků patří hráčům **bez uživatelského účtu** (hosté) – model „výsledek = uživatel“ (ADR 0004) nestačí.
 
 ## Rozhodnutí
 - **Nová entita `Player`** (patří skupině, volitelně navázaná na `User`). `PlayResult` odkazuje na `Player`, ne na `User`. Člen skupiny dostane hráče automaticky (`Party::ensurePlayerFor`), hosty přidává člen přes `POST /api/parties/{id}/players`. Po odebrání člena hráč zůstane (historie) jako host. Přezdívka účtu se propisuje do jména hráče, pokud je jméno ve skupině volné.
