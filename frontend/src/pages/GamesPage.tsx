@@ -11,19 +11,21 @@ export function GamesPage() {
   const { data: games, isPending, error } = useQuery({ queryKey: ['games', party.id], queryFn: () => api.games(party.id) });
 
   return (
-    <section>
-      <h2>Hry</h2>
-      <Link className="btn block" to="/games/new">+ Nová hra</Link>
-      <ErrorMessage error={error} />
-      {isPending && <p className="muted">Načítám…</p>}
+    <section className="flush">
+      <div className="pad">
+        <h2>Hry</h2>
+        <Link className="btn block" to="/games/new">+ Nová hra</Link>
+        <ErrorMessage error={error} />
+        {isPending && <p className="muted">Načítám…</p>}
+      </div>
       <ul className="list">
         {games?.map((g) => (
           <li key={g.id}>
-            <Link to={`/games/${g.id}`} className="play">
-              <GameImage url={g.imageUrl} name={g.name} />
-              <div className="play-body">
-                <strong>{g.name}</strong>
-                <small className="muted">{SCORE_TYPE_LABELS[g.scoreType]}</small>
+            <Link to={`/games/${g.id}`} className="list-item">
+              <GameImage url={g.imageUrl} />
+              <div className="list-item-body">
+                <strong className="h5">{g.name}</strong>
+                <span className="secondary">{SCORE_TYPE_LABELS[g.scoreType]}</span>
               </div>
             </Link>
           </li>

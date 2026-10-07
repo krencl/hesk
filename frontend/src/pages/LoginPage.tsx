@@ -20,7 +20,7 @@ export function LoginPage() {
 
   return (
     <div className="login">
-      <h1 className="logo big">HESK</h1>
+      <img className="login-logo" src={`${import.meta.env.BASE_URL}logo.svg`} alt="HESK" />
       <p>Zapisuj odehrané deskovky a sleduj, kdo vyhrává.</p>
       <a className="btn" href="/api/auth/google">Přihlásit přes Google</a>
       {import.meta.env.DEV && (

@@ -25,6 +25,7 @@ export const api = {
   deleteGame: (id: number) => del(`/games/${id}`),
 
   plays: (partyId: number, limit = 50, offset = 0) => get<Play[]>(`/parties/${partyId}/plays?limit=${limit}&offset=${offset}`),
+  play: (id: number) => get<Play>(`/plays/${id}`),
   createPlay: (partyId: number, input: PlayInput) => post<Play>(`/parties/${partyId}/plays`, input),
   deletePlay: (id: number) => del(`/plays/${id}`),
 

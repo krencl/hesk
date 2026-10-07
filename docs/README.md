@@ -11,6 +11,7 @@ Primárně architektonická rozhodnutí (ADR). Aplikační dokumentace je zámě
 | [0005](adr/0005-frontend-architecture.md) | Architektura frontendu |
 | [0006](adr/0006-configuration-and-deployment.md) | Konfigurace, databáze (MariaDB) a nasazení |
 | [0007](adr/0007-legacy-data-import.md) | Převzetí dat ze staré aplikace, model Hráče |
+| [0008](adr/0008-ui-look-and-play-detail.md) | Vzhled podle starého prototypu, detail zápisu |
 
 Poznámky ke vzoru z předchozích verzí: [prototype-notes.md](prototype-notes.md).
 

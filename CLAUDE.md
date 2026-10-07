@@ -28,7 +28,7 @@ Není tu PHP ani MySQL ani sudo. PHP 8.4 je statický binár v `~/bin/php` + `~/
 
 ## Frontend – orientace
 - `src/api` (klient + typy + endpointy) · `src/lib` (čistá logika: `playForm`, `scoring`, `activeParty`, `afterLogin`, `datetime`) · `src/pages` · `src/components` · `src/AppContext.tsx` (me, parties, aktivní skupina) · `src/App.tsx` (routy + gating login → přezdívka → skupina).
-- Mobile-first, max. šířka 480 px, UI v češtině.
+- Mobile-first, max. šířka 400 px, UI v češtině; vzhled převzatý ze starého prototypu (ADR 0008). Routy: `/` seznam zápisů, `/plays/:id` detail zápisu, `/plays/new`, `/games…`, `/stats`, `/parties`.
 
 ## Konvence a pasti
 - Pravidla domény patří do entit/`Domain`, ne do kontrolerů; kontrolery vrací `Presenter` pole.
@@ -39,4 +39,4 @@ Není tu PHP ani MySQL ani sudo. PHP 8.4 je statický binár v `~/bin/php` + `~/
 
 ## Stav (2026-10-02)
 Hotovo: dev DB zmigrována na nové schéma s importem dat, hráči-hosté, auth (Google + dev login, spárování starých účtů podle e-mailu), skupiny/členové/pozvánky, hry (+přídavky), zápisy se seancemi, statistiky (výhry, top hry), mobilní UI.
-Nehotovo/nápady: editace zápisu ve UI, vynucení přezdívky na backendu, upload obrázků, WYSIWYG taháček, CI s MySQL, import z původní app, postavy/„začínající hráč“.
+Nehotovo/nápady: editace zápisu ve UI, detail hry se seznamem zápisů (jako ve starém UI), vynucení přezdívky na backendu, upload obrázků, WYSIWYG taháček, CI s MySQL, import z původní app, postavy/„začínající hráč“.

@@ -17,3 +17,16 @@ export function formatDateTime(iso: string): string {
 export function formatDate(iso: string): string {
   return new Date(iso).toLocaleDateString('cs-CZ', { day: 'numeric', month: 'long', year: 'numeric' });
 }
+
+/** Délka mezi dvěma ISO časy, např. „1 h 30 min“; pod minutu vrací prázdný řetězec. */
+export function formatDuration(startIso: string, endIso: string): string {
+  const minutes = Math.round((new Date(endIso).getTime() - new Date(startIso).getTime()) / 60000);
+  if (!Number.isFinite(minutes) || minutes <= 0) return '';
+  const h = Math.floor(minutes / 60);
+  const m = minutes % 60;
+  return [h > 0 ? `${h} h` : '', m > 0 ? `${m} min` : ''].filter(Boolean).join(' ');
+}
+
+export function formatTime(iso: string): string {
+  return new Date(iso).toLocaleTimeString('cs-CZ', { hour: '2-digit', minute: '2-digit' });
+}

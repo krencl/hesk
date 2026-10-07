@@ -1,17 +1,23 @@
+/* Vzhled převzatý ze starého vývojového prototypu (/hesk-dev-old): bootstrapový základ, ostré rohy,
+   kulaté tlačítko skupiny vpravo nahoře, celoobrazovkové menu, seznamy s velkými náhledy. */
 :root {
   --main: #277bda;
-  --main-dark: #1b5fae;
+  --main-dark: #1f62ae;
+  --secondary: #777;
   --light-blue: #c4dbff;
   --gray: #ced4da;
   --light-gray: #e7ecf1;
-  --text: #1d2733;
-  --muted: #6b7684;
+  --text: #212529;
   --error: #da2736;
   --ok: #1f8f4d;
   --bg: #eee;
   --surface: #fff;
-  --max-width: 480px;
-  --topbar-height: 3.5rem;
+  --max-width: 400px;
+  --header-height: 4rem;
+  --image-size: 7.2rem;
+  --image-size-small: 4rem;
+  --radius: 0.1rem;
+  --animation: 0.3s;
 }
 
 * { box-sizing: border-box; }
@@ -20,8 +26,9 @@ body {
   margin: 0;
   background: var(--bg);
   color: var(--text);
-  font-family: Signika, system-ui, sans-serif;
-  font-size: 16px;
+  font-family: Signika, sans-serif;
+  font-size: 1rem;
+  line-height: 1.5;
   overflow-y: scroll;
 }
 
@@ -34,91 +41,156 @@ body {
   position: relative;
 }
 .splash { padding: 2rem 1rem; text-align: center; }
-main { padding: 1rem; }
-h1, h2, h3 { margin: 0.5rem 0; }
-h2 { font-size: 1.3rem; }
-h3 { font-size: 1.05rem; color: var(--muted); }
-.muted { color: var(--muted); }
+main { padding-bottom: 2rem; }
+main > :not(.flush):not(.detail) { padding: 1rem 1rem 0; }
+.pad { padding: 1rem 1rem 0; }
+h1, h2, h3, h4 { margin: 0.5rem 0; font-weight: 500; line-height: 1.2; }
+h2 { font-size: 1.5rem; }
+h3 { font-size: 1.05rem; color: var(--secondary); }
+h4 { font-size: 1.25rem; }
+.h5 { font-size: 1.25rem; font-weight: 500; line-height: 1.2; }
+.muted, .secondary { color: var(--secondary); }
+.primary { color: var(--main); }
+.small, small { font-size: 0.8em; }
 small { display: block; }
+hr { border: 0; border-top: 1px solid rgba(0, 0, 0, 0.15); margin: 1rem 0; }
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 
-.topbar {
-  position: sticky; top: 0; z-index: 10;
-  display: flex; align-items: center; gap: 0.75rem;
-  height: var(--topbar-height); padding: 0 1rem;
-  background: var(--main); color: #fff;
+/* Material Symbols */
+.icon {
+  font-family: 'Material Symbols Outlined';
+  font-weight: normal; font-style: normal; font-size: 1.4em; line-height: 1;
+  display: inline-block; vertical-align: middle; text-transform: none; letter-spacing: normal;
+  white-space: nowrap; direction: ltr;
 }
-.logo { color: #fff; font-weight: 600; letter-spacing: 0.12em; text-decoration: none; font-size: 1.3rem; }
-.logo.big { color: var(--main); font-size: 3rem; text-align: center; margin: 3rem 0 1rem; display: block; }
-.party-switch {
-  flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-  background: rgba(255,255,255,.18); color: #fff; border: 0; border-radius: 999px;
-  padding: 0.45rem 0.9rem; font: inherit; cursor: pointer; text-align: left;
-}
-.hamburger { background: none; border: 0; padding: 0.5rem; display: grid; gap: 4px; cursor: pointer; }
-.hamburger span { display: block; width: 22px; height: 2px; background: #fff; }
-.dropdown {
-  position: absolute; top: var(--topbar-height); left: 0; right: 0;
-  background: var(--surface); color: var(--text);
-  box-shadow: 0 8px 16px rgba(0,0,0,.18); display: flex; flex-direction: column; padding: 0.5rem 0;
-}
-.dropdown h3 { margin: 0.5rem 1rem 0.2rem; font-size: 0.8rem; text-transform: uppercase; letter-spacing: .06em; }
-.dropdown a, .dropdown button {
-  background: none; border: 0; text-align: left; font: inherit; color: inherit;
-  padding: 0.7rem 1rem; text-decoration: none; cursor: pointer;
-}
-.dropdown a:hover, .dropdown button:hover, .dropdown .active { background: var(--light-gray); }
 
+/* Hlavička: logo + kulaté tlačítko aktivní skupiny (otevírá menu) */
+.header { padding: 0.5rem; }
+.header-logo { display: block; height: var(--header-height); }
+.header-button {
+  position: fixed; top: 1rem; z-index: 60;
+  right: max(1rem, calc(50% - var(--max-width) / 2 + 1rem));
+  width: 3rem; height: 3rem; padding: 0;
+  display: grid; place-items: center;
+  border: 0; border-radius: 50%;
+  background: var(--main); color: #fff; font: inherit; font-size: 1.1rem; line-height: 1;
+  box-shadow: 0 0 0 0.2rem rgba(255, 255, 255, 0);
+  cursor: pointer; transition: box-shadow 0.2s;
+}
+.header-button:hover { box-shadow: 0 0 0 0.3rem var(--gray); }
+.header-button.size-1 { font-size: 1.9rem; }
+.header-button.size-2 { font-size: 1.4rem; }
+.header-button.open { background: var(--gray); }
+.header-button .icon { font-size: 1.9rem; }
+
+/* Menu přes celou obrazovku */
+.menu {
+  position: fixed; top: 0; z-index: 40;
+  left: max(0px, calc(50% - var(--max-width) / 2));
+  width: min(100%, var(--max-width)); height: 100%;
+  overflow-y: auto;
+  background: rgba(196, 219, 255, 0.92); backdrop-filter: blur(3px);
+  opacity: 0; visibility: hidden;
+  transition: opacity var(--animation) ease-in-out, visibility var(--animation);
+}
+.menu.visible { opacity: 1; visibility: visible; transition: opacity var(--animation) ease-in-out, visibility 1ms; }
+.menu-header { background: rgba(39, 123, 218, 0.98); color: #fff; padding: 1.2rem 4.5rem 1.2rem 1rem; min-height: calc(var(--header-height) + 1rem); }
+.menu-header h2 { margin: 0; }
+.menu-content { padding: 1rem; }
+.menu-content h4 { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 0.5rem; }
+.menu-content h4 small { flex: 1 0 100%; }
+.menu-content h4 .btn { margin-left: auto; align-self: center; }
+.menu-list { list-style: none; margin: 0 0 1rem; padding: 0; font-size: 1.1rem; }
+.menu-list a, .menu-list button {
+  display: block; width: 100%; padding: 0.3rem 0.5rem; background: none; border: 0; text-align: left;
+  font: inherit; color: var(--text); text-decoration: none; cursor: pointer;
+}
+.menu-list .muted { color: var(--secondary); }
+.menu-list a:hover, .menu-list button:hover, .menu-list a.active { background: var(--main); color: #fff; }
+.menu-list a:hover small, .menu-list button:hover small { color: var(--light-blue); }
+
+/* Tlačítka (bootstrap) */
 .btn {
-  display: inline-block; background: var(--main); color: #fff; border: 0; border-radius: 0.4rem;
-  padding: 0.75rem 1.1rem; font: inherit; text-decoration: none; text-align: center; cursor: pointer;
+  display: inline-block; background: var(--main); color: #fff; border: 1px solid var(--main); border-radius: var(--radius);
+  padding: 0.375rem 0.75rem; font: inherit; text-decoration: none; text-align: center; cursor: pointer;
+  transition: background-color 0.15s, color 0.15s, border-color 0.15s;
 }
-.btn:hover { background: var(--main-dark); }
-.btn:disabled { opacity: .6; cursor: default; }
-.btn.block { display: block; margin-bottom: 1rem; }
-.btn.secondary { background: var(--light-blue); color: var(--main-dark); }
-.btn.danger, .link.danger { background: none; color: var(--error); border: 1px solid var(--error); }
+.btn:hover { background: var(--main-dark); border-color: var(--main-dark); }
+.btn:disabled { opacity: .65; cursor: default; }
+.btn.block { display: block; width: 100%; margin-bottom: 1rem; }
+.btn.small { padding: 0.25rem 0.5rem; font-size: 0.875rem; }
+.btn.secondary { background: var(--secondary); border-color: var(--secondary); }
+.btn.secondary:hover { background: #5c5c5c; border-color: #5c5c5c; }
+.btn.outline { background: none; color: var(--main); }
+.btn.outline:hover { background: var(--main); color: #fff; }
+.btn.outline-secondary { background: none; color: var(--secondary); border-color: var(--secondary); }
+.btn.outline-secondary:hover { background: var(--secondary); color: #fff; }
+.btn.danger { background: none; color: var(--error); border-color: var(--error); }
+.btn.danger:hover { background: var(--error); color: #fff; }
 .link { background: none; border: 0; color: var(--main); font: inherit; cursor: pointer; padding: 0.25rem 0.5rem; }
-.link.danger { border: 0; }
-.icon-btn { background: none; border: 0; color: var(--muted); cursor: pointer; font-size: 1rem; padding: 0.5rem; }
+.link.danger { color: var(--error); }
+.nav-actions { display: flex; gap: 0.25rem; margin: 0.5rem 0; }
+.nav-actions > * { flex: 1; }
 
 .login { padding: 1.5rem; display: flex; flex-direction: column; gap: 1rem; text-align: center; }
+.login-logo { width: 100%; margin: 2rem 0 1rem; }
 .dev-login { margin-top: 2rem; display: grid; gap: .5rem; border-top: 1px dashed var(--gray); padding-top: 1rem; }
 
+/* Formuláře */
 .form { display: grid; gap: 0.9rem; }
 .form.inline { grid-template-columns: 1fr auto; margin: 1rem 0; }
-label { display: grid; gap: 0.25rem; font-size: 0.9rem; color: var(--muted); }
+label { display: grid; gap: 0.25rem; font-size: 0.9rem; color: var(--secondary); }
 label.check { display: flex; gap: 0.5rem; align-items: center; color: var(--text); font-size: 1rem; }
 input, select, textarea {
-  font: inherit; color: var(--text); padding: 0.6rem 0.7rem; width: 100%;
-  border: 1px solid var(--gray); border-radius: 0.35rem; background: #fff;
+  font: inherit; color: var(--text); padding: 0.375rem 0.75rem; width: 100%;
+  border: 1px solid var(--gray); border-radius: var(--radius); background: #fff;
 }
-input[type='checkbox'] { width: auto; }
-fieldset { border: 1px solid var(--gray); border-radius: 0.35rem; padding: 0.5rem 0.8rem; }
-legend { color: var(--muted); font-size: 0.85rem; padding: 0 0.3rem; }
+input:focus, select:focus, textarea:focus { outline: 0; border-color: #93bdec; box-shadow: 0 0 0 0.25rem rgba(39, 123, 218, 0.25); }
+input[type='checkbox'] { width: auto; accent-color: var(--main); }
+fieldset { border: 1px solid var(--gray); border-radius: var(--radius); padding: 0.5rem 0.8rem; }
+legend { color: var(--secondary); font-size: 0.85rem; padding: 0 0.3rem; }
 .row { display: grid; grid-template-columns: 1fr 1fr; gap: 0.6rem; }
 .player-row { display: grid; grid-template-columns: 1fr 6.5rem; gap: 0.5rem; align-items: center; padding: 0.25rem 0; }
 
-.error { background: #fdecee; color: var(--error); border-radius: 0.35rem; padding: 0.6rem 0.8rem; margin: 0.5rem 0; }
+.error { background: #fdecee; color: var(--error); border-radius: var(--radius); padding: 0.6rem 0.8rem; margin: 0.5rem 0; }
 .error ul { margin: 0.3rem 0 0; padding-left: 1.2rem; }
 .success { color: var(--ok); }
-.empty { text-align: center; color: var(--muted); padding: 2rem 1rem; display: grid; gap: 1rem; justify-items: center; }
+.empty { text-align: center; color: var(--secondary); padding: 2rem 1rem; display: grid; gap: 1rem; justify-items: center; }
 
+/* Seznamy (zápisy, hry): velký čtvercový náhled, po najetí modré pozadí */
 .list { list-style: none; margin: 0; padding: 0; }
 .list > li { border-bottom: 1px solid var(--light-gray); }
-.list-btn { width: 100%; background: none; border: 0; text-align: left; font: inherit; padding: 0.8rem 0.2rem; cursor: pointer; }
+.session h3 { margin: 1.2rem 1rem 0.4rem; }
+.list-item {
+  display: flex; color: inherit; text-decoration: none; transition: background-color var(--animation);
+}
+.list-item:hover { color: #fff; background: var(--main); }
+.list-item:hover .secondary { color: var(--light-blue); }
+.list-item-body { flex: 1; min-width: 0; display: flex; flex-direction: column; padding: 0.5rem 1rem; }
+.game-image { width: var(--image-size); height: var(--image-size); object-fit: cover; flex: none; background: var(--light-gray); }
+.game-image.small { width: var(--image-size-small); height: var(--image-size-small); }
+.list-btn { width: 100%; background: none; border: 0; text-align: left; font: inherit; padding: 0.5rem 0.2rem; cursor: pointer; }
+.list-btn:hover { background: var(--light-blue); }
 .list-btn.active { font-weight: 600; color: var(--main); }
 .member { display: flex; justify-content: space-between; align-items: center; padding: 0.5rem 0; }
-.session h3 { margin-top: 1.2rem; }
-.play { display: flex; align-items: center; gap: 0.8rem; padding: 0.6rem 0; color: inherit; text-decoration: none; }
-.play-body { flex: 1; min-width: 0; display: grid; }
-.game-image { width: 3.6rem; height: 3.6rem; border-radius: 0.3rem; object-fit: cover; flex: none; }
-.game-image.placeholder { display: grid; place-items: center; background: var(--light-blue); color: var(--main-dark); font-weight: 600; font-size: 1.4rem; }
 .invite input { margin-top: 0.4rem; }
 .safe-html { padding: 0.5rem 0; }
 
+/* Detail zápisu */
+.detail { padding: 0.5rem 1rem 0; }
+.detail-game { display: flex; gap: 1rem; align-items: center; margin: 0.5rem 0 1rem; }
+.detail-game > div { display: flex; flex-direction: column; }
+.detail-info { margin-bottom: 1rem; font-weight: 300; }
+.results { list-style: none; margin: 0 0 1rem; padding: 0; }
+.results li { display: grid; grid-template-columns: 2rem 1fr auto; gap: 0.25rem; align-items: center; padding: 0.15rem 0; font-weight: 500; }
+.results li.winner { color: var(--main); }
+.result-icon .icon { font-size: 1.4rem; vertical-align: top; }
+.result-score { text-align: right; font-variant-numeric: tabular-nums; }
+
+/* Statistiky */
 .bars { list-style: none; padding: 0; margin: 0 0 1rem; display: grid; gap: 0.5rem; }
 .bars li { display: grid; grid-template-columns: 7rem 1fr 2rem; gap: 0.5rem; align-items: center; }
 .bar-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.bar-track { background: var(--light-gray); border-radius: 999px; height: 0.9rem; overflow: hidden; }
-.bar-fill { display: block; height: 100%; background: var(--main); border-radius: 999px; }
+.bar-track { background: var(--light-gray); border-radius: var(--radius); height: 0.9rem; overflow: hidden; }
+.bar-fill { display: block; height: 100%; background: var(--main); }
 .bar-value { text-align: right; font-variant-numeric: tabular-nums; }

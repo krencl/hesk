@@ -59,8 +59,40 @@ describe('App gating', () => {
       },
     });
     renderApp();
-    expect(await screen.findByRole('button', { name: /Pátek/ })).toBeInTheDocument();
+    expect(await screen.findByRole('button', { name: /Menu – Pátek/ })).toBeInTheDocument();
     expect(await screen.findByText('Carcassonne')).toBeInTheDocument();
     expect(screen.getByText(/Anna \(90\)/)).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /Carcassonne/ })).toHaveAttribute('href', '/plays/9');
+  });
+
+  it('shows the detail of a play with results', async () => {
+    mockApi({
+      '/me': { body: { id: 1, nickname: 'Anna', email: 'a@b.cz', hasNickname: true } },
+      '/parties': { body: [{ id: 3, name: 'Pátek', role: 'admin' }] },
+      '/plays/9': {
+        body: {
+          id: 9, sessionId: 1, game: { id: 1, name: 'Carcassonne', imageUrl: null, scoreType: 'most_points' },
+          startedAt: '2026-03-01T18:00:00+00:00', endedAt: '2026-03-01T19:30:00+00:00', place: 'U Kuby', notes: 'Skvělá hra',
+          addons: [{ id: 1, name: 'Řeka' }], tags: ['rodinná'],
+          results: [
+            { playerId: 1, name: 'Anna', score: 90, rank: 1, winner: true },
+            { playerId: 2, name: 'Petr', score: 75, rank: 2, winner: false },
+          ],
+        },
+      },
+    });
+    renderApp('/plays/9');
+    expect(await screen.findByText('Carcassonne')).toBeInTheDocument();
+    expect(screen.getByText(/1 h 30 min/)).toBeInTheDocument();
+    expect(screen.getByText('U Kuby')).toBeInTheDocument();
+    expect(screen.getByText('Řeka')).toBeInTheDocument();
+    expect(screen.getByText('#rodinná')).toBeInTheDocument();
+    expect(screen.getByText('Skvělá hra')).toBeInTheDocument();
+    const rows = screen.getAllByRole('listitem', { name: '' }).filter((li) => li.closest('.results'));
+    expect(rows).toHaveLength(2);
+    expect(rows[0]).toHaveTextContent('Anna');
+    expect(rows[0]).toHaveTextContent('90');
+    expect(rows[0]).toHaveClass('winner');
+    expect(rows[1]).not.toHaveClass('winner');
   });
 });

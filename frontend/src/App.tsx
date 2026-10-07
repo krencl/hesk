@@ -9,6 +9,7 @@ import { HomePage } from './pages/HomePage';
 import { JoinPage } from './pages/JoinPage';
 import { LoginPage } from './pages/LoginPage';
 import { NewPlayPage } from './pages/NewPlayPage';
+import { PlayDetailPage } from './pages/PlayDetailPage';
 import { NicknamePage } from './pages/NicknamePage';
 import { PartiesPage } from './pages/PartiesPage';
 import { SettingsPage } from './pages/SettingsPage';
@@ -40,6 +41,7 @@ export function App() {
           <Route element={<RequireParty />}>
             <Route path="/" element={<HomePage />} />
             <Route path="/plays/new" element={<NewPlayPage />} />
+            <Route path="/plays/:id" element={<PlayDetailPage />} />
             <Route path="/games" element={<GamesPage />} />
             <Route path="/games/new" element={<GameFormPage />} />
             <Route path="/games/:id" element={<GameFormPage />} />
