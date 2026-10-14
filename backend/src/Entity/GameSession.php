@@ -12,6 +12,7 @@ use Doctrine\ORM\Mapping as ORM;
  * není větší mezera než {@see self::MAX_GAP}.
  */
 #[ORM\Entity(repositoryClass: GameSessionRepository::class)]
+#[ORM\UniqueConstraint(name: 'uniq_session_party_number', columns: ['party_id', 'number'])]
 class GameSession
 {
     public const MAX_GAP = '24 hours';
@@ -23,6 +24,9 @@ class GameSession
         #[ORM\ManyToOne]
         #[ORM\JoinColumn(nullable: false, onDelete: 'CASCADE')]
         private Party $party,
+        /** Pořadové číslo seance ve skupině (ze staré aplikace ručně udržované, může mít mezery). */
+        #[ORM\Column]
+        private int $number,
         #[ORM\Column]
         private \DateTimeImmutable $startedAt,
         #[ORM\Column]
@@ -38,6 +42,11 @@ class GameSession
     public function getParty(): Party
     {
         return $this->party;
+    }
+
+    public function getNumber(): int
+    {
+        return $this->number;
     }
 
     public function getStartedAt(): \DateTimeImmutable

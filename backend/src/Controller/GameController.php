@@ -8,11 +8,13 @@ use App\Domain\Exception\DomainException;
 use App\Dto\GameRequest;
 use App\Entity\Game;
 use App\Entity\Party;
+use App\Repository\GameRepository;
 use App\Repository\PlayRepository;
 use App\Security\PartyVoter;
 use App\Service\Presenter;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\HttpFoundation\JsonResponse;
+use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Attribute\MapRequestPayload;
 use Symfony\Component\Routing\Attribute\Route;
@@ -20,18 +22,25 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 
 final class GameController extends ApiController
 {
-    public function __construct(Presenter $presenter, private readonly EntityManagerInterface $em, private readonly PlayRepository $plays)
+    public function __construct(Presenter $presenter, private readonly EntityManagerInterface $em, private readonly PlayRepository $plays, private readonly GameRepository $games)
     {
         parent::__construct($presenter);
     }
 
     #[Route('/api/parties/{id}/games', requirements: ['id' => '\d+'], methods: ['GET'])]
     #[IsGranted(PartyVoter::VIEW, 'party')]
-    public function list(Party $party): JsonResponse
+    public function list(Party $party, Request $request): JsonResponse
     {
-        $games = $this->em->getRepository(Game::class)->findBy(['party' => $party], ['name' => 'ASC']);
+        $sort = GameRepository::SORT_NAME === $request->query->get('sort') ? GameRepository::SORT_NAME : GameRepository::SORT_ACTIVITY;
+        $limit = $request->query->has('limit') ? max(1, min(100, $request->query->getInt('limit'))) : null;
+        $sessionNumber = $request->query->has('sessionNumber') && '' !== $request->query->get('sessionNumber') ? $request->query->getInt('sessionNumber') : null;
+        $games = $this->games->search($party, $request->query->get('q'), $sort, $sessionNumber, $limit, max(0, $request->query->getInt('offset')));
+        $stats = $this->games->statsFor($games);
 
-        return new JsonResponse(array_map($this->presenter->game(...), $games));
+        return new JsonResponse(array_map(
+            fn (Game $g): array => $this->presenter->gameWithStats($g, $stats[$g->getId()]['lastPlay'], $stats[$g->getId()]['playCount']),
+            $games,
+        ));
     }
 
     #[Route('/api/parties/{id}/games', requirements: ['id' => '\d+'], methods: ['POST'])]
@@ -50,8 +59,9 @@ final class GameController extends ApiController
     public function show(Game $game): JsonResponse
     {
         $this->denyAccessUnlessGranted(PartyVoter::VIEW, $game->getParty());
+        $stats = $this->games->statsFor([$game])[$game->getId()];
 
-        return new JsonResponse($this->presenter->game($game));
+        return new JsonResponse($this->presenter->gameWithStats($game, $stats['lastPlay'], $stats['playCount']));
     }
 
     #[Route('/api/games/{id}', requirements: ['id' => '\d+'], methods: ['PUT'])]

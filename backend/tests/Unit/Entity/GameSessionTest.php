@@ -13,7 +13,7 @@ final class GameSessionTest extends TestCase
 {
     private function session(string $start, string $end): GameSession
     {
-        return new GameSession(Party::create('P', new User('g', 'a@example.com')), new \DateTimeImmutable($start), new \DateTimeImmutable($end));
+        return new GameSession(Party::create('P', new User('g', 'a@example.com')), 1, new \DateTimeImmutable($start), new \DateTimeImmutable($end));
     }
 
     public function testAcceptsPlayWithin24HoursAfterEnd(): void

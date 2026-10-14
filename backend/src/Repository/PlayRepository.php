@@ -22,7 +22,7 @@ class PlayRepository extends ServiceEntityRepository
     /** @return list<Play> */
     public function findPage(Party $party, int $limit, int $offset, ?int $gameId = null): array
     {
-        $qb = $this->createQueryBuilder('p')
+        $qb = $this->createQueryBuilder('p')->addSelect('s')->join('p.session', 's')
             ->andWhere('p.party = :party')->setParameter('party', $party)
             ->orderBy('p.startedAt', 'DESC')->addOrderBy('p.id', 'DESC')
             ->setMaxResults($limit)->setFirstResult($offset);

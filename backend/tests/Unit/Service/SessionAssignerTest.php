@@ -46,7 +46,7 @@ final class SessionAssignerTest extends TestCase
 
     public function testJoinsRecentSessionAndExtendsIt(): void
     {
-        $existing = new GameSession($this->party, $this->d('2026-01-01 18:00'), $this->d('2026-01-01 19:00'));
+        $existing = new GameSession($this->party, 1, $this->d('2026-01-01 18:00'), $this->d('2026-01-01 19:00'));
 
         $s = $this->assigner([$existing])->assign($this->party, $this->d('2026-01-02 10:00'), $this->d('2026-01-02 11:00'));
 
@@ -56,16 +56,27 @@ final class SessionAssignerTest extends TestCase
 
     public function testStartsNewSessionAfterLongGap(): void
     {
-        $existing = new GameSession($this->party, $this->d('2026-01-01 18:00'), $this->d('2026-01-01 19:00'));
+        $existing = new GameSession($this->party, 1, $this->d('2026-01-01 18:00'), $this->d('2026-01-01 19:00'));
 
         $s = $this->assigner([$existing])->assign($this->party, $this->d('2026-01-05 18:00'), $this->d('2026-01-05 19:00'));
 
         self::assertNotSame($existing, $s);
     }
 
+    public function testNewSessionGetsNumberAfterHighestExisting(): void
+    {
+        $first = new GameSession($this->party, 1, $this->d('2026-01-01 18:00'), $this->d('2026-01-01 19:00'));
+        $gap = new GameSession($this->party, 69, $this->d('2026-02-01 18:00'), $this->d('2026-02-01 19:00'));
+
+        $s = $this->assigner([$gap, $first])->assign($this->party, $this->d('2026-03-01 18:00'), $this->d('2026-03-01 19:00'));
+
+        self::assertSame(70, $s->getNumber());
+        self::assertSame(1, $this->assigner([])->assign($this->party, $this->d('2026-03-01 18:00'), $this->d('2026-03-01 19:00'))->getNumber());
+    }
+
     public function testRecalculateUsesRemainingPlaysOrFlagsEmpty(): void
     {
-        $session = new GameSession($this->party, $this->d('2026-01-01 10:00'), $this->d('2026-01-03 10:00'));
+        $session = new GameSession($this->party, 1, $this->d('2026-01-01 10:00'), $this->d('2026-01-03 10:00'));
         $game = new Game($this->party, 'G', ScoreType::MostPoints);
         $play = new Play($this->party, $game, $this->d('2026-01-01 12:00'), $this->d('2026-01-01 13:00'), $session);
         $assigner = $this->assigner([]);

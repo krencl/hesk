@@ -100,6 +100,52 @@ final class ApiFlowTest extends WebTestCase
         $this->api('DELETE', "/api/plays/{$p3['id']}", expected: 404);
     }
 
+    public function testGameListSearchSortLastPlayAndSessions(): void
+    {
+        $this->login('anna@example.com', 'Anna');
+        $party = $this->api('POST', '/api/parties', ['name' => 'Pátek'], 201);
+        $base = "/api/parties/{$party['id']}";
+        $anna = $this->api('GET', "$base/players")[0]['id'];
+        $dixit = $this->api('POST', "$base/games", ['name' => 'Dixit', 'scoreType' => 'most_points'], 201);
+        $azul = $this->api('POST', "$base/games", ['name' => 'Azul', 'scoreType' => 'winner_only'], 201);
+        $this->api('POST', "$base/games", ['name' => 'Caj_100%', 'scoreType' => 'winner_only'], 201);
+
+        $play = fn (array $game, string $day): array => $this->api('POST', "$base/plays", [
+            'gameId' => $game['id'], 'startedAt' => "{$day}T18:00:00+00:00", 'endedAt' => "{$day}T19:00:00+00:00",
+            'players' => [['playerId' => $anna, 'score' => 5, 'winner' => true]],
+        ], 201);
+        $p1 = $play($dixit, '2026-03-01');
+        $p2 = $play($azul, '2026-03-20');
+        $p3 = $play($dixit, '2026-04-10');
+
+        self::assertSame([1, 2, 3], [$p1['sessionNumber'], $p2['sessionNumber'], $p3['sessionNumber']]);
+        self::assertSame([3, 2, 1], array_column($this->api('GET', "$base/sessions"), 'number'));
+
+        // výchozí řazení = poslední aktivita, hry bez zápisu na konci
+        $list = $this->api('GET', "$base/games");
+        self::assertSame(['Dixit', 'Azul', 'Caj_100%'], array_column($list, 'name'));
+        self::assertSame(2, $list[0]['playCount']);
+        self::assertSame($p3['id'], $list[0]['lastPlay']['id']);
+        self::assertSame(3, $list[0]['lastPlay']['sessionNumber']);
+        self::assertSame(['Anna'], $list[0]['lastPlay']['winners']);
+        self::assertEquals(5, $list[0]['lastPlay']['winnerScore']);
+        self::assertNull($list[2]['lastPlay']);
+        self::assertSame(0, $list[2]['playCount']);
+
+        self::assertSame(['Azul', 'Caj_100%', 'Dixit'], array_column($this->api('GET', "$base/games?sort=name"), 'name'));
+        self::assertSame(['Dixit'], array_column($this->api('GET', "$base/games?q=dIX"), 'name'));
+        self::assertSame(['Caj_100%'], array_column($this->api('GET', "$base/games?q=".rawurlencode('_100%')), 'name'), 'LIKE wildcards are escaped');
+        self::assertSame(['Azul'], array_column($this->api('GET', "$base/games?sessionNumber=2"), 'name'));
+        self::assertSame(['Azul', 'Caj_100%'], array_column($this->api('GET', "$base/games?limit=2&offset=1"), 'name'));
+
+        $detail = $this->api('GET', "/api/games/{$dixit['id']}");
+        self::assertSame(2, $detail['playCount']);
+        self::assertSame($p3['id'], $detail['lastPlay']['id']);
+
+        $byGame = $this->api('GET', "$base/plays?gameId={$dixit['id']}");
+        self::assertSame([$p3['id'], $p1['id']], array_column($byGame, 'id'));
+    }
+
     public function testInvalidPlayIsRejected(): void
     {
         $this->login('anna@example.com', 'Anna');

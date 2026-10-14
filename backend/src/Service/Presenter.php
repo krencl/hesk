@@ -62,6 +62,37 @@ final class Presenter
         ];
     }
 
+    /**
+     * Hra včetně statistik pro seznam/detail: poslední zápis (nebo null) a počet zápisů.
+     *
+     * @return array<string, mixed>
+     */
+    public function gameWithStats(Game $game, ?Play $lastPlay, int $playCount): array
+    {
+        $winners = [];
+        $winnerScore = null;
+        if (null !== $lastPlay) {
+            foreach ($lastPlay->getResults() as $r) {
+                if ($r->isWinner()) {
+                    $winners[] = $r->getPlayer()->getName();
+                    $winnerScore ??= $r->getScore();
+                }
+            }
+            sort($winners);
+        }
+
+        return $this->game($game) + [
+            'playCount' => $playCount,
+            'lastPlay' => null === $lastPlay ? null : [
+                'id' => $lastPlay->getId(),
+                'startedAt' => $lastPlay->getStartedAt()->format(\DATE_ATOM),
+                'sessionNumber' => $lastPlay->getSession()->getNumber(),
+                'winners' => $winners,
+                'winnerScore' => $winnerScore,
+            ],
+        ];
+    }
+
     public function play(Play $play): array
     {
         $results = $play->getResults()->toArray();
@@ -71,6 +102,7 @@ final class Presenter
             'id' => $play->getId(),
             'game' => ['id' => $play->getGame()->getId(), 'name' => $play->getGame()->getName(), 'imageUrl' => $play->getGame()->getImageUrl(), 'scoreType' => $play->getGame()->getScoreType()->value],
             'sessionId' => $play->getSession()->getId(),
+            'sessionNumber' => $play->getSession()->getNumber(),
             'startedAt' => $play->getStartedAt()->format(\DATE_ATOM),
             'endedAt' => $play->getEndedAt()->format(\DATE_ATOM),
             'place' => $play->getPlace()?->getName(),

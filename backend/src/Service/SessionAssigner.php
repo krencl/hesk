@@ -18,15 +18,17 @@ final class SessionAssigner
 
     public function assign(Party $party, \DateTimeImmutable $start, \DateTimeImmutable $end): GameSession
     {
+        $lastNumber = 0;
         foreach ($this->sessions->findByParty($party) as $session) {
             if ($session->accepts($start, $end)) {
                 $session->extendTo($start, $end);
 
                 return $session;
             }
+            $lastNumber = max($lastNumber, $session->getNumber());
         }
 
-        return new GameSession($party, $start, $end);
+        return new GameSession($party, $lastNumber + 1, $start, $end);
     }
 
     /** Po smazání/přesunu zápisu přepočítá hranice seance; prázdnou seanci vrátí jako ke smazání. */
