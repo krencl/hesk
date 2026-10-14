@@ -15,6 +15,7 @@ export function HomePage() {
   return (
     <section className="flush">
       <div className="pad">
+        <h2>Zápisy</h2>
         <Link className="btn block" to="/plays/new">+ Nový zápis</Link>
         <ErrorMessage error={error} />
         {isPending && <p className="muted">Načítám…</p>}
@@ -34,7 +35,7 @@ export function HomePage() {
                       <span className="secondary">
                         {formatDateTime(play.startedAt)}{play.place ? ` · ${play.place}` : ''}
                       </span>
-                      <span className="secondary"><Icon name="emoji_events" /> {winnerSummary(play)}</span>
+                      <span className="secondary"><Icon name="workspace_premium" /> {winnerSummary(play)}</span>
                       {play.tags.length > 0 && <span className="secondary small">{play.tags.map((t) => `#${t}`).join(' ')}</span>}
                     </div>
                   </Link>

@@ -3,7 +3,10 @@ import { consumeAfterLoginPath, rememberAfterLoginPath } from './lib/afterLogin'
 import { AppProvider, useCurrentUserQuery } from './AppContext';
 import { Layout } from './components/Layout';
 import { RequireParty } from './components/RequireParty';
+import { GameCheatsheetPage } from './pages/GameCheatsheetPage';
+import { GameDetailPage } from './pages/GameDetailPage';
 import { GameFormPage } from './pages/GameFormPage';
+import { GameListPage } from './pages/GameListPage';
 import { GamesPage } from './pages/GamesPage';
 import { HomePage } from './pages/HomePage';
 import { JoinPage } from './pages/JoinPage';
@@ -39,12 +42,16 @@ export function App() {
           <Route path="/join/:token" element={<JoinPage />} />
           <Route path="/settings" element={<SettingsPage />} />
           <Route element={<RequireParty />}>
-            <Route path="/" element={<HomePage />} />
+            <Route path="/" element={<Navigate to="/games" replace />} />
+            <Route path="/games" element={<GameListPage />} />
+            <Route path="/games/new" element={<GameFormPage />} />
+            <Route path="/games/:id" element={<GameDetailPage />} />
+            <Route path="/games/:id/cheatsheet" element={<GameCheatsheetPage />} />
+            <Route path="/games/:id/edit" element={<GameFormPage />} />
+            <Route path="/manage/games" element={<GamesPage />} />
+            <Route path="/plays" element={<HomePage />} />
             <Route path="/plays/new" element={<NewPlayPage />} />
             <Route path="/plays/:id" element={<PlayDetailPage />} />
-            <Route path="/games" element={<GamesPage />} />
-            <Route path="/games/new" element={<GameFormPage />} />
-            <Route path="/games/:id" element={<GameFormPage />} />
             <Route path="/stats" element={<StatsPage />} />
           </Route>
           <Route path="*" element={<Navigate to="/" replace />} />

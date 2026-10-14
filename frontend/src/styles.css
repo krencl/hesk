@@ -98,7 +98,7 @@ hr { border: 0; border-top: 1px solid rgba(0, 0, 0, 0.15); margin: 1rem 0; }
 .menu-header h2 { margin: 0; }
 .menu-content { padding: 1rem; }
 .menu-content h4 { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 0.5rem; }
-.menu-content h4 small { flex: 1 0 100%; }
+.menu-content h4 small { display: inline; color: var(--secondary); font-size: 0.8em; }
 .menu-content h4 .btn { margin-left: auto; align-self: center; }
 .menu-list { list-style: none; margin: 0 0 1rem; padding: 0; font-size: 1.1rem; }
 .menu-list a, .menu-list button {
@@ -137,20 +137,21 @@ hr { border: 0; border-top: 1px solid rgba(0, 0, 0, 0.15); margin: 1rem 0; }
 .dev-login { margin-top: 2rem; display: grid; gap: .5rem; border-top: 1px dashed var(--gray); padding-top: 1rem; }
 
 /* Formuláře */
-.form { display: grid; gap: 0.9rem; }
-.form.inline { grid-template-columns: 1fr auto; margin: 1rem 0; }
+.form { display: grid; grid-template-columns: minmax(0, 1fr); gap: 0.9rem; }
+.form.inline { grid-template-columns: minmax(0, 1fr) auto; margin: 1rem 0; }
 label { display: grid; gap: 0.25rem; font-size: 0.9rem; color: var(--secondary); }
 label.check { display: flex; gap: 0.5rem; align-items: center; color: var(--text); font-size: 1rem; }
 input, select, textarea {
-  font: inherit; color: var(--text); padding: 0.375rem 0.75rem; width: 100%;
+  font: inherit; color: var(--text); padding: 0.375rem 0.75rem; width: 100%; min-width: 0;
   border: 1px solid var(--gray); border-radius: var(--radius); background: #fff;
 }
 input:focus, select:focus, textarea:focus { outline: 0; border-color: #93bdec; box-shadow: 0 0 0 0.25rem rgba(39, 123, 218, 0.25); }
 input[type='checkbox'] { width: auto; accent-color: var(--main); }
 fieldset { border: 1px solid var(--gray); border-radius: var(--radius); padding: 0.5rem 0.8rem; }
 legend { color: var(--secondary); font-size: 0.85rem; padding: 0 0.3rem; }
-.row { display: grid; grid-template-columns: 1fr 1fr; gap: 0.6rem; }
-.player-row { display: grid; grid-template-columns: 1fr 6.5rem; gap: 0.5rem; align-items: center; padding: 0.25rem 0; }
+.row { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 0.6rem; }
+.row.stack { grid-template-columns: minmax(0, 1fr); }
+.player-row { display: grid; grid-template-columns: minmax(0, 1fr) 6.5rem; gap: 0.5rem; align-items: center; padding: 0.25rem 0; }
 
 .error { background: #fdecee; color: var(--error); border-radius: var(--radius); padding: 0.6rem 0.8rem; margin: 0.5rem 0; }
 .error ul { margin: 0.3rem 0 0; padding-left: 1.2rem; }
@@ -194,3 +195,97 @@ legend { color: var(--secondary); font-size: 0.85rem; padding: 0 0.3rem; }
 .bar-track { background: var(--light-gray); border-radius: var(--radius); height: 0.9rem; overflow: hidden; }
 .bar-fill { display: block; height: 100%; background: var(--main); }
 .bar-value { text-align: right; font-variant-numeric: tabular-nums; }
+
+/* Načítání: pulzující kroužek kolem tlačítka skupiny (jako ve starém prototypu) */
+@keyframes loading-ring {
+  0% { box-shadow: 0 0 0 0.15rem var(--gray); }
+  50% { box-shadow: 0 0 0 0.4rem var(--gray); }
+  100% { box-shadow: 0 0 0 0.15rem var(--gray); }
+}
+.header-button.loading { animation: loading-ring 1.5s infinite; }
+.menu-logout { text-align: center; margin: 0; }
+.menu-logout button { background: none; border: 0; font: inherit; color: var(--secondary); text-decoration: underline; cursor: pointer; padding: 0.3rem 0.5rem; }
+.menu-logout button:hover { color: var(--main); }
+
+.btn.light { background: #f8f9fa; border-color: #f8f9fa; color: var(--text); }
+.btn.light:hover { background: #e2e6ea; border-color: #dae0e5; }
+.center { text-align: center; }
+a.plain { color: inherit; text-decoration: none; }
+a.plain:hover { color: var(--main); }
+a.link { text-decoration: none; display: inline-block; }
+a.link:hover { text-decoration: underline; }
+
+/* Seznam her: hledání a filtr */
+.search { position: relative; border-bottom: 1px solid var(--gray); }
+.search-row { position: relative; display: flex; }
+.search-row input {
+  flex: 1; min-width: 0; border-radius: 0; border-width: 1px 0; padding: 0.375rem 3rem;
+  -webkit-appearance: none; appearance: none;
+}
+.search-row input::-webkit-search-cancel-button { display: none; }
+.search-icon, .search-filter-icon {
+  position: absolute; top: 0; bottom: 0; width: 2.5rem; padding: 0; background: none; border: 0; cursor: pointer;
+  color: var(--text); display: grid; place-items: center; z-index: 1;
+}
+.search-icon { left: 0; }
+.search-filter-icon { right: 0; }
+.search-icon:hover, .search-filter-icon:hover { background: var(--gray); }
+.search-filter-icon.active { color: var(--main); background: var(--gray); }
+.search-filter {
+  display: grid; grid-template-columns: auto 1fr auto 1fr; align-items: stretch; background: var(--gray);
+}
+.search-filter .filter-label { display: flex; align-items: center; padding: 0 0.5rem; font-size: 1rem; color: var(--text); font-weight: 500; }
+.search-filter select {
+  border: 0; border-radius: 0; background-color: var(--light-gray); font-weight: 500; text-align: right; text-align-last: right; padding-right: 0.5rem;
+}
+.game-list .list.stale { opacity: 0.55; transition: opacity var(--animation); }
+.game-list .empty { padding: 2rem 1rem; }
+.last-play { font-weight: 500; }
+.more { margin: 0.5rem 0 0; border-radius: 0; }
+
+/* Detail hry: záhlaví, rozbalovací zápisy */
+.game-header { display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem 1rem 0.5rem 0; margin: 0.5rem 0; }
+.game-header .game-image { margin-right: 0.25rem; }
+.round { border-left: 0.2rem solid transparent; border-bottom: 1px solid transparent; }
+.round:hover { border-left-color: var(--main); }
+.round.selected { border-left-color: var(--main); background: #e8f0fb; }
+.round-head {
+  width: 100%; display: grid; grid-template-columns: 5fr 5fr 2fr; gap: 0.5rem; align-items: end; text-align: left;
+  background: none; border: 0; font: inherit; color: inherit; padding: 0.35rem 0.8rem; cursor: pointer;
+}
+.round-when { font-size: 0.8rem; font-weight: 300; line-height: 1.6; }
+.round-head:hover .round-winners { color: var(--main); }
+.round-score { text-align: right; font-variant-numeric: tabular-nums; }
+.round-body { padding: 0.25rem 0.8rem 0.5rem; }
+.round-body .detail-info { margin-bottom: 0.5rem; }
+.round-body .results li { grid-template-columns: 2rem 7fr 3fr; }
+.round-actions { display: flex; justify-content: space-between; align-items: center; padding-top: 0.25rem; }
+.game-detail .nav-actions { margin-top: 0.75rem; }
+
+/* Taháček (HTML od uživatelů) */
+.cheatsheet { padding: 0 1rem; }
+.cheatsheet h1, .cheatsheet h2 { font-size: 1.25rem; }
+.cheatsheet h3 { font-size: 1.2rem; color: var(--text); }
+.cheatsheet h4 { font-size: 1.15rem; }
+.cheatsheet img { max-width: 100%; height: auto; }
+.cheatsheet table { width: 100%; border-collapse: collapse; margin-bottom: 1rem; }
+.cheatsheet th, .cheatsheet td { border: 1px solid var(--gray); padding: 0.5rem; text-align: left; vertical-align: top; }
+
+/* Kostra při načítání */
+@keyframes skeleton-shine { to { background-position-x: -200%; } }
+.skeleton-row { display: flex; gap: 1rem; padding: 0.5rem 0.8rem; border-bottom: 1px solid var(--light-gray); }
+.skeleton-row.with-image { padding: 0 1rem 0 0; }
+.skeleton-lines { flex: 1; display: grid; align-content: center; gap: 0.5rem; padding: 0.5rem 0; }
+.skeleton-item {
+  display: block; height: 1rem; border-radius: var(--radius);
+  background: linear-gradient(110deg, #e7ecf1 8%, #f5f7f9 18%, #e7ecf1 33%) 0 0 / 200% 100%;
+  animation: skeleton-shine 2s linear infinite;
+}
+.skeleton-image { width: var(--image-size); height: var(--image-size); flex: none; border-radius: 0; }
+.skeleton-row.with-image .skeleton-lines { padding: 0.5rem 0; }
+
+/* Nový zápis: řádek hráče */
+.player-row { padding: 0.35rem 0.5rem; border-radius: var(--radius); }
+.player-row.selected { background: #e8f0fb; }
+.form > label { font-weight: 500; }
+.form > label > input, .form > label > select, .form > label > textarea { font-weight: 400; }

@@ -27,16 +27,18 @@ Není tu PHP ani MySQL ani sudo. PHP 8.4 je statický binár v `~/bin/php` + `~/
 - Testy: `tests/Unit` (bez DB), `tests/Functional` (SQLite, `ApiFlowTest`).
 
 ## Frontend – orientace
-- `src/api` (klient + typy + endpointy) · `src/lib` (čistá logika: `playForm`, `scoring`, `activeParty`, `afterLogin`, `datetime`) · `src/pages` · `src/components` · `src/AppContext.tsx` (me, parties, aktivní skupina) · `src/App.tsx` (routy + gating login → přezdívka → skupina).
-- Mobile-first, max. šířka 400 px, UI v češtině; vzhled převzatý ze starého prototypu (ADR 0008). Routy: `/` seznam zápisů, `/plays/:id` detail zápisu, `/plays/new`, `/games…`, `/stats`, `/parties`.
+- `src/api` (klient + typy + endpointy) · `src/lib` (čistá logika: `playForm`, `scoring`, `activeParty`, `afterLogin`, `datetime`) · `src/pages` · `src/components` (`Skeleton`, `GameHeader`, …) · `src/AppContext.tsx` (me, parties, aktivní skupina) · `src/App.tsx` (routy + gating login → přezdívka → skupina).
+- Mobile-first, max. šířka 400 px, UI v češtině; vzhled převzatý ze starého prototypu (ADR 0008). Routy (ADR 0009): `/`→`/games` seznam her (hledání, filtr), `/games/:id` detail hry se zápisy, `/games/:id/cheatsheet|edit`, `/games/new`, `/manage/games`, `/plays` chronologie, `/plays/:id`, `/plays/new?gameId=`, `/stats`, `/parties`.
 
 ## Konvence a pasti
 - Pravidla domény patří do entit/`Domain`, ne do kontrolerů; kontrolery vrací `Presenter` pole.
 - `list<DTO>` v DTO funguje jen díky `phpdocumentor/reflection-docblock` + `phpstan/phpdoc-parser` (bez nich se pole nedeserializují na objekty).
 - Funkční testy mažou a vytvářejí schéma pro každý test (pomalé, ~35 s celkem).
-- Taháček her je HTML od uživatelů → vždy přes `SafeHtml` (DOMPurify).
+- Taháček her je Markdown (import ze staré app) nebo HTML od uživatelů → vždy přes `renderCheatSheet` + `SafeHtml` (marked + DOMPurify).
+- Čísla seancí (`game_session.number`) jsou uložená, ne odvozená (stará čísla mají mezery); novou seanci číslo přiřadí `SessionAssigner` (max+1).
+- Obálky her jsou lokálně v `frontend/public/covers/` (git-ignorováno) a `game.image_url` = `/static/covers/…`; statika se servíruje pod `/static/` (Vite `base`).
 - Git: větev `master`, commity s trailerem `Co-Authored-By` dle zadání prostředí.
 
-## Stav (2026-10-02)
-Hotovo: dev DB zmigrována na nové schéma s importem dat, hráči-hosté, auth (Google + dev login, spárování starých účtů podle e-mailu), skupiny/členové/pozvánky, hry (+přídavky), zápisy se seancemi, statistiky (výhry, top hry), mobilní UI.
-Nehotovo/nápady: editace zápisu ve UI, detail hry se seznamem zápisů (jako ve starém UI), vynucení přezdívky na backendu, upload obrázků, WYSIWYG taháček, CI s MySQL, import z původní app, postavy/„začínající hráč“.
+## Stav (2026-10-14)
+Hotovo: dev DB zmigrována na nové schéma s importem dat, hráči-hosté, auth (Google + dev login, spárování starých účtů podle e-mailu), skupiny/členové/pozvánky, hry (+přídavky), zápisy se seancemi, statistiky (výhry, top hry), mobilní UI; UX podle prototypu (seznam her s hledáním/filtrem, detail hry se zápisy a taháčkem, čísla seancí, ADR 0009).
+Nehotovo/nápady: editace zápisu ve UI, vynucení přezdívky na backendu, upload obrázků, WYSIWYG taháček, CI s MySQL, import z původní app, postavy/„začínající hráč“.

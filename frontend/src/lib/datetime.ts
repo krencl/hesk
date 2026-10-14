@@ -14,6 +14,18 @@ export function formatDateTime(iso: string): string {
   return new Date(iso).toLocaleString('cs-CZ', { day: 'numeric', month: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' });
 }
 
+/** Kompaktní tvar jako ve starém prototypu: „6.2.2022 21:06“. */
+export function formatDateTimeShort(iso: string): string {
+  const d = new Date(iso);
+  return `${d.getDate()}.${d.getMonth() + 1}.${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+/** Jen datum v kompaktním tvaru: „6.2.2022“. */
+export function formatDateShort(iso: string): string {
+  const d = new Date(iso);
+  return `${d.getDate()}.${d.getMonth() + 1}.${d.getFullYear()}`;
+}
+
 export function formatDate(iso: string): string {
   return new Date(iso).toLocaleDateString('cs-CZ', { day: 'numeric', month: 'long', year: 'numeric' });
 }

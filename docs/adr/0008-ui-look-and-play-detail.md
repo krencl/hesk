@@ -10,6 +10,6 @@ Majitel chce, aby nová aplikace vypadala jako běžící starý vývojový prot
 - Detail zápisu `/plays/:id` (`PlayDetailPage`): hra, kdy/kde, přídavky, tagy, poznámka, výsledky s trofejí u vítězů a skóre/pořadím podle typu bodování; mazání s dvoukrokovým potvrzením. Seznam zápisů na úvodní stránce na detail odkazuje (mazání ze seznamu zmizelo).
 
 ## Důsledky
-- Domovská stránka zůstává seznam zápisů skupiny (ne seznam her jako ve starém UI); starý detail hry se seznamem kol zatím nemá obdobu.
+- _Překonáno ADR 0009:_ domovská stránka je teď seznam her a detail hry se zápisy existuje; chronologie zápisů je na `/plays`.
 - U zápisů importovaných ze staré DB je začátek = konec, detail proto ukazuje jen jeden čas a bez délky.
 - Ikony závisí na načtení písma z Google Fonts; offline se místo nich zobrazí text ligatury.

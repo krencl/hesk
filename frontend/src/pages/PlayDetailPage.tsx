@@ -8,6 +8,7 @@ import { ErrorMessage } from '../components/ErrorMessage';
 import { GameImage } from '../components/GameImage';
 import { Icon } from '../components/Icon';
 import { formatDate, formatDuration, formatTime } from '../lib/datetime';
+import { refreshAfterPlayChange } from '../lib/refresh';
 import { formatScore, SCORE_TYPE_LABELS } from '../lib/scoring';
 
 export function PlayDetailPage() {
@@ -18,13 +19,13 @@ export function PlayDetailPage() {
   const [confirmDelete, setConfirmDelete] = useState(false);
   const { data: play, isPending, error } = useQuery({ queryKey: ['play', id], queryFn: () => api.play(id), retry: false });
 
+  const gameId = play?.game.id;
   const remove = useMutation({
     mutationFn: () => api.deletePlay(id),
     onSuccess: async () => {
       queryClient.removeQueries({ queryKey: ['play', id] });
-      await queryClient.invalidateQueries({ queryKey: ['plays', party.id] });
-      await queryClient.invalidateQueries({ queryKey: ['stats', party.id] });
-      navigate('/', { replace: true });
+      await refreshAfterPlayChange(queryClient, party.id, gameId!, { leaving: true });
+      navigate(`/games/${gameId}`, { replace: true });
     },
   });
 
@@ -32,7 +33,7 @@ export function PlayDetailPage() {
     return (
       <section className="detail">
         <p className="empty">Tenhle zápis neexistuje nebo k němu nemáš přístup.</p>
-        <div className="nav-actions"><Link className="btn secondary" to="/">Zpět</Link></div>
+        <div className="nav-actions"><Link className="btn secondary" to="/games">Zpět</Link></div>
       </section>
     );
   }
@@ -58,7 +59,7 @@ export function PlayDetailPage() {
       <div className="detail-game">
         <GameImage url={play.game.imageUrl} small />
         <div>
-          <strong className="h5">{play.game.name}</strong>
+          <Link className="h5 plain" to={`/games/${play.game.id}`}>{play.game.name}</Link>
           <small className="muted">{SCORE_TYPE_LABELS[play.game.scoreType]}</small>
         </div>
       </div>
@@ -72,7 +73,7 @@ export function PlayDetailPage() {
       <ul className="results" aria-label="Výsledky">
         {play.results.map((r) => (
           <li key={r.playerId} className={r.winner ? 'winner' : ''}>
-            <span className="result-icon">{r.winner && <Icon name="emoji_events" />}</span>
+            <span className="result-icon">{r.winner && <Icon name="workspace_premium" />}</span>
             <span className="result-name">{r.name}{r.winner && <span className="sr-only"> (vítěz)</span>}</span>
             {showScore && <span className="result-score">{r.score === null ? '' : formatScore(r.score)}</span>}
             {play.game.scoreType === 'rank_order' && <span className="result-score muted">{r.rank}.</span>}
@@ -85,7 +86,7 @@ export function PlayDetailPage() {
         <button type="button" className="btn outline-secondary" disabled={remove.isPending} onClick={() => (confirmDelete ? remove.mutate() : setConfirmDelete(true))}>
           {confirmDelete ? 'Potvrď smazání' : 'Smazat zápis'}
         </button>
-        <Link className="btn secondary" to="/">Zpět</Link>
+        <Link className="btn secondary" to={`/games/${play.game.id}`}>Zpět</Link>
       </div>
     </section>
   );

@@ -1,11 +1,12 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { type FormEvent, useEffect, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useActiveParty } from '../AppContext';
 import { api } from '../api';
 import type { GameInput } from '../api/types';
 import { ErrorMessage } from '../components/ErrorMessage';
 import { SafeHtml } from '../components/SafeHtml';
+import { renderCheatSheet } from '../lib/cheatSheet';
 import { SCORE_TYPE_LABELS, SCORE_TYPES } from '../lib/scoring';
 
 const EMPTY = { name: '', scoreType: 'most_points', imageUrl: '', description: '', cheatSheet: '', addons: '' } as const;
@@ -33,13 +34,16 @@ export function GameFormPage() {
     addons: form.addons.split('\n').map((a) => a.trim()).filter(Boolean),
   });
 
-  const done = async () => {
+  const done = async (target: string) => {
     await queryClient.invalidateQueries({ queryKey: ['games', party.id] });
     await queryClient.invalidateQueries({ queryKey: ['game', gameId] });
-    navigate('/games');
+    navigate(target);
   };
-  const save = useMutation({ mutationFn: () => (gameId ? api.updateGame(gameId, toInput()) : api.createGame(party.id, toInput())), onSuccess: done });
-  const remove = useMutation({ mutationFn: () => api.deleteGame(gameId!), onSuccess: done });
+  const save = useMutation({
+    mutationFn: () => (gameId ? api.updateGame(gameId, toInput()) : api.createGame(party.id, toInput())),
+    onSuccess: (game) => done(`/games/${game.id}`),
+  });
+  const remove = useMutation({ mutationFn: () => api.deleteGame(gameId!), onSuccess: () => done('/games') });
 
   const submit = (e: FormEvent) => {
     e.preventDefault();
@@ -62,15 +66,18 @@ export function GameFormPage() {
       <label>URL obrázku<input type="url" value={form.imageUrl} onChange={(e) => set({ imageUrl: e.target.value })} /></label>
       <label>Popis<textarea rows={3} value={form.description} onChange={(e) => set({ description: e.target.value })} /></label>
       <label>Přídavky (jeden na řádek)<textarea rows={3} value={form.addons} onChange={(e) => set({ addons: e.target.value })} /></label>
-      <label>Taháček (HTML)<textarea rows={6} value={form.cheatSheet} onChange={(e) => set({ cheatSheet: e.target.value })} /></label>
+      <label>Taháček (Markdown nebo HTML)<textarea rows={6} value={form.cheatSheet} onChange={(e) => set({ cheatSheet: e.target.value })} /></label>
       {form.cheatSheet.trim() && (
         <details>
           <summary>Náhled taháčku</summary>
-          <SafeHtml html={form.cheatSheet} />
+          <SafeHtml html={renderCheatSheet(form.cheatSheet)} />
         </details>
       )}
       <ErrorMessage error={save.error ?? remove.error} />
-      <button className="btn" type="submit" disabled={save.isPending}>Uložit</button>
+      <div className="nav-actions">
+        <button className="btn" type="submit" disabled={save.isPending}>Uložit</button>
+        <Link className="btn outline-secondary" to={gameId ? `/games/${gameId}` : '/games'}>Zpět</Link>
+      </div>
       {gameId && (
         <button type="button" className="btn danger" onClick={() => window.confirm('Smazat hru?') && remove.mutate()}>
           Smazat hru

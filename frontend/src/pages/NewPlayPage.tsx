@@ -1,16 +1,19 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { type FormEvent, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useActiveParty } from '../AppContext';
 import { api } from '../api';
 import { ErrorMessage } from '../components/ErrorMessage';
+import { ListSkeleton } from '../components/Skeleton';
 import { toLocalInput } from '../lib/datetime';
+import { refreshAfterPlayChange } from '../lib/refresh';
 import { type PlayDraft, toPlayInput, validateDraft } from '../lib/playForm';
 
 export function NewPlayPage() {
   const party = useActiveParty();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const presetGameId = Number(useSearchParams()[0].get('gameId')) || null;
   const games = useQuery({ queryKey: ['games', party.id], queryFn: () => api.games(party.id) });
   const players = useQuery({ queryKey: ['players', party.id], queryFn: () => api.players(party.id) });
   const [guestName, setGuestName] = useState('');
@@ -26,7 +29,7 @@ export function NewPlayPage() {
   const [draft, setDraft] = useState<PlayDraft>(() => {
     const end = new Date();
     return {
-      gameId: null,
+      gameId: presetGameId,
       startedAt: toLocalInput(new Date(end.getTime() - 60 * 60 * 1000)),
       endedAt: toLocalInput(end),
       players: [],
@@ -41,10 +44,9 @@ export function NewPlayPage() {
 
   const save = useMutation({
     mutationFn: () => api.createPlay(party.id, toPlayInput(draft, game!)),
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ['plays', party.id] });
-      await queryClient.invalidateQueries({ queryKey: ['stats', party.id] });
-      navigate('/');
+    onSuccess: async (saved) => {
+      await refreshAfterPlayChange(queryClient, party.id, saved.game.id, { leaving: true });
+      navigate(`/games/${saved.game.id}`);
     },
   });
 
@@ -66,8 +68,8 @@ export function NewPlayPage() {
     if (!problem) save.mutate();
   };
 
-  if (games.isPending || players.isPending) return <p className="muted">Načítám…</p>;
-  if (games.data?.length === 0) return <p className="empty">Nejdřív přidej nějakou hru v menu → Hry.</p>;
+  if (games.isPending || players.isPending) return <ListSkeleton rows={3} withImage={false} />;
+  if (games.data?.length === 0) return <p className="empty">Nejdřív přidej nějakou hru.<Link className="btn" to="/games/new">Přidat hru</Link></p>;
 
   return (
     <form className="form" onSubmit={submit}>
@@ -77,7 +79,7 @@ export function NewPlayPage() {
         Hra
         <select value={draft.gameId ?? ''} onChange={(e) => patch({ gameId: e.target.value ? Number(e.target.value) : null, addonIds: [] })} required>
           <option value="">— vyber —</option>
-          {games.data?.map((g) => <option key={g.id} value={g.id}>{g.name}</option>)}
+          {games.data?.slice().sort((a, b) => a.name.localeCompare(b.name, 'cs')).map((g) => <option key={g.id} value={g.id}>{g.name}</option>)}
         </select>
       </label>
 
@@ -98,7 +100,7 @@ export function NewPlayPage() {
         {players.data?.map((m) => {
           const player = draft.players.find((p) => p.playerId === m.id);
           return (
-            <div key={m.id} className="player-row">
+            <div key={m.id} className={`player-row${player ? ' selected' : ''}`}>
               <label className="check">
                 <input type="checkbox" checked={!!player} onChange={() => togglePlayer(m.id)} />
                 {m.name}
@@ -124,7 +126,7 @@ export function NewPlayPage() {
         <ErrorMessage error={addGuest.error} />
       </fieldset>
 
-      <div className="row">
+      <div className="row stack">
         <label>Začátek<input type="datetime-local" value={draft.startedAt} onChange={(e) => patch({ startedAt: e.target.value })} required /></label>
         <label>Konec<input type="datetime-local" value={draft.endedAt} onChange={(e) => patch({ endedAt: e.target.value })} required /></label>
       </div>
@@ -134,7 +136,10 @@ export function NewPlayPage() {
 
       {formError && <div className="error" role="alert">{formError}</div>}
       <ErrorMessage error={save.error} />
-      <button className="btn" type="submit" disabled={save.isPending}>Uložit zápis</button>
+      <div className="nav-actions">
+        <button className="btn" type="submit" disabled={save.isPending}>Uložit zápis</button>
+        <Link className="btn outline-secondary" to={draft.gameId ? `/games/${draft.gameId}` : '/games'}>Zrušit</Link>
+      </div>
     </form>
   );
 }

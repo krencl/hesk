@@ -39,6 +39,37 @@ export interface Game {
   addons: Addon[];
 }
 
+export type GameSort = 'activity' | 'name';
+
+export interface GameListQuery {
+  q?: string;
+  sort?: GameSort;
+  sessionNumber?: number | null;
+  limit?: number;
+  offset?: number;
+}
+
+export interface LastPlay {
+  id: number;
+  startedAt: string;
+  sessionNumber: number;
+  winners: string[];
+  winnerScore: number | null;
+}
+
+/** Hra včetně statistik ze seznamu/detailu (poslední zápis a počet zápisů). */
+export interface GameWithStats extends Game {
+  playCount: number;
+  lastPlay: LastPlay | null;
+}
+
+export interface SessionInfo {
+  id: number;
+  number: number;
+  startedAt: string;
+  endedAt: string;
+}
+
 export interface GameInput {
   name: string;
   scoreType: ScoreType;
@@ -66,6 +97,7 @@ export interface Play {
   id: number;
   game: { id: number; name: string; imageUrl: string | null; scoreType: ScoreType };
   sessionId: number;
+  sessionNumber: number;
   startedAt: string;
   endedAt: string;
   place: string | null;

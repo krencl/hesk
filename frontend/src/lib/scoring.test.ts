@@ -3,7 +3,7 @@ import type { Play } from '../api/types';
 import { formatScore, groupBySession, winnerSummary } from './scoring';
 
 const play = (id: number, sessionId: number, results: Play['results'] = []): Play => ({
-  id, sessionId, results,
+  id, sessionId, sessionNumber: sessionId, results,
   game: { id: 1, name: 'G', imageUrl: null, scoreType: 'most_points' },
   startedAt: '2026-01-01T10:00:00Z', endedAt: '2026-01-01T11:00:00Z', place: null, notes: null, addons: [], tags: [],
 });

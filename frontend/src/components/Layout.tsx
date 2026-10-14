@@ -1,4 +1,4 @@
-import { useQueryClient } from '@tanstack/react-query';
+import { useIsFetching, useIsMutating, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { Link, NavLink, Outlet, useLocation } from 'react-router-dom';
 import { useApp } from '../AppContext';
@@ -11,6 +11,7 @@ export function Layout() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [changingParty, setChangingParty] = useState(false);
   const queryClient = useQueryClient();
+  const loading = useIsFetching() + useIsMutating() > 0;
   const location = useLocation();
   const [lastPath, setLastPath] = useState(location.pathname);
   if (lastPath !== location.pathname) {
@@ -39,7 +40,7 @@ export function Layout() {
         </Link>
         <button
           type="button"
-          className={`header-button size-${Math.min(shortcut.length, 2)}${menuOpen ? ' open' : ''}`}
+          className={`header-button size-${Math.min(shortcut.length, 2)}${menuOpen ? ' open' : ''}${loading ? ' loading' : ''}`}
           aria-label={menuOpen ? 'Zavřít menu' : `Menu – ${activeParty?.name ?? 'žádná skupina'}`}
           aria-expanded={menuOpen}
           onClick={toggleMenu}
@@ -82,32 +83,32 @@ export function Layout() {
                 )}
               </h4>
               <ul className="menu-list">
+                <li><NavLink to="/parties">Zobrazit detail</NavLink></li>
                 <li><NavLink to="/stats">Statistiky</NavLink></li>
-                <li><NavLink to="/parties">Správa skupin</NavLink></li>
               </ul>
             </>
           )}
 
           <hr />
-          <h4 className="primary">Navigace</h4>
+          <h4 className="primary">Menu</h4>
           <ul className="menu-list">
-            <li><NavLink to="/" end>Zápisy</NavLink></li>
+            <li><NavLink to="/games" end>Seznam her</NavLink></li>
+            <li><NavLink to="/plays" end>Chronologie zápisů</NavLink></li>
             <li><NavLink to="/plays/new">Nový zápis</NavLink></li>
           </ul>
 
           <hr />
           <h4 className="primary">Správa</h4>
           <ul className="menu-list">
-            <li><NavLink to="/games">Hry</NavLink></li>
-            <li><NavLink to="/settings">Profil</NavLink></li>
+            <li><NavLink to="/parties">Spravovat skupiny</NavLink></li>
+            <li><NavLink to="/manage/games">Spravovat hry</NavLink></li>
+            <li><NavLink to="/settings">Nastavení</NavLink></li>
           </ul>
 
           <hr />
-          <ul className="menu-list">
-            <li>
-              <button type="button" className="muted" onClick={logout}><Icon name="logout" /> Odhlásit</button>
-            </li>
-          </ul>
+          <p className="menu-logout">
+            <button type="button" onClick={logout}>Odhlásit se</button>
+          </p>
         </div>
       </nav>
     </div>
