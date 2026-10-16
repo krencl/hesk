@@ -9,6 +9,7 @@ Webová aplikace pro zapisování výsledků z hraní deskových her a statistik
 - `docs/` – ADR + poznámky. `/hesk-dev-old` (rozpracovaný prototyp, mimo repo) a `/hesk-original` (produkce, Node/RethinkDB) jsou **jen vzor**, ne součást nové app.
 
 ## Příkazy
+- Import ze staré aplikace (opakovatelný, ADR 0012): `cd backend && php bin/console app:legacy:import --dry-run --no-debug -v`, pak bez `--dry-run`. Přístupy `LEGACY_DB_*` jsou v `backend/.env.dev.local` (git-ignorováno, nevypisovat).
 - Backend: `cd backend && composer install && php bin/phpunit` · dev server z kořene: `php -S 127.0.0.1:8000 -t web web/index.php` (API + statika + SPA fallback) · DB `docker compose up -d database` + `php bin/console doctrine:migrations:migrate`.
 - Frontend: `cd frontend && npm install && npm test` · `npm run dev` (proxy `/api` → :8000) · `npm run build` (včetně `tsc`, výstup do `/web/static`).
 - Konfigurace: kořenový `/workspace/.env` (git-ignorováno, root-owned, **obsahuje secrets – nikdy necommitovat ani nevypisovat**) je přes symlink `backend/.env.local` načten Symfony (`DB_*`, `OAUTH_GOOGLE_*`). Viz ADR 0006. DB je **MariaDB 11 – dev databáze**, majitel povolil s ní libovolně nakládat (má zálohu). Obsahuje migrovaná data staré aplikace (tabulky `legacy_*` zůstaly pro kontrolu, ADR 0007). Bez Google klíčů lze ve vývoji použít `POST /api/auth/dev-login` (login formulář ve Vite dev módu).

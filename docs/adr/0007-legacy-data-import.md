@@ -19,6 +19,8 @@ Dev DB (MariaDB 11) obsahovala schéma prototypu `hesk-dev-old` s reálnými dat
   - nepřevedeno (zůstává v `legacy_*`): překlady, `party_player/party_tag/user_player` počítadla, `bgg_id`, `shortcut` party, tagy her.
 - Ověřeno po migraci: počty (544 zápisů, 2071 výsledků, 553 tagů) sedí, každý zápis má vítěze, `doctrine:schema:validate` je v pořádku, API vrací převedená data.
 
+> _Pokračování:_ opakovaný import z živé staré databáze řeší ADR 0012 (`app:legacy:import`).
+
 ## Důsledky
 - Migrace `…000200` je napsaná v PHP přes DBAL (ne čisté SQL), není idempotentní – spouští se jednou. `down()` jen vyprázdní nové tabulky.
 - U převedených zápisů je čas začátku = konci; seznam proto ukazuje jen jeden čas.

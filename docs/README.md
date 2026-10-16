@@ -15,6 +15,7 @@ Primárně architektonická rozhodnutí (ADR). Aplikační dokumentace je zámě
 | [0009](adr/0009-game-centric-ux.md) | UX podle prototypu: seznam her, detail hry, čísla seancí, cheatsheety v Markdownu |
 | [0010](adr/0010-ui-consistency-and-play-flags.md) | Jednotná kostra UI (nadpisy, tlačítka 2×2), vítěz a začínající hráč v zápisu |
 | [0011](adr/0011-game-extras.md) | Zkrácený název, rozšíření, postavy a hráč hry |
+| [0012](adr/0012-repeatable-legacy-import.md) | Opakovatelný import ze staré aplikace (`app:legacy:import`) |
 
 Poznámky ke vzoru z předchozích verzí: [prototype-notes.md](prototype-notes.md).
 
