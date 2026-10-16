@@ -60,17 +60,17 @@ class PlayRepository extends ServiceEntityRepository
         ], $rows);
     }
 
-    /** @return list<array{gameId: int, name: string, plays: int}> */
+    /** @return list<array{gameId: int, name: string, shortName: ?string, plays: int}> */
     public function topGames(Party $party, int $limit = 10): array
     {
         $rows = $this->getEntityManager()->createQuery(
-            'SELECT g.id AS gameId, g.name AS name, COUNT(p.id) AS plays
+            'SELECT g.id AS gameId, g.name AS name, g.shortName AS shortName, COUNT(p.id) AS plays
              FROM App\Entity\Play p JOIN p.game g WHERE p.party = :party
-             GROUP BY g.id, g.name ORDER BY plays DESC, g.name ASC',
+             GROUP BY g.id, g.name, g.shortName ORDER BY plays DESC, g.name ASC',
         )->setParameter('party', $party)->setMaxResults($limit)->getArrayResult();
 
         return array_map(static fn (array $r): array => [
-            'gameId' => (int) $r['gameId'], 'name' => $r['name'], 'plays' => (int) $r['plays'],
+            'gameId' => (int) $r['gameId'], 'name' => $r['name'], 'shortName' => $r['shortName'], 'plays' => (int) $r['plays'],
         ], $rows);
     }
 }

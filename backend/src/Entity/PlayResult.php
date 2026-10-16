@@ -29,6 +29,10 @@ class PlayResult
         private bool $winner,
         #[ORM\Column(name: 'is_starting')]
         private bool $starting = false,
+        /** Postava, kterou hráč v zápisu hrál (jen u her s postavami). */
+        #[ORM\ManyToOne]
+        #[ORM\JoinColumn(onDelete: 'SET NULL')]
+        private ?GameCharacter $character = null,
     ) {
     }
 
@@ -50,6 +54,11 @@ class PlayResult
     public function isWinner(): bool
     {
         return $this->winner;
+    }
+
+    public function getCharacter(): ?GameCharacter
+    {
+        return $this->character;
     }
 
     /** Hráč, který ve hře začínal. */

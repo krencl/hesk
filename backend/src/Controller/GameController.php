@@ -6,8 +6,10 @@ namespace App\Controller;
 
 use App\Domain\Exception\DomainException;
 use App\Dto\GameRequest;
+use App\Dto\NamedItemRequest;
 use App\Entity\Game;
 use App\Entity\Party;
+use App\Entity\Player;
 use App\Repository\GameRepository;
 use App\Repository\PlayRepository;
 use App\Security\PartyVoter;
@@ -48,7 +50,7 @@ final class GameController extends ApiController
     public function create(Party $party, #[MapRequestPayload] GameRequest $req): JsonResponse
     {
         $game = new Game($party, trim($req->name), $req->scoreType);
-        $game->update(trim($req->name), $req->scoreType, $req->imageUrl, $req->description, $req->cheatSheet, $req->addons);
+        $this->apply($game, $req);
         $this->em->persist($game);
         $this->em->flush();
 
@@ -71,7 +73,7 @@ final class GameController extends ApiController
         if ($req->scoreType !== $game->getScoreType() && $this->plays->countForGame($game) > 0) {
             throw new DomainException('Typ bodování nelze změnit u hry s odehranými zápisy.');
         }
-        $game->update(trim($req->name), $req->scoreType, $req->imageUrl, $req->description, $req->cheatSheet, $req->addons);
+        $this->apply($game, $req);
         $this->em->flush();
 
         return new JsonResponse($this->presenter->game($game));
@@ -88,5 +90,19 @@ final class GameController extends ApiController
         $this->em->flush();
 
         return new Response(status: Response::HTTP_NO_CONTENT);
+    }
+
+    /** Přenese údaje z požadavku na hru; hráč hry musí patřit do stejné party. */
+    private function apply(Game $game, GameRequest $req): void
+    {
+        $player = null;
+        if (null !== $req->playerId) {
+            $player = $this->em->find(Player::class, $req->playerId);
+            if (!$player || $player->getParty() !== $game->getParty()) {
+                throw new DomainException('Hráč nepatří do této party.');
+            }
+        }
+        $items = static fn (array $list): array => array_map(static fn (NamedItemRequest $i): array => ['id' => $i->id, 'name' => $i->name], $list);
+        $game->update(trim($req->name), $req->shortName, $req->scoreType, $req->imageUrl, $req->description, $req->cheatSheet, $items($req->addons), $items($req->characters), $player);
     }
 }

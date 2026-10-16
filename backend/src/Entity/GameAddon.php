@@ -35,4 +35,9 @@ class GameAddon
     {
         return $this->name;
     }
+
+    public function rename(string $name): void
+    {
+        $this->name = $name;
+    }
 }

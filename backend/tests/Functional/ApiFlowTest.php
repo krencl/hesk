@@ -60,7 +60,7 @@ final class ApiFlowTest extends WebTestCase
         $this->api('POST', "/api/parties/{$party['id']}/invitations", null, 403);
 
         $game = $this->api('POST', "/api/parties/{$party['id']}/games", [
-            'name' => 'Carcassonne', 'scoreType' => 'most_points', 'addons' => ['Rivers'],
+            'name' => 'Carcassonne', 'scoreType' => 'most_points', 'addons' => [['name' => 'Rivers']],
         ], 201);
 
         $players = array_column($this->api('GET', "/api/parties/{$party['id']}/players"), 'id', 'name');
@@ -153,7 +153,7 @@ final class ApiFlowTest extends WebTestCase
         $base = "/api/parties/{$party['id']}";
         $anna = $this->api('GET', "$base/players")[0]['id'];
         $bob = $this->api('POST', "$base/players", ['name' => 'Bob'], 201)['id'];
-        $game = $this->api('POST', "$base/games", ['name' => 'Azul', 'scoreType' => 'most_points', 'addons' => ['Rivers', 'Opat']], 201);
+        $game = $this->api('POST', "$base/games", ['name' => 'Azul', 'scoreType' => 'most_points', 'addons' => [['name' => 'Rivers'], ['name' => 'Opat']]], 201);
         [$rivers, $opat] = array_column($game['addons'], 'id');
 
         $payload = fn (string $day, int $annaScore, int $bobScore, array $extra = []): array => $extra + [
@@ -219,6 +219,61 @@ final class ApiFlowTest extends WebTestCase
 
         // dva začínající hráči nejsou možní
         $this->api('POST', "$base/plays", $payload([['playerId' => $anna, 'score' => 1, 'starting' => true], ['playerId' => $bob, 'score' => 2, 'starting' => true]]), 422);
+    }
+
+    public function testGameShortNameCharactersOwnPlayerAndRenamesKeepLinks(): void
+    {
+        $this->login('anna@example.com', 'Anna');
+        $party = $this->api('POST', '/api/parties', ['name' => 'Pátek'], 201);
+        $base = "/api/parties/{$party['id']}";
+        $anna = $this->api('GET', "$base/players")[0]['id'];
+        $boss = $this->api('POST', "$base/players", ['name' => 'Boss'], 201)['id'];
+
+        $game = $this->api('POST', "$base/games", [
+            'name' => 'King of Tokyo', 'shortName' => ' Tokyo ', 'scoreType' => 'winner_only', 'playerId' => $boss,
+            'addons' => [['name' => 'Power Up']], 'characters' => [['name' => 'Gigazaur'], ['name' => 'Kraken'], ['name' => '  ']],
+        ], 201);
+        self::assertSame('Tokyo', $game['shortName']);
+        self::assertSame(['id' => $boss, 'name' => 'Boss'], $game['player']);
+        self::assertSame(['Gigazaur', 'Kraken'], array_column($game['characters'], 'name'));
+
+        // postava ve výsledku zápisu
+        [$giga, $kraken] = array_column($game['characters'], 'id');
+        $payload = fn (?int $character): array => [
+            'gameId' => $game['id'], 'startedAt' => '2026-03-01T18:00:00+00:00', 'endedAt' => '2026-03-01T19:00:00+00:00',
+            'addonIds' => [$game['addons'][0]['id']],
+            'players' => [['playerId' => $anna, 'winner' => true, 'characterId' => $character], ['playerId' => $boss]],
+        ];
+        $play = $this->api('POST', "$base/plays", $payload($giga), 201);
+        self::assertSame(['id' => $giga, 'name' => 'Gigazaur'], array_column($play['results'], 'character', 'name')['Anna']);
+        self::assertNull(array_column($play['results'], 'character', 'name')['Boss']);
+
+        // přejmenování podle id zachová id (vazby na zápisy), odebrání postavy ji z výsledku odpojí
+        $updated = $this->api('PUT', "/api/games/{$game['id']}", [
+            'name' => 'King of Tokyo', 'scoreType' => 'winner_only', 'shortName' => null, 'playerId' => null,
+            'addons' => [['id' => $game['addons'][0]['id'], 'name' => 'Power Up 2']],
+            'characters' => [['id' => $giga, 'name' => 'Giga'], ['name' => 'Alienoid']],
+        ]);
+        self::assertSame([$giga], array_slice(array_column($updated['characters'], 'id'), 0, 1), 'renamed, not recreated');
+        self::assertSame(['Giga', 'Alienoid'], array_column($updated['characters'], 'name'));
+        self::assertSame($game['addons'][0]['id'], $updated['addons'][0]['id']);
+        self::assertNull($updated['shortName']);
+        self::assertNull($updated['player']);
+        $reloaded = $this->api('GET', "/api/plays/{$play['id']}");
+        self::assertSame('Giga', array_column($reloaded['results'], 'character', 'name')['Anna']['name']);
+        self::assertSame(['Power Up 2'], array_column($reloaded['addons'], 'name'));
+
+        // postava z jiné hry a cizí hráč se odmítnou
+        $other = $this->api('POST', "$base/games", ['name' => 'Jiná', 'scoreType' => 'winner_only', 'characters' => [['name' => 'X']]], 201);
+        $this->api('POST', "$base/plays", $payload($other['characters'][0]['id']), 422);
+        $foreign = $this->api('POST', '/api/parties', ['name' => 'Cizí'], 201);
+        $foreignPlayer = $this->api('GET', "/api/parties/{$foreign['id']}/players")[0]['id'];
+        $this->api('PUT', "/api/games/{$game['id']}", ['name' => 'King of Tokyo', 'scoreType' => 'winner_only', 'playerId' => $foreignPlayer], 422);
+
+        // zkrácený název ve statistikách
+        $this->api('PUT', "/api/games/{$game['id']}", ['name' => 'King of Tokyo', 'scoreType' => 'winner_only', 'shortName' => 'Tokyo', 'addons' => [['id' => $game['addons'][0]['id'], 'name' => 'Power Up 2']], 'characters' => [['id' => $giga, 'name' => 'Giga']]]);
+        $stats = $this->api('GET', "$base/stats");
+        self::assertSame(['Tokyo'], array_column($stats['topGames'], 'shortName'));
     }
 
     public function testInvalidPlayIsRejected(): void

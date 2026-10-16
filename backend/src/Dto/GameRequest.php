@@ -9,7 +9,10 @@ use Symfony\Component\Validator\Constraints as Assert;
 
 final readonly class GameRequest
 {
-    /** @param list<string> $addons */
+    /**
+     * @param list<NamedItemRequest> $addons     rozšíření hry
+     * @param list<NamedItemRequest> $characters postavy hry
+     */
     public function __construct(
         #[Assert\NotBlank, Assert\Length(max: 150)]
         public string $name = '',
@@ -18,8 +21,14 @@ final readonly class GameRequest
         public ?string $imageUrl = null,
         public ?string $description = null,
         public ?string $cheatSheet = null,
-        #[Assert\All([new Assert\NotBlank(), new Assert\Length(max: 150)])]
+        #[Assert\Valid]
         public array $addons = [],
+        #[Assert\Length(max: 50)]
+        public ?string $shortName = null,
+        #[Assert\Valid]
+        public array $characters = [],
+        /** Vlastní hráč hry (hráč té samé party). */
+        public ?int $playerId = null,
     ) {
     }
 }

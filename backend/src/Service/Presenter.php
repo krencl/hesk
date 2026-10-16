@@ -55,10 +55,16 @@ final class Presenter
             'imageUrl' => $game->getImageUrl(),
             'description' => $game->getDescription(),
             'cheatSheet' => $game->getCheatSheet(),
+            'shortName' => $game->getShortName(),
             'addons' => array_values(array_map(
                 static fn ($a): array => ['id' => $a->getId(), 'name' => $a->getName()],
                 $game->getAddons()->toArray(),
             )),
+            'characters' => array_values(array_map(
+                static fn ($c): array => ['id' => $c->getId(), 'name' => $c->getName()],
+                $game->getCharacters()->toArray(),
+            )),
+            'player' => null === $game->getPlayer() ? null : ['id' => $game->getPlayer()->getId(), 'name' => $game->getPlayer()->getName()],
         ];
     }
 
@@ -116,6 +122,7 @@ final class Presenter
                 'rank' => $r->getRank(),
                 'winner' => $r->isWinner(),
                 'starting' => $r->isStarting(),
+                'character' => null === $r->getCharacter() ? null : ['id' => $r->getCharacter()->getId(), 'name' => $r->getCharacter()->getName()],
             ], $results),
         ];
     }

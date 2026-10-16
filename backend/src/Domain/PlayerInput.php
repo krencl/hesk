@@ -16,6 +16,7 @@ final readonly class PlayerInput
         public ?int $rank = null,
         public ?bool $winner = null,
         public bool $starting = false,
+        public ?int $characterId = null,
     ) {
     }
 }

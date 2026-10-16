@@ -12,6 +12,7 @@ final readonly class PlayerOutcome
         public int $rank,
         public bool $winner,
         public bool $starting = false,
+        public ?int $characterId = null,
     ) {
     }
 }

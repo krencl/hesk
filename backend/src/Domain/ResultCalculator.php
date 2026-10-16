@@ -41,13 +41,13 @@ final class ResultCalculator
             ScoreType::WinnerOnly => $this->byWinnerFlag($inputs),
         };
 
-        $starting = [];
+        $byPlayer = [];
         foreach ($inputs as $input) {
-            $starting[$input->playerId] = $input->starting;
+            $byPlayer[$input->playerId] = $input;
         }
 
         return array_map(
-            static fn (PlayerOutcome $o): PlayerOutcome => new PlayerOutcome($o->playerId, $o->score, $o->rank, $o->winner, $starting[$o->playerId]),
+            static fn (PlayerOutcome $o): PlayerOutcome => new PlayerOutcome($o->playerId, $o->score, $o->rank, $o->winner, $byPlayer[$o->playerId]->starting, $byPlayer[$o->playerId]->characterId),
             $outcomes,
         );
     }
