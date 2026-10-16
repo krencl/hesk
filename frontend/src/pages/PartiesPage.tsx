@@ -31,7 +31,7 @@ export function PartiesPage() {
 
   return (
     <section>
-      <h2>Skupiny</h2>
+      <h2>Party</h2>
       <ul className="list">
         {parties.map((p) => (
           <li key={p.id}>
@@ -43,7 +43,7 @@ export function PartiesPage() {
       </ul>
 
       <form className="form inline" onSubmit={submit}>
-        <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Název nové skupiny" maxLength={100} required aria-label="Název nové skupiny" />
+        <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Název nové party" maxLength={100} required aria-label="Název nové party" />
         <button className="btn" type="submit" disabled={create.isPending}>Vytvořit</button>
       </form>
       <ErrorMessage error={create.error} />
@@ -67,7 +67,7 @@ export function PartiesPage() {
                   </span>
                 )}
                 {!isAdmin && m.userId === me.id && (
-                  <button type="button" className="link danger" onClick={() => window.confirm('Opustit skupinu?') && remove.mutate(m.userId)}>Opustit</button>
+                  <button type="button" className="link danger" onClick={() => window.confirm('Opustit partu?') && remove.mutate(m.userId)}>Opustit</button>
                 )}
               </li>
             ))}

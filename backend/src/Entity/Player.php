@@ -7,7 +7,7 @@ namespace App\Entity;
 use Doctrine\ORM\Mapping as ORM;
 
 /**
- * Hráč v rámci skupiny. Může být navázaný na uživatelský účet, nebo jde o „hosta“
+ * Hráč v rámci party. Může být navázaný na uživatelský účet, nebo jde o „hosta“
  * bez účtu (kamarád, kterého zapisujeme do her, ale který se do aplikace nepřihlašuje).
  */
 #[ORM\Entity]

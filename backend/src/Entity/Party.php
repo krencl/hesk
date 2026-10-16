@@ -102,7 +102,7 @@ class Party
         return null;
     }
 
-    /** Každý člen skupiny má svého hráče (pod přezdívkou účtu). */
+    /** Každý člen party má svého hráče (pod přezdívkou účtu). */
     public function ensurePlayerFor(User $user): Player
     {
         if ($player = $this->findPlayerFor($user)) {
@@ -118,7 +118,7 @@ class Party
         $name = trim($name);
         foreach ($this->players as $player) {
             if (0 === strcasecmp($player->getName(), $name)) {
-                throw new DomainException('Hráč s tímto jménem už ve skupině existuje.');
+                throw new DomainException('Hráč s tímto jménem už v partě existuje.');
             }
         }
         $this->players->add($player = new Player($this, $name));
@@ -126,7 +126,7 @@ class Party
         return $player;
     }
 
-    /** Přejmenuje hráče navázaného na účet podle nové přezdívky, pokud je jméno ve skupině volné. */
+    /** Přejmenuje hráče navázaného na účet podle nové přezdívky, pokud je jméno v partě volné. */
     public function syncPlayerName(User $user): void
     {
         $player = $this->findPlayerFor($user);
@@ -176,7 +176,7 @@ class Party
 
     public function removeMember(User $user): void
     {
-        $member = $this->findMember($user) ?? throw new DomainException('Uživatel není členem skupiny.');
+        $member = $this->findMember($user) ?? throw new DomainException('Uživatel není členem party.');
         $this->assertStillHasAdminWithout($member);
         $this->members->removeElement($member);
         // Historie her zůstává: hráč jen přijde o vazbu na účet a stane se z něj host.
@@ -185,14 +185,14 @@ class Party
 
     public function changeRole(User $user, PartyRole $role): void
     {
-        $member = $this->findMember($user) ?? throw new DomainException('Uživatel není členem skupiny.');
+        $member = $this->findMember($user) ?? throw new DomainException('Uživatel není členem party.');
         if (PartyRole::Member === $role) {
             $this->assertStillHasAdminWithout($member);
         }
         $member->setRole($role);
     }
 
-    /** Skupina musí mít vždy alespoň jednoho admina. */
+    /** Parta musí mít vždy alespoň jednoho admina. */
     private function assertStillHasAdminWithout(PartyMember $leaving): void
     {
         if (!$leaving->isAdmin()) {
@@ -203,6 +203,6 @@ class Party
                 return;
             }
         }
-        throw new DomainException('Skupina musí mít alespoň jednoho admina.');
+        throw new DomainException('Parta musí mít alespoň jednoho admina.');
     }
 }

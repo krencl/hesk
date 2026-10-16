@@ -31,7 +31,7 @@ final class Version20261003000200 extends AbstractMigration
         $utc = new \DateTimeZone('UTC');
         $toUtc = static fn (string $local): string => (new \DateTimeImmutable($local, $prague))->setTimezone($utc)->format('Y-m-d H:i:s');
 
-        // --- uživatelé a skupiny (id zachováno) ---
+        // --- uživatelé a party (id zachováno) ---
         foreach ($db->fetchAllAssociative('SELECT u.id, u.email, u.google_id, u.created_at, p.name FROM legacy_user u LEFT JOIN legacy_player p ON p.id = u.player_id') as $u) {
             $db->insert('app_user', [
                 'id' => $u['id'], 'google_id' => $u['google_id'] ?: null, 'email' => $u['email'],
@@ -45,7 +45,7 @@ final class Version20261003000200 extends AbstractMigration
             $db->insert('party_member', ['party_id' => $m['party_id'], 'user_id' => $m['user_id'], 'role' => 'owner' === $m['role'] ? 'admin' : 'member']);
         }
 
-        // --- hráči: starý hráč je globální, nový patří skupině → jeden na dvojici (hráč, skupina) ---
+        // --- hráči: starý hráč je globální, nový patří partě → jeden na dvojici (hráč, parta) ---
         $pairs = $db->fetchAllAssociative(
             'SELECT DISTINCT x.player_id, x.party_id FROM (
                 SELECT player_id, party_id FROM legacy_party_player
@@ -78,7 +78,7 @@ final class Version20261003000200 extends AbstractMigration
             $playerMap["$legacyId:$partyId"] = (int) $db->lastInsertId();
         }
 
-        // --- hry: globální katalog → jedna hra na dvojici (hra, skupina), kde se opravdu hrálo ---
+        // --- hry: globální katalog → jedna hra na dvojici (hra, parta), kde se opravdu hrálo ---
         $scoreTypes = ['highest_score' => 'most_points', 'lowest_score' => 'fewest_points', 'order' => 'rank_order', 'only_winner' => 'winner_only'];
         $legacyGames = array_column($db->fetchAllAssociative('SELECT * FROM legacy_game'), null, 'id');
         $gameMap = []; // "legacyGame:party" => [new id, score type]
@@ -110,7 +110,7 @@ final class Version20261003000200 extends AbstractMigration
             $sessionMap[$s['party_id'].':'.$s['session_number']] = (int) $db->lastInsertId();
         }
 
-        // --- tagy kol (patří skupině) ---
+        // --- tagy kol (patří partě) ---
         $tagNames = array_column($db->fetchAllAssociative('SELECT id, name FROM legacy_tag'), 'name', 'id');
         $tagMap = [];
         $tagRows = $db->fetchAllAssociative('SELECT DISTINCT tr.tag_id, r.party_id FROM legacy_tag_round tr JOIN legacy_round r ON r.id = tr.round_id ORDER BY r.party_id, tr.tag_id');

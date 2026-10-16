@@ -1,5 +1,5 @@
 /* Vzhled převzatý ze starého vývojového prototypu (/hesk-dev-old): bootstrapový základ, ostré rohy,
-   kulaté tlačítko skupiny vpravo nahoře, celoobrazovkové menu, seznamy s velkými náhledy. */
+   kulaté tlačítko party vpravo nahoře, celoobrazovkové menu, seznamy s velkými náhledy. */
 :root {
   --main: #277bda;
   --main-dark: #1f62ae;
@@ -64,7 +64,7 @@ hr { border: 0; border-top: 1px solid rgba(0, 0, 0, 0.15); margin: 1rem 0; }
   white-space: nowrap; direction: ltr;
 }
 
-/* Hlavička: logo + kulaté tlačítko aktivní skupiny (otevírá menu) */
+/* Hlavička: logo + kulaté tlačítko aktivní party (otevírá menu) */
 .header { padding: 0.5rem; }
 .header-logo { display: block; height: var(--header-height); }
 .header-button {
@@ -196,13 +196,14 @@ legend { color: var(--secondary); font-size: 0.85rem; padding: 0 0.3rem; }
 .bar-fill { display: block; height: 100%; background: var(--main); }
 .bar-value { text-align: right; font-variant-numeric: tabular-nums; }
 
-/* Načítání: pulzující kroužek kolem tlačítka skupiny (jako ve starém prototypu) */
+/* Načítání: pulzující kroužek kolem tlačítka party (jako ve starém prototypu) */
 @keyframes loading-ring {
   0% { box-shadow: 0 0 0 0.15rem var(--gray); }
   50% { box-shadow: 0 0 0 0.4rem var(--gray); }
   100% { box-shadow: 0 0 0 0.15rem var(--gray); }
 }
 .header-button.loading { animation: loading-ring 1.5s infinite; }
+.menu-actions { display: flex; gap: 0.5rem; }
 .menu-logout { text-align: center; margin: 0; }
 .menu-logout button { background: none; border: 0; font: inherit; color: var(--secondary); text-decoration: underline; cursor: pointer; padding: 0.3rem 0.5rem; }
 .menu-logout button:hover { color: var(--main); }

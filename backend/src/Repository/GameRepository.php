@@ -22,7 +22,7 @@ class GameRepository extends ServiceEntityRepository
     }
 
     /**
-     * Hry skupiny: hledání v názvu, filtr podle čísla seance, řazení (podle poslední aktivity, nebo názvu).
+     * Hry party: hledání v názvu, filtr podle čísla seance, řazení (podle poslední aktivity, nebo názvu).
      *
      * @return list<Game>
      */

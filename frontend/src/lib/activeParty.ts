@@ -17,11 +17,11 @@ export function saveActivePartyId(id: number | null): void {
     if (id === null) localStorage.removeItem(KEY);
     else localStorage.setItem(KEY, String(id));
   } catch {
-    // úložiště nemusí být dostupné (privátní režim) – aktivní skupina se pak jen nepamatuje
+    // úložiště nemusí být dostupné (privátní režim) – aktivní parta se pak jen nepamatuje
   }
 }
 
-/** Zvolí aktivní skupinu: uloženou, pokud v seznamu pořád je, jinak první dostupnou. */
+/** Zvolí aktivní partu: uloženou, pokud v seznamu pořád je, jinak první dostupnou. */
 export function resolveActiveParty(parties: Party[], storedId: number | null): Party | null {
   return parties.find((p) => p.id === storedId) ?? parties[0] ?? null;
 }

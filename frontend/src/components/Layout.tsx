@@ -41,7 +41,7 @@ export function Layout() {
         <button
           type="button"
           className={`header-button size-${Math.min(shortcut.length, 2)}${menuOpen ? ' open' : ''}${loading ? ' loading' : ''}`}
-          aria-label={menuOpen ? 'Zavřít menu' : `Menu – ${activeParty?.name ?? 'žádná skupina'}`}
+          aria-label={menuOpen ? 'Zavřít menu' : `Menu – ${activeParty?.name ?? 'žádná parta'}`}
           aria-expanded={menuOpen}
           onClick={toggleMenu}
         >
@@ -60,7 +60,7 @@ export function Layout() {
         <div className="menu-content">
           {changingParty ? (
             <>
-              <h4 className="muted">Vyber skupinu</h4>
+              <h4 className="muted">Vyber partu</h4>
               <ul className="menu-list">
                 {parties.filter((p) => p.id !== activeParty?.id).map((p) => (
                   <li key={p.id}>
@@ -69,18 +69,18 @@ export function Layout() {
                     </button>
                   </li>
                 ))}
-                <li><NavLink to="/parties">Vytvořit novou skupinu…</NavLink></li>
               </ul>
-              <button type="button" className="btn small secondary" onClick={() => setChangingParty(false)}>Zrušit</button>
+              <div className="menu-actions">
+                <Link className="btn small" to="/parties">Vytvořit novou partu</Link>
+                <button type="button" className="btn small secondary" onClick={() => setChangingParty(false)}>Zrušit</button>
+              </div>
             </>
           ) : (
             <>
               <h4 className="primary">
-                <small className="muted">Skupina</small>
-                {activeParty?.name ?? 'Žádná skupina'}
-                {parties.length > 1 && (
-                  <button type="button" className="btn small outline" onClick={() => setChangingParty(true)}>Změnit</button>
-                )}
+                <small className="muted">Parta</small>
+                {activeParty?.name ?? 'Žádná parta'}
+                <button type="button" className="btn small outline" onClick={() => setChangingParty(true)}>Přepnout</button>
               </h4>
               <ul className="menu-list">
                 <li><NavLink to="/parties">Zobrazit detail</NavLink></li>
@@ -98,7 +98,7 @@ export function Layout() {
           <hr />
           <h4 className="primary">Správa</h4>
           <ul className="menu-list">
-            <li><NavLink to="/parties">Spravovat skupiny</NavLink></li>
+            <li><NavLink to="/parties">Spravovat party</NavLink></li>
             <li><NavLink to="/manage/games">Spravovat hry</NavLink></li>
             <li><NavLink to="/settings">Nastavení</NavLink></li>
           </ul>

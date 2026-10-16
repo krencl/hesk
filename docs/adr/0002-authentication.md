@@ -11,7 +11,7 @@ Specifikace: přihlášení přes Google („Google 2FA“ – chápáno jako p�
 - Pomocný `SessionLoginAuthenticator` se nikdy sám neaktivuje (`supports()` = false); slouží jen tomu, aby `Security::login()` mělo authenticator.
 - **Přezdívka** se nastavuje po prvním přihlášení (`PATCH /api/me`); frontend bez ní nepustí dál. Backend ji zatím nevynucuje na ostatních endpointech (viz otevřené body).
 - `POST /api/auth/dev-login` existuje **jen v `dev`/`test`** (jinak 404) – umožňuje vývoj a testy bez Google credentials.
-- Autorizace skupin přes `PartyVoter` (`PARTY_VIEW` = člen, `PARTY_ADMIN` = admin).
+- Autorizace part přes `PartyVoter` (`PARTY_VIEW` = člen, `PARTY_ADMIN` = admin).
 
 ## Důsledky
 - CSRF: mutace vyžadují JSON `Content-Type` a cookie je SameSite=Lax; pokud bude API někdy na jiné doméně, je nutné přidat CSRF token / přejít na SameSite=None + token.

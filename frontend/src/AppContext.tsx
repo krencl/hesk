@@ -20,7 +20,7 @@ export function useApp(): AppState {
   return value;
 }
 
-/** Aktivní skupina; vyhodí chybu mimo kontext, kde už je skupina zaručená (viz RequireParty). */
+/** Aktivní parta; vyhodí chybu mimo kontext, kde už je parta zaručená (viz RequireParty). */
 export function useActiveParty(): Party {
   const { activeParty } = useApp();
   if (!activeParty) throw new Error('No active party');

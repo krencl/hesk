@@ -1,4 +1,4 @@
-/** Zkratka skupiny do kulatého tlačítka v hlavičce (1–2 znaky): „Deskobraní“ → „De“, „Pátek večer“ → „PV“. */
+/** Zkratka party do kulatého tlačítka v hlavičce (1–2 znaky): „Deskobraní“ → „De“, „Pátek večer“ → „PV“. */
 export function partyShortcut(name: string): string {
   const words = name.trim().split(/\s+/).filter(Boolean);
   if (words.length === 0) return '?';

@@ -17,7 +17,7 @@ use Symfony\Component\HttpKernel\Attribute\MapRequestPayload;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 
-/** Hráči skupiny: členové s účtem i hosté, které do her zapisujeme. */
+/** Hráči party: členové s účtem i hosté, které do her zapisujeme. */
 final class PlayerController extends ApiController
 {
     public function __construct(Presenter $presenter, private readonly EntityManagerInterface $em)
@@ -51,7 +51,7 @@ final class PlayerController extends ApiController
         $this->denyAccessUnlessGranted(PartyVoter::VIEW, $player->getParty());
         foreach ($player->getParty()->getPlayers() as $other) {
             if ($other !== $player && 0 === strcasecmp($other->getName(), trim($req->name))) {
-                throw new DomainException('Hráč s tímto jménem už ve skupině existuje.');
+                throw new DomainException('Hráč s tímto jménem už v partě existuje.');
             }
         }
         $player->rename(trim($req->name));

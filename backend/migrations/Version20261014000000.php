@@ -8,7 +8,7 @@ use Doctrine\DBAL\Schema\Schema;
 use Doctrine\Migrations\AbstractMigration;
 
 /**
- * Pořadové číslo seance ve skupině (`game_session.number`). Dev data ze staré aplikace mají ručně
+ * Pořadové číslo seance v partě (`game_session.number`). Dev data ze staré aplikace mají ručně
  * udržovaná čísla (s mezerami), proto se přebírají z `legacy_round`; jinak se číslují chronologicky.
  */
 final class Version20261014000000 extends AbstractMigration

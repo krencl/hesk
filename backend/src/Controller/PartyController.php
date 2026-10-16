@@ -61,7 +61,7 @@ final class PartyController extends ApiController
         return new JsonResponse($this->presenter->partyDetail($party, $this->currentUser()));
     }
 
-    /** Admin vygeneruje odkaz (token), kterým se může kdokoli přihlášený do skupiny připojit. */
+    /** Admin vygeneruje odkaz (token), kterým se může kdokoli přihlášený do party připojit. */
     #[Route('/api/parties/{id}/invitations', requirements: ['id' => '\d+'], methods: ['POST'])]
     #[IsGranted(PartyVoter::ADMIN, 'party')]
     public function invite(Party $party): JsonResponse
@@ -101,7 +101,7 @@ final class PartyController extends ApiController
         return new JsonResponse($this->presenter->partyDetail($party, $this->currentUser()));
     }
 
-    /** Člena odebírá admin; kdokoli může opustit skupinu sám. */
+    /** Člena odebírá admin; kdokoli může opustit partu sám. */
     #[Route('/api/parties/{id}/members/{userId}', requirements: ['id' => '\d+', 'userId' => '\d+'], methods: ['DELETE'])]
     #[IsGranted(PartyVoter::VIEW, 'party')]
     public function removeMember(Party $party, int $userId): Response

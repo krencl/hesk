@@ -5,7 +5,7 @@ import { useApp } from '../AppContext';
 import { api } from '../api';
 import { ErrorMessage } from '../components/ErrorMessage';
 
-/** Přijetí pozvánky: po otevření odkazu se přihlášený uživatel rovnou přidá a skupina se stane aktivní. */
+/** Přijetí pozvánky: po otevření odkazu se přihlášený uživatel rovnou přidá a parta se stane aktivní. */
 export function JoinPage() {
   const { token } = useParams();
   const { setActiveParty } = useApp();
@@ -36,7 +36,7 @@ export function JoinPage() {
           <Link className="btn" to="/">Zpět domů</Link>
         </>
       ) : (
-        <p>Připojuji do skupiny…</p>
+        <p>Připojuji do party…</p>
       )}
     </section>
   );

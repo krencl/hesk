@@ -1,4 +1,4 @@
-import { screen } from '@testing-library/react';
+import { fireEvent, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { GAME, mockApi, ME, PARTY, renderApp } from './test/helpers';
 
@@ -24,7 +24,7 @@ describe('App gating', () => {
       '/parties': { body: [] },
     });
     renderApp();
-    expect(await screen.findByRole('link', { name: 'Vytvořit skupinu' })).toBeInTheDocument();
+    expect(await screen.findByRole('link', { name: 'Vytvořit partu' })).toBeInTheDocument();
   });
 
   it('renders the active party in the top bar and the game list as the home page', async () => {
@@ -39,6 +39,27 @@ describe('App gating', () => {
     expect(screen.getByText(/6\.2\.2022 \d{2}:\d{2} #69/)).toBeInTheDocument();
     expect(screen.getByText('Anna')).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /Carcassonne/ })).toHaveAttribute('href', '/games/1');
+  });
+
+  it('switches the party in the menu and offers creating a new one like the old prototype', async () => {
+    mockApi({
+      '/me': { body: ME },
+      '/parties': { body: [PARTY, { id: 4, name: 'Víkend', role: 'member' }] },
+      '/parties/3/games?sort=activity&limit=21&offset=0': { body: [] },
+    });
+    renderApp();
+    await screen.findByRole('searchbox', { name: 'Hledat hru' }); // přesměrování / → /games zavírá menu, počkáme na něj
+    fireEvent.click(await screen.findByRole('button', { name: /Menu – Pátek/ }));
+    expect(await screen.findByText('Parta')).toBeInTheDocument();
+    expect(screen.queryByText(/skupin/i)).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Přepnout' }));
+    expect(screen.getByRole('heading', { name: 'Vyber partu' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Víkend/ })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Vytvořit novou partu' })).toHaveAttribute('href', '/parties');
+
+    fireEvent.click(screen.getByRole('button', { name: 'Zrušit' }));
+    expect(screen.getByRole('button', { name: 'Přepnout' })).toBeInTheDocument();
   });
 
   it('shows the detail of a play with results', async () => {

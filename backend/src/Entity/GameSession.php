@@ -8,7 +8,7 @@ use App\Repository\GameSessionRepository;
 use Doctrine\ORM\Mapping as ORM;
 
 /**
- * Herní seance: sled her odehraných skupinou, kde mezi sousedními zápisy
+ * Herní seance: sled her odehraných partou, kde mezi sousedními zápisy
  * není větší mezera než {@see self::MAX_GAP}.
  */
 #[ORM\Entity(repositoryClass: GameSessionRepository::class)]
@@ -24,7 +24,7 @@ class GameSession
         #[ORM\ManyToOne]
         #[ORM\JoinColumn(nullable: false, onDelete: 'CASCADE')]
         private Party $party,
-        /** Pořadové číslo seance ve skupině (ze staré aplikace ručně udržované, může mít mezery). */
+        /** Pořadové číslo seance v partě (ze staré aplikace ručně udržované, může mít mezery). */
         #[ORM\Column]
         private int $number,
         #[ORM\Column]

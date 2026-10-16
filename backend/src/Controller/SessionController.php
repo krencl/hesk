@@ -19,7 +19,7 @@ final class SessionController extends ApiController
         parent::__construct($presenter);
     }
 
-    /** Seance skupiny od nejnovější (podle čísla). */
+    /** Seance party od nejnovější (podle čísla). */
     #[Route('/api/parties/{id}/sessions', requirements: ['id' => '\d+'], methods: ['GET'])]
     #[IsGranted(PartyVoter::VIEW, 'party')]
     public function list(Party $party): JsonResponse

@@ -17,7 +17,7 @@ class GameSessionRepository extends ServiceEntityRepository
         parent::__construct($registry, GameSession::class);
     }
 
-    /** @return list<GameSession> seance skupiny, od nejnovější */
+    /** @return list<GameSession> seance party, od nejnovější */
     public function findByParty(Party $party): array
     {
         return $this->findBy(['party' => $party], ['endedAt' => 'DESC']);

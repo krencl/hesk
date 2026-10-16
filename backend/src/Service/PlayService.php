@@ -83,7 +83,7 @@ final class PlayService
     {
         $game = $this->em->find(Game::class, $req->gameId);
         if (!$game || $game->getParty() !== $party) {
-            throw new DomainException('Hra neexistuje v této skupině.');
+            throw new DomainException('Hra neexistuje v této partě.');
         }
 
         return $game;
@@ -100,7 +100,7 @@ final class PlayService
         foreach ($outcomes as $o) {
             $player = $this->em->find(Player::class, $o->playerId);
             if (!$player || $player->getParty() !== $party) {
-                throw new DomainException('Hráč nepatří do této skupiny.');
+                throw new DomainException('Hráč nepatří do této party.');
             }
             $results[] = new PlayResult($play, $player, $o->score, $o->rank, $o->winner);
         }
