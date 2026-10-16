@@ -6,11 +6,17 @@ import { App } from '../App';
 
 export type MockRoutes = Record<string, { status?: number; body: unknown }>;
 
-/** Nahradí fetch odpověďmi podle cesty (bez /api, včetně query stringu); klíč může mít předponu metody (`POST /parties`). Vrací mock pro kontrolu volání. */
+/** Cesta s `*` na konci (`/parties/3/plays/defaults*`) pokryje i query string, který se mění (např. čas „teď“). */
+function wildcard(routes: MockRoutes, withMethod: string, path: string) {
+  const key = Object.keys(routes).find((k) => k.endsWith('*') && (withMethod.startsWith(k.slice(0, -1)) || path.startsWith(k.slice(0, -1))));
+  return key ? routes[key] : undefined;
+}
+
+/** Nahradí fetch odpověďmi podle cesty (bez /api, včetně query stringu; na konci může být `*`); klíč může mít předponu metody (`POST /parties`). Vrací mock pro kontrolu volání. */
 export function mockApi(routes: MockRoutes) {
   const fetchMock = vi.fn(async (url: string, init?: RequestInit) => {
     const path = url.replace('/api', '');
-    const hit = routes[`${init?.method ?? 'GET'} ${path}`] ?? routes[path];
+    const hit = routes[`${init?.method ?? 'GET'} ${path}`] ?? routes[path] ?? wildcard(routes, `${init?.method ?? 'GET'} ${path}`, path);
     if (!hit) return new Response('{"error":"nf"}', { status: 404 });
     if (hit.status === 204) return new Response(null, { status: 204 });
     return new Response(JSON.stringify(hit.body), { status: hit.status ?? 200 });

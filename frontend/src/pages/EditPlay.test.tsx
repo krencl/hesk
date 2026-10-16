@@ -14,6 +14,8 @@ const routes = {
   '/plays/9': { body: PLAY_FULL },
   '/games/1': { body: { ...GAME, addons: [{ id: 5, name: 'Řeka' }, { id: 6, name: 'Opat' }] } },
   '/parties/3/players': { body: PLAYERS },
+  '/parties/3/places': { body: ['Doma', 'U Kuby'] },
+  '/parties/3/tags': { body: ['liga', 'rodinná', 'víkend'] },
   '/parties/3/plays?limit=11&offset=0&gameId=1': { body: [PLAY_FULL] },
 };
 
@@ -34,7 +36,9 @@ describe('edit play (/plays/:id/edit)', () => {
     expect(screen.getByLabelText('Řeka')).toBeChecked();
     expect(screen.getByLabelText('Opat')).not.toBeChecked();
     expect(screen.getByLabelText('Místo')).toHaveValue('U Kuby');
-    expect(screen.getByLabelText(/Tagy/)).toHaveValue('rodinná, liga');
+    expect(screen.getByLabelText('Číslo sezení')).toHaveValue(69);
+    expect(screen.getByRole('button', { name: 'Odebrat tag rodinná' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Odebrat tag liga' })).toBeInTheDocument();
     expect(screen.getByLabelText('Poznámka')).toHaveValue('Skvělá hra');
     expect(screen.getByLabelText('Začátek')).toHaveValue(toLocalInput(new Date(PLAY_FULL.startedAt)));
     expect(screen.getByLabelText('Konec')).toHaveValue(toLocalInput(new Date(PLAY_FULL.endedAt)));

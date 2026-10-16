@@ -1,15 +1,18 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { type FormEvent, type ReactNode, useState } from 'react';
+import { type FormEvent, type ReactNode, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useActiveParty } from '../AppContext';
 import { api } from '../api';
 import type { Game, PlayInput } from '../api/types';
+import { fromLocalInput } from '../lib/datetime';
 import { isScored, isWinner, newPlayerDraft, type PlayDraft, toPlayInput, validateDraft } from '../lib/playForm';
 import { Actions } from './Actions';
+import { Autocomplete } from './Autocomplete';
 import { ErrorMessage } from './ErrorMessage';
 import { GameHeader } from './GameHeader';
 import { Icon } from './Icon';
 import { ListSkeleton } from './Skeleton';
+import { TagInput } from './TagInput';
 
 interface Props {
   game: Game;
@@ -21,17 +24,41 @@ interface Props {
   /** Chyba z ukládání (zobrazí se pod formulářem). */
   error: unknown;
   cancelTo: string;
+  /** U nového zápisu se číslo sezení předvyplňuje podle času zápisu, dokud ho uživatel sám nezmění. */
+  suggestSessionNumber?: boolean;
   onSubmit: (input: PlayInput) => void;
   /** Doplňkové prvky pod tlačítky (např. smazání zápisu). */
   children?: ReactNode;
 }
 
+/** Hodnota z <input type="datetime-local"> jako ISO, nebo `null`, když není (ještě) platná. */
+function validIso(local: string): string | null {
+  return local && !Number.isNaN(new Date(local).getTime()) ? fromLocalInput(local) : null;
+}
+
 /** Formulář zápisu hry – sdílený mezi založením a úpravou zápisu. */
-export function PlayForm({ game, initial, heading, submitLabel, saving, error, cancelTo, onSubmit, children }: Props) {
+export function PlayForm({ game, initial, heading, submitLabel, saving, error, cancelTo, suggestSessionNumber = false, onSubmit, children }: Props) {
   const party = useActiveParty();
   const queryClient = useQueryClient();
   const players = useQuery({ queryKey: ['players', party.id], queryFn: () => api.players(party.id) });
+  const places = useQuery({ queryKey: ['places', party.id], queryFn: () => api.places(party.id) });
+  const tags = useQuery({ queryKey: ['tags', party.id], queryFn: () => api.tags(party.id) });
   const [draft, setDraft] = useState<PlayDraft>(initial);
+
+  // Číslo sezení závisí na čase zápisu (do 24 h od posledního zápisu zůstává, jinak o jedno víc); stejný dotaz už načetla stránka.
+  const startedIso = validIso(draft.startedAt);
+  const endedIso = validIso(draft.endedAt);
+  const suggestion = useQuery({
+    queryKey: ['playDefaults', party.id, startedIso, endedIso],
+    queryFn: () => api.playDefaults(party.id, startedIso!, endedIso!),
+    enabled: suggestSessionNumber && !!startedIso && !!endedIso,
+    staleTime: 60_000,
+    gcTime: 0,
+  });
+  const suggested = suggestion.data?.sessionNumber;
+  useEffect(() => {
+    if (suggested !== undefined) setDraft((d) => (d.sessionNumberTouched || d.sessionNumber === String(suggested) ? d : { ...d, sessionNumber: String(suggested) }));
+  }, [suggested]);
   const [formError, setFormError] = useState<string | null>(null);
   const [showGuests, setShowGuests] = useState(false);
   const [guestName, setGuestName] = useState('');
@@ -164,8 +191,15 @@ export function PlayForm({ game, initial, heading, submitLabel, saving, error, c
           <label>Začátek<input type="datetime-local" value={draft.startedAt} onChange={(e) => patch({ startedAt: e.target.value })} required /></label>
           <label>Konec<input type="datetime-local" value={draft.endedAt} onChange={(e) => patch({ endedAt: e.target.value })} required /></label>
         </div>
-        <label>Místo<input value={draft.place} maxLength={100} onChange={(e) => patch({ place: e.target.value })} /></label>
-        <label>Tagy (oddělené čárkou)<input value={draft.tags} onChange={(e) => patch({ tags: e.target.value })} /></label>
+        <label>Číslo sezení<input type="number" inputMode="numeric" min={1} step={1} value={draft.sessionNumber} onChange={(e) => patch({ sessionNumber: e.target.value, sessionNumberTouched: true })} /></label>
+        <div className="field">
+          <label htmlFor="play-place" className="field-label">Místo</label>
+          <Autocomplete id="play-place" value={draft.place} maxLength={100} options={places.data ?? []} onChange={(place) => patch({ place })} />
+        </div>
+        <div className="field">
+          <label htmlFor="play-tags" className="field-label">Tagy</label>
+          <TagInput id="play-tags" tags={draft.tags} options={tags.data ?? []} onChange={(t) => patch({ tags: t })} />
+        </div>
         <label>Poznámka<textarea value={draft.notes} rows={3} onChange={(e) => patch({ notes: e.target.value })} /></label>
 
         {formError && <div className="error" role="alert">{formError}</div>}

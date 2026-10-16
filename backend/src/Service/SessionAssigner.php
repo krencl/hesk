@@ -16,19 +16,58 @@ final class SessionAssigner
     {
     }
 
-    public function assign(Party $party, \DateTimeImmutable $start, \DateTimeImmutable $end): GameSession
+    /**
+     * @param int|null $number výslovně zvolené číslo seance (existující seanci rozšíří, jinak založí novou s tímto číslem);
+     *                         bez čísla se seance určí podle 24h pravidla
+     */
+    public function assign(Party $party, \DateTimeImmutable $start, \DateTimeImmutable $end, ?int $number = null): GameSession
+    {
+        if (null !== $number) {
+            foreach ($this->sessions->findByParty($party) as $session) {
+                if ($session->getNumber() === $number) {
+                    $session->extendTo($start, $end);
+
+                    return $session;
+                }
+            }
+
+            return new GameSession($party, $number, $start, $end);
+        }
+
+        ['session' => $match, 'number' => $next] = $this->match($party, $start, $end);
+        if (null !== $match) {
+            $match->extendTo($start, $end);
+
+            return $match;
+        }
+
+        return new GameSession($party, $next, $start, $end);
+    }
+
+    /**
+     * Do které seance by zápis v daném čase spadl, a jaké číslo by tedy dostal (nic se nemění).
+     *
+     * @return array{number: int, session: ?GameSession}
+     */
+    public function suggest(Party $party, \DateTimeImmutable $start, \DateTimeImmutable $end): array
+    {
+        ['session' => $match, 'number' => $next] = $this->match($party, $start, $end);
+
+        return ['number' => $match?->getNumber() ?? $next, 'session' => $match];
+    }
+
+    /** @return array{session: ?GameSession, number: int} nalezená seance a číslo pro případ, že se bude zakládat nová */
+    private function match(Party $party, \DateTimeImmutable $start, \DateTimeImmutable $end): array
     {
         $lastNumber = 0;
         foreach ($this->sessions->findByParty($party) as $session) {
             if ($session->accepts($start, $end)) {
-                $session->extendTo($start, $end);
-
-                return $session;
+                return ['session' => $session, 'number' => $session->getNumber()];
             }
             $lastNumber = max($lastNumber, $session->getNumber());
         }
 
-        return new GameSession($party, $lastNumber + 1, $start, $end);
+        return ['session' => null, 'number' => $lastNumber + 1];
     }
 
     /** Po smazání/přesunu zápisu přepočítá hranice seance; prázdnou seanci vrátí jako ke smazání. */

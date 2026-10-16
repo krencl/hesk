@@ -26,6 +26,9 @@ final readonly class PlayRequest
         #[Assert\All([new Assert\NotBlank(), new Assert\Length(max: 100)])]
         public array $tags = [],
         public ?string $notes = null,
+        /** Ručně zadané číslo seance; bez něj se seance určí podle 24h pravidla. */
+        #[Assert\Positive]
+        public ?int $sessionNumber = null,
     ) {
     }
 

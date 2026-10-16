@@ -1,5 +1,5 @@
 import { del, get, patch, post, put } from './client';
-import type { Game, GameListQuery, GameWithStats, Player, GameInput, SessionInfo, Me, Party, PartyDetail, PartyRole, Play, PlayInput, Stats } from './types';
+import type { Game, GameListQuery, GameWithStats, Player, GameInput, SessionInfo, Me, Party, PartyDetail, PartyRole, Play, PlayDefaults, PlayInput, Stats } from './types';
 
 /** Sestaví `?a=1&b=2`; prázdné hodnoty (undefined, null, '') vynechá. */
 export function queryString(params: object): string {
@@ -37,6 +37,10 @@ export const api = {
 
   plays: (partyId: number, limit = 50, offset = 0, gameId?: number) =>
     get<Play[]>(`/parties/${partyId}/plays${queryString({ limit, offset, gameId })}`),
+  playDefaults: (partyId: number, startedAt: string, endedAt: string) =>
+    get<PlayDefaults>(`/parties/${partyId}/plays/defaults${queryString({ startedAt, endedAt })}`),
+  places: (partyId: number) => get<string[]>(`/parties/${partyId}/places`),
+  tags: (partyId: number) => get<string[]>(`/parties/${partyId}/tags`),
   play: (id: number) => get<Play>(`/plays/${id}`),
   createPlay: (partyId: number, input: PlayInput) => post<Play>(`/parties/${partyId}/plays`, input),
   updatePlay: (id: number, input: PlayInput) => put<Play>(`/plays/${id}`, input),

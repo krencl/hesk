@@ -1,11 +1,13 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useActiveParty } from '../AppContext';
 import { api } from '../api';
 import { ApiError } from '../api/client';
 import { PlayForm } from '../components/PlayForm';
 import { ListSkeleton } from '../components/Skeleton';
-import { emptyDraft } from '../lib/playForm';
+import { fromLocalInput } from '../lib/datetime';
+import { defaultPlayerIds, defaultTimes, emptyDraft } from '../lib/playForm';
 import { refreshAfterPlayChange } from '../lib/refresh';
 
 /** Nový zápis dané hry (hra se nevybírá, formulář se otevírá z jejího detailu). */
@@ -15,6 +17,19 @@ export function NewPlayPage() {
   const queryClient = useQueryClient();
   const gameId = Number(useParams().id);
   const game = useQuery({ queryKey: ['game', gameId], queryFn: () => api.game(gameId), retry: false });
+
+  // Výchozí hodnoty závisejí na čase zápisu: sezení (a jeho číslo) a hráči posledního zápisu stejného sezení.
+  const [now] = useState(() => new Date());
+  const times = defaultTimes(now);
+  const startedIso = fromLocalInput(times.startedAt);
+  const endedIso = fromLocalInput(times.endedAt);
+  const players = useQuery({ queryKey: ['players', party.id], queryFn: () => api.players(party.id) });
+  const defaults = useQuery({
+    queryKey: ['playDefaults', party.id, startedIso, endedIso],
+    queryFn: () => api.playDefaults(party.id, startedIso, endedIso),
+    staleTime: 60_000,
+    gcTime: 0,
+  });
 
   const save = useMutation({
     mutationFn: (input: Parameters<typeof api.createPlay>[1]) => api.createPlay(party.id, input),
@@ -27,12 +42,13 @@ export function NewPlayPage() {
   if (game.error instanceof ApiError && (game.error.status === 404 || game.error.status === 403)) {
     return <p className="page pad empty">Tahle hra neexistuje nebo k ní nemáš přístup.<Link className="btn" to="/games">Zpět na hry</Link></p>;
   }
-  if (!game.data) return <ListSkeleton rows={3} withImage={false} />;
+  if (!game.data || !players.data || (defaults.isPending && !defaults.isError)) return <ListSkeleton rows={3} withImage={false} />;
 
   return (
     <PlayForm
       game={game.data}
-      initial={emptyDraft(game.data)}
+      initial={emptyDraft(game.data, now, { playerIds: defaultPlayerIds(defaults.data, players.data), sessionNumber: defaults.data?.sessionNumber })}
+      suggestSessionNumber
       heading="Nový zápis"
       submitLabel="Uložit zápis"
       saving={save.isPending}

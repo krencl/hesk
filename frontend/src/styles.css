@@ -333,3 +333,22 @@ a.link:hover { text-decoration: underline; }
 .icon-button { display: grid; place-items: center; width: 2.375rem; height: 2.375rem; padding: 0; background: none; border: 1px solid var(--gray); border-radius: var(--radius); color: var(--secondary); cursor: pointer; }
 .icon-button:hover { background: var(--light-gray); color: var(--error); }
 .hint { font-size: 0.8rem; }
+
+/* Našeptávání (místo, tagy) */
+.combo { position: relative; }
+.combo-list {
+  position: absolute; z-index: 10; left: 0; right: 0; top: 100%; margin: 0.15rem 0 0; padding: 0; list-style: none;
+  max-height: 12rem; overflow-y: auto; background: #fff; border: 1px solid var(--gray); border-radius: var(--radius);
+  box-shadow: 0 0.25rem 0.75rem rgba(0, 0, 0, 0.15);
+}
+.combo-list[hidden] { display: none; }
+.combo-list li { padding: 0.4rem 0.75rem; cursor: pointer; }
+.combo-list li:hover, .combo-list li[aria-selected='true'] { background: var(--light-blue); }
+.tag-input { display: grid; gap: 0.4rem; }
+.tag-list { display: flex; flex-wrap: wrap; gap: 0.4rem; margin: 0; padding: 0; list-style: none; }
+.tag {
+  display: inline-flex; align-items: center; padding: 0.1rem 0.2rem 0.1rem 0.7rem; font-size: 0.9rem;
+  background: #e8f0fb; border-radius: 1rem;
+}
+.tag button { display: inline-flex; padding: 0.1rem; font: inherit; color: var(--secondary); background: none; border: 0; cursor: pointer; }
+.tag .icon { font-size: 1.1rem; }

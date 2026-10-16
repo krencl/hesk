@@ -1,4 +1,4 @@
-import type { Game, Play, PlayerInput, PlayInput, ScoreType } from '../api/types';
+import type { Game, Play, PlayDefaults, Player, PlayerInput, PlayInput, ScoreType } from '../api/types';
 import { fromLocalInput, toLocalInput } from './datetime';
 
 export interface PlayerDraft {
@@ -18,8 +18,12 @@ export interface PlayDraft {
   players: PlayerDraft[];
   addonIds: number[];
   place: string;
-  tags: string;
+  tags: string[];
   notes: string;
+  /** Číslo sezení jako text z inputu; prázdné = určí backend. */
+  sessionNumber: string;
+  /** Uživatel číslo ručně změnil (jinak se předvyplňuje podle času zápisu a posílá se jen tehdy). */
+  sessionNumberTouched: boolean;
   /** U her se skóre: vítěze vybral uživatel ručně (jinak vyhrává nejlepší skóre, při shodě všichni se shodou). */
   winnersTouched: boolean;
 }
@@ -50,19 +54,40 @@ export function isWinner(draft: PlayDraft, game: Pick<Game, 'scoreType'>, player
   return bestScoreIds(draft.players.map((p) => ({ playerId: p.playerId, score: parseScore(p.score) })), game.scoreType).has(playerId);
 }
 
+/** Číslo sezení z inputu; neplatné nebo prázdné → `null`. */
+export function parseSessionNumber(text: string): number | null {
+  const trimmed = text.trim();
+  return /^\d+$/.test(trimmed) && Number(trimmed) >= 1 ? Number(trimmed) : null;
+}
+
 export const newPlayerDraft = (playerId: number): PlayerDraft => ({ playerId, score: '', rank: '', winner: false, starting: false, characterId: null });
 
-/** Prázdný formulář nového zápisu: začátek před hodinou, konec teď; vlastní hráč hry (je-li) je rovnou vybraný. */
-export function emptyDraft(game: Pick<Game, 'id' | 'player'>, now = new Date()): PlayDraft {
+/** Výchozí čas nového zápisu: začátek před hodinou, konec teď. */
+export function defaultTimes(now = new Date()): { startedAt: string; endedAt: string } {
+  return { startedAt: toLocalInput(new Date(now.getTime() - 60 * 60 * 1000)), endedAt: toLocalInput(now) };
+}
+
+/**
+ * Předvybraní hráči nového zápisu: hráči posledního zápisu stejného sezení (do 24 h);
+ * když sezení ještě není (první hra dne), členové party s účtem.
+ */
+export function defaultPlayerIds(defaults: Pick<PlayDefaults, 'playerIds'> | undefined, players: Pick<Player, 'id' | 'hasAccount'>[]): number[] {
+  return defaults?.playerIds ?? players.filter((p) => p.hasAccount).map((p) => p.id);
+}
+
+/** Formulář nového zápisu; vlastní hráč hry (je-li) je vždy vybraný jako první, dál `playerIds` a předvyplněné číslo sezení. */
+export function emptyDraft(game: Pick<Game, 'id' | 'player'>, now = new Date(), prefill: { playerIds?: number[]; sessionNumber?: number } = {}): PlayDraft {
+  const playerIds = [...new Set([...(game.player ? [game.player.id] : []), ...(prefill.playerIds ?? [])])];
   return {
     gameId: game.id,
-    startedAt: toLocalInput(new Date(now.getTime() - 60 * 60 * 1000)),
-    endedAt: toLocalInput(now),
-    players: game.player ? [newPlayerDraft(game.player.id)] : [],
+    ...defaultTimes(now),
+    players: playerIds.map(newPlayerDraft),
     addonIds: [],
     place: '',
-    tags: '',
+    tags: [],
     notes: '',
+    sessionNumber: prefill.sessionNumber === undefined ? '' : String(prefill.sessionNumber),
+    sessionNumberTouched: false,
     winnersTouched: false,
   };
 }
@@ -88,8 +113,10 @@ export function draftFromPlay(play: Play): PlayDraft {
     })),
     addonIds: play.addons.map((a) => a.id),
     place: play.place ?? '',
-    tags: play.tags.join(', '),
+    tags: play.tags,
     notes: play.notes ?? '',
+    sessionNumber: String(play.sessionNumber),
+    sessionNumberTouched: false,
     winnersTouched: touched,
   };
 }
@@ -100,6 +127,7 @@ export function validateDraft(draft: PlayDraft, game: Game | undefined): string 
   if (draft.players.length === 0) return 'Vyber alespoň jednoho hráče.';
   if (!draft.startedAt || !draft.endedAt) return 'Vyplň začátek i konec.';
   if (new Date(draft.endedAt) < new Date(draft.startedAt)) return 'Konec nesmí být před začátkem.';
+  if (draft.sessionNumberTouched && parseSessionNumber(draft.sessionNumber) === null) return 'Číslo sezení musí být kladné celé číslo.';
   for (const p of draft.players) {
     if (isScored(game.scoreType) && p.score.trim() === '') return 'Zadej skóre všem hráčům.';
     if (isScored(game.scoreType) && parseScore(p.score) === null) return 'Skóre musí být číslo.';
@@ -131,7 +159,8 @@ export function toPlayInput(draft: PlayDraft, game: Game): PlayInput {
     players,
     addonIds: draft.addonIds.filter((id) => game.addons.some((a) => a.id === id)),
     place: draft.place.trim() || null,
-    tags: draft.tags.split(',').map((t) => t.trim()).filter(Boolean),
+    tags: draft.tags,
     notes: draft.notes.trim() || null,
+    ...(draft.sessionNumberTouched ? { sessionNumber: parseSessionNumber(draft.sessionNumber) } : {}),
   };
 }

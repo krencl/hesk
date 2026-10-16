@@ -74,6 +74,38 @@ final class SessionAssignerTest extends TestCase
         self::assertSame(1, $this->assigner([])->assign($this->party, $this->d('2026-03-01 18:00'), $this->d('2026-03-01 19:00'))->getNumber());
     }
 
+    public function testExplicitNumberJoinsExistingSessionOrCreatesNewOne(): void
+    {
+        $existing = new GameSession($this->party, 95, $this->d('2026-01-01 18:00'), $this->d('2026-01-01 19:00'));
+        $assigner = $this->assigner([$existing]);
+
+        // i daleko od seance se zápis zařadí tam, kam uživatel řekl (a seanci rozšíří)
+        $joined = $assigner->assign($this->party, $this->d('2026-03-01 18:00'), $this->d('2026-03-01 19:00'), 95);
+        self::assertSame($existing, $joined);
+        self::assertEquals($this->d('2026-03-01 19:00'), $existing->getEndedAt());
+
+        $created = $assigner->assign($this->party, $this->d('2026-03-01 18:00'), $this->d('2026-03-01 19:00'), 120);
+        self::assertNotSame($existing, $created);
+        self::assertSame(120, $created->getNumber());
+    }
+
+    public function testSuggestKeepsNumberWithin24HoursAndIncrementsAfterwards(): void
+    {
+        $existing = new GameSession($this->party, 95, $this->d('2026-01-01 18:00'), $this->d('2026-01-01 19:00'));
+        $assigner = $this->assigner([$existing]);
+
+        $same = $assigner->suggest($this->party, $this->d('2026-01-02 18:30'), $this->d('2026-01-02 19:30'));
+        self::assertSame(95, $same['number']);
+        self::assertSame($existing, $same['session']);
+
+        $next = $assigner->suggest($this->party, $this->d('2026-02-01 18:00'), $this->d('2026-02-01 19:00'));
+        self::assertSame(96, $next['number']);
+        self::assertNull($next['session']);
+        self::assertEquals($this->d('2026-01-01 19:00'), $existing->getEndedAt(), 'návrh nic nemění');
+
+        self::assertSame(1, $this->assigner([])->suggest($this->party, $this->d('2026-02-01 18:00'), $this->d('2026-02-01 19:00'))['number']);
+    }
+
     public function testRecalculateUsesRemainingPlaysOrFlagsEmpty(): void
     {
         $session = new GameSession($this->party, 1, $this->d('2026-01-01 10:00'), $this->d('2026-01-03 10:00'));

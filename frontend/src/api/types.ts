@@ -149,6 +149,15 @@ export interface PlayInput {
   place: string | null;
   tags: string[];
   notes: string | null;
+  /** Ručně zadané číslo sezení; bez něj ho určí backend podle 24h pravidla. */
+  sessionNumber?: number | null;
+}
+
+/** Výchozí hodnoty nového zápisu pro daný čas. */
+export interface PlayDefaults {
+  sessionNumber: number;
+  /** Hráči posledního zápisu stejného sezení; `null`, když sezení ještě neexistuje (první hra dne). */
+  playerIds: number[] | null;
 }
 
 export interface Stats {

@@ -16,6 +16,7 @@ Primárně architektonická rozhodnutí (ADR). Aplikační dokumentace je zámě
 | [0010](adr/0010-ui-consistency-and-play-flags.md) | Jednotná kostra UI (nadpisy, tlačítka 2×2), vítěz a začínající hráč v zápisu |
 | [0011](adr/0011-game-extras.md) | Zkrácený název, rozšíření, postavy a hráč hry |
 | [0012](adr/0012-repeatable-legacy-import.md) | Opakovatelný import ze staré aplikace (`app:legacy:import`) |
+| [0013](adr/0013-play-form-defaults.md) | Výchozí hodnoty formuláře zápisu: číslo sezení, předvybraní hráči, místo a tagy s našeptáváním |
 
 Poznámky ke vzoru z předchozích verzí: [prototype-notes.md](prototype-notes.md).
 

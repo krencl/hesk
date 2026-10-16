@@ -191,6 +191,90 @@ final class ApiFlowTest extends WebTestCase
         self::assertCount(2, $this->api('GET', "/api/plays/{$play['id']}")['results']);
     }
 
+    public function testPlayDefaultsSuggestSessionNumberAndLastPlayers(): void
+    {
+        $this->login('anna@example.com', 'Anna');
+        $party = $this->api('POST', '/api/parties', ['name' => 'Pátek'], 201);
+        $base = "/api/parties/{$party['id']}";
+        $anna = $this->api('GET', "$base/players")[0]['id'];
+        $bob = $this->api('POST', "$base/players", ['name' => 'Bob'], 201)['id'];
+        $game = $this->api('POST', "$base/games", ['name' => 'Azul', 'scoreType' => 'winner_only'], 201);
+        $defaults = fn (string $day, string $time = '20:00'): array => $this->api('GET', "$base/plays/defaults?startedAt=".rawurlencode("{$day}T{$time}:00+00:00"));
+
+        // první hra: seance ještě není → číslo 1 a žádní předvybraní hráči
+        self::assertSame(['sessionNumber' => 1, 'playerIds' => null], $defaults('2026-03-01'));
+
+        $play = fn (string $day, string $time, array $ids, array $extra = []): array => $this->api('POST', "$base/plays", $extra + [
+            'gameId' => $game['id'], 'startedAt' => "{$day}T{$time}:00+00:00", 'endedAt' => "{$day}T{$time}:00+00:00",
+            'players' => array_map(static fn (int $id): array => ['playerId' => $id, 'winner' => $id === $ids[0]], $ids),
+        ], 201);
+        $play('2026-03-01', '18:00', [$anna, $bob]);
+        $play('2026-03-01', '20:00', [$bob]);
+
+        // ten samý večer: stejné číslo a hráči posledního zápisu seance
+        self::assertSame(['sessionNumber' => 1, 'playerIds' => [$bob]], $defaults('2026-03-01', '21:00'));
+        // do 24 h od posledního zápisu je to pořád ta samá seance
+        self::assertSame(1, $defaults('2026-03-02', '19:00')['sessionNumber']);
+        // o měsíc později další číslo, hráči se neberou
+        self::assertSame(['sessionNumber' => 2, 'playerIds' => null], $defaults('2026-04-01'));
+
+        $this->api('GET', "$base/plays/defaults", expected: 422);
+        $this->api('GET', "$base/plays/defaults?startedAt=nesmysl", expected: 422);
+    }
+
+    public function testExplicitSessionNumberOnCreateAndUpdate(): void
+    {
+        $this->login('anna@example.com', 'Anna');
+        $party = $this->api('POST', '/api/parties', ['name' => 'Pátek'], 201);
+        $base = "/api/parties/{$party['id']}";
+        $anna = $this->api('GET', "$base/players")[0]['id'];
+        $game = $this->api('POST', "$base/games", ['name' => 'Azul', 'scoreType' => 'winner_only'], 201);
+        $payload = fn (string $day, array $extra = []): array => $extra + [
+            'gameId' => $game['id'], 'startedAt' => "{$day}T18:00:00+00:00", 'endedAt' => "{$day}T19:00:00+00:00",
+            'players' => [['playerId' => $anna, 'winner' => true]],
+        ];
+
+        // ruční číslo (třeba navázání na starou číselnou řadu), další zápis bez čísla pokračuje za ním
+        $first = $this->api('POST', "$base/plays", $payload('2026-03-01', ['sessionNumber' => 95]), 201);
+        self::assertSame(95, $first['sessionNumber']);
+        self::assertSame(96, $this->api('POST', "$base/plays", $payload('2026-04-01'), 201)['sessionNumber']);
+        // zápis se zařadí do existující seance s daným číslem
+        $joined = $this->api('POST', "$base/plays", $payload('2026-05-01', ['sessionNumber' => 95]), 201);
+        self::assertSame($first['sessionId'], $joined['sessionId']);
+        $this->api('POST', "$base/plays", $payload('2026-05-02', ['sessionNumber' => 0]), 422);
+
+        // úprava: přepsání čísla přesune zápis, prázdná seance zmizí
+        $moved = $this->api('PUT', "/api/plays/{$joined['id']}", $payload('2026-05-01', ['sessionNumber' => 96]));
+        self::assertSame(96, $moved['sessionNumber']);
+        $same = $this->api('PUT', "/api/plays/{$moved['id']}", $payload('2026-05-01', ['sessionNumber' => 96]));
+        self::assertSame(96, $same['sessionNumber']);
+        $alone = $this->api('PUT', "/api/plays/{$first['id']}", $payload('2026-03-01', ['sessionNumber' => 95]));
+        self::assertSame($first['sessionId'], $alone['sessionId'], 'stejné číslo = žádný přesun');
+        self::assertSame([96, 95], array_column($this->api('GET', "$base/sessions"), 'number'));
+    }
+
+    public function testPlacesAndTagsAreListedForSuggestions(): void
+    {
+        $this->login('anna@example.com', 'Anna');
+        $party = $this->api('POST', '/api/parties', ['name' => 'Pátek'], 201);
+        $base = "/api/parties/{$party['id']}";
+        $anna = $this->api('GET', "$base/players")[0]['id'];
+        $game = $this->api('POST', "$base/games", ['name' => 'Azul', 'scoreType' => 'winner_only'], 201);
+        self::assertSame([], $this->api('GET', "$base/places"));
+
+        $this->api('POST', "$base/plays", [
+            'gameId' => $game['id'], 'startedAt' => '2026-03-01T18:00:00+00:00', 'endedAt' => '2026-03-01T19:00:00+00:00',
+            'players' => [['playerId' => $anna, 'winner' => true]], 'place' => 'U Kuby', 'tags' => ['víkend', 'Liga'],
+        ], 201);
+
+        self::assertSame(['U Kuby'], $this->api('GET', "$base/places"));
+        self::assertSame(['Liga', 'víkend'], $this->api('GET', "$base/tags"));
+
+        $this->login('eve@example.com', 'Eve');
+        $this->api('GET', "$base/places", expected: 403);
+        $this->api('GET', "$base/tags", expected: 403);
+    }
+
     public function testStartingPlayerAndManualWinnerAreStoredAndUpdatable(): void
     {
         $this->login('anna@example.com', 'Anna');

@@ -4,12 +4,14 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Domain\Exception\DomainException;
 use App\Dto\PlayRequest;
 use App\Entity\Party;
 use App\Entity\Play;
 use App\Repository\PlayRepository;
 use App\Security\PartyVoter;
 use App\Service\PlayService;
+use App\Service\SessionAssigner;
 use App\Service\Presenter;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -20,7 +22,7 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 
 final class PlayController extends ApiController
 {
-    public function __construct(Presenter $presenter, private readonly PlayService $service, private readonly PlayRepository $plays)
+    public function __construct(Presenter $presenter, private readonly PlayService $service, private readonly PlayRepository $plays, private readonly SessionAssigner $sessions)
     {
         parent::__construct($presenter);
     }
@@ -37,6 +39,41 @@ final class PlayController extends ApiController
             $this->presenter->play(...),
             $this->plays->findPage($party, $limit, $offset, $gameId),
         ));
+    }
+
+    /**
+     * Výchozí hodnoty nového zápisu: číslo seance, do které by zápis v daném čase spadl (jinak další v pořadí),
+     * a hráči posledního zápisu této seance (`null`, když seance ještě neexistuje = první hra dne).
+     */
+    #[Route('/api/parties/{id}/plays/defaults', requirements: ['id' => '\d+'], methods: ['GET'])]
+    #[IsGranted(PartyVoter::VIEW, 'party')]
+    public function defaults(Party $party, Request $request): JsonResponse
+    {
+        $start = $this->parseTime($request->query->get('startedAt'));
+        $end = $this->parseTime($request->query->get('endedAt')) ?? $start;
+        if (null === $start || null === $end) {
+            throw new DomainException('Zadej začátek (startedAt) a konec (endedAt) hry.');
+        }
+
+        ['number' => $number, 'session' => $session] = $this->sessions->suggest($party, $start, $end);
+        $last = $session ? $this->plays->findLastInSession($session) : null;
+
+        return new JsonResponse([
+            'sessionNumber' => $number,
+            'playerIds' => null === $last ? null : array_values(array_map(static fn ($r): int => $r->getPlayer()->getId(), $last->getResults()->toArray())),
+        ]);
+    }
+
+    private function parseTime(mixed $value): ?\DateTimeImmutable
+    {
+        if (!\is_string($value) || '' === $value) {
+            return null;
+        }
+        try {
+            return new \DateTimeImmutable($value);
+        } catch (\Exception) {
+            throw new DomainException('Neplatné datum a čas.');
+        }
     }
 
     #[Route('/api/parties/{id}/plays', requirements: ['id' => '\d+'], methods: ['POST'])]

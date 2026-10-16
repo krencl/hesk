@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { Game, Play } from '../api/types';
 import { toLocalInput } from './datetime';
-import { bestScoreIds, draftFromPlay, emptyDraft, isWinner, type PlayDraft, toPlayInput, validateDraft } from './playForm';
+import { bestScoreIds, defaultPlayerIds, defaultTimes, draftFromPlay, emptyDraft, isWinner, type PlayDraft, toPlayInput, validateDraft } from './playForm';
 
 const game = (scoreType: Game['scoreType']): Game => ({
   id: 7, name: 'G', shortName: null, scoreType, imageUrl: null, description: null, cheatSheet: null, addons: [{ id: 1, name: 'X' }], characters: [{ id: 3, name: 'Gigazaur' }], player: null,
@@ -14,8 +14,10 @@ const draft = (over: Partial<PlayDraft> = {}): PlayDraft => ({
   players: [{ playerId: 1, score: '10,5', rank: '', winner: false, starting: false, characterId: null }],
   addonIds: [1, 99],
   place: ' Doma ',
-  tags: 'víkend, , liga',
+  tags: ['víkend', 'liga'],
   notes: '  ',
+  sessionNumber: '95',
+  sessionNumberTouched: false,
   winnersTouched: false,
   ...over,
 });
@@ -76,8 +78,10 @@ describe('draftFromPlay', () => {
       players: [{ playerId: 4, score: '10.5', rank: '1', winner: true, starting: true, characterId: null }, { playerId: 5, score: '', rank: '2', winner: false, starting: false, characterId: null }],
       addonIds: [1],
       place: '',
-      tags: 'víkend, liga',
+      tags: ['víkend', 'liga'],
       notes: '',
+      sessionNumber: '3',
+      sessionNumberTouched: false,
       winnersTouched: false,
     });
   });
@@ -92,7 +96,44 @@ describe('draftFromPlay', () => {
   });
 });
 
+describe('session number', () => {
+  it('is not sent unless the user changed it (the backend derives it from the time)', () => {
+    expect(toPlayInput(draft(), game('most_points'))).not.toHaveProperty('sessionNumber');
+    expect(toPlayInput(draft({ sessionNumberTouched: true, sessionNumber: ' 96 ' }), game('most_points')).sessionNumber).toBe(96);
+  });
+
+  it('rejects an invalid manual number', () => {
+    for (const bad of ['', '0', '-1', '1.5', 'abc']) {
+      expect(validateDraft(draft({ sessionNumberTouched: true, sessionNumber: bad }), game('most_points'))).toMatch(/Číslo sezení/);
+    }
+    expect(validateDraft(draft({ sessionNumberTouched: false, sessionNumber: '' }), game('most_points'))).toBeNull();
+  });
+});
+
+describe('defaultPlayerIds', () => {
+  const players = [{ id: 1, hasAccount: true }, { id: 2, hasAccount: false }, { id: 3, hasAccount: true }];
+
+  it('takes the players of the last play of the same session', () => {
+    expect(defaultPlayerIds({ playerIds: [2, 3] }, players)).toEqual([2, 3]);
+  });
+
+  it('falls back to the party members with an account when there is no session yet', () => {
+    expect(defaultPlayerIds({ playerIds: null }, players)).toEqual([1, 3]);
+    expect(defaultPlayerIds(undefined, players)).toEqual([1, 3]);
+  });
+});
+
 describe('emptyDraft', () => {
+  it('prefills players and the session number without duplicating the own player of the game', () => {
+    const d = emptyDraft({ id: 7, player: { id: 3, name: 'Boss' } }, new Date(2026, 2, 1, 20, 0), { playerIds: [1, 3], sessionNumber: 95 });
+    expect(d.players.map((p) => p.playerId)).toEqual([3, 1]);
+    expect(d).toMatchObject({ sessionNumber: '95', sessionNumberTouched: false, tags: [] });
+  });
+
+  it('computes default times', () => {
+    expect(defaultTimes(new Date(2026, 2, 1, 20, 0))).toEqual({ startedAt: '2026-03-01T19:00', endedAt: '2026-03-01T20:00' });
+  });
+
   it('starts an hour before now and ends now', () => {
     const now = new Date(2026, 2, 1, 20, 0);
     expect(emptyDraft({ id: 7, player: null }, now)).toMatchObject({ gameId: 7, startedAt: '2026-03-01T19:00', endedAt: '2026-03-01T20:00', players: [], addonIds: [] });

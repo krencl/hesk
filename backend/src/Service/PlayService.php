@@ -32,7 +32,7 @@ final class PlayService
     public function create(Party $party, PlayRequest $req): Play
     {
         $game = $this->resolveGame($party, $req);
-        $session = $this->sessions->assign($party, $req->startedAt, $req->endedAt);
+        $session = $this->sessions->assign($party, $req->startedAt, $req->endedAt, $req->sessionNumber);
         $play = new Play($party, $game, $req->startedAt, $req->endedAt, $session);
         $this->em->persist($session);
         $this->fill($play, $party, $game, $req);
@@ -60,8 +60,12 @@ final class PlayService
         // Seance přepočítáme z jejích zápisů (bez upravovaného) a upravený zápis zařadíme znovu.
         $others = array_filter($this->plays->findBySession($oldSession), static fn (Play $p): bool => $p !== $play);
         $emptied = $this->sessions->recalculate($oldSession, $others);
-        $newSession = $this->sessions->assign($party, $req->startedAt, $req->endedAt);
+        $newSession = $this->sessions->assign($party, $req->startedAt, $req->endedAt, $req->sessionNumber);
         $this->em->persist($newSession);
+        if ($emptied && $newSession === $oldSession) {
+            // prázdná seance se znovu použije (stejné číslo) – hranice musí odpovídat jen novému zápisu
+            $newSession->resetBounds($req->startedAt, $req->endedAt);
+        }
         $play->setSession($newSession);
         $this->em->flush();
         if ($emptied && $oldSession !== $newSession) {

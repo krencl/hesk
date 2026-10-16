@@ -46,6 +46,12 @@ class PlayRepository extends ServiceEntityRepository
         return $this->findBy(['session' => $session]);
     }
 
+    /** Nejnovější zápis seance (podle konce hry). */
+    public function findLastInSession(GameSession $session): ?Play
+    {
+        return $this->findOneBy(['session' => $session], ['endedAt' => 'DESC', 'id' => 'DESC']);
+    }
+
     /** @return list<array{playerId: int, name: string, wins: int, plays: int}> */
     public function winsPerPlayer(Party $party): array
     {

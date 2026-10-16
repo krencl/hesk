@@ -168,6 +168,9 @@ describe('new play', () => {
     '/parties/3/players': { body: players },
     '/parties/3/plays': { body: PLAY },
     '/parties/3/plays?limit=11&offset=0&gameId=1': { body: [PLAY] },
+    '/parties/3/plays/defaults*': { body: { sessionNumber: 95, playerIds: null } },
+    '/parties/3/places': { body: ['Doma', 'U Kuby'] },
+    '/parties/3/tags': { body: ['liga', 'víkend'] },
   };
 
   it('is scoped to the game: no game picker, validates and posts the scores', async () => {
@@ -177,6 +180,11 @@ describe('new play', () => {
     expect(screen.getByText('Carcassonne')).toBeInTheDocument();
     expect(screen.queryByLabelText('Hra')).not.toBeInTheDocument();
 
+    // členové party jsou předvybraní, hosté ne
+    expect(screen.getByLabelText('Anna')).toBeChecked();
+    expect(screen.getByLabelText('Petr')).toBeChecked();
+    fireEvent.click(screen.getByLabelText('Anna'));
+    fireEvent.click(screen.getByLabelText('Petr'));
     fireEvent.click(screen.getByRole('button', { name: 'Uložit zápis' }));
     expect(await screen.findByRole('alert')).toHaveTextContent('Vyber alespoň jednoho hráče.');
 
@@ -197,6 +205,76 @@ describe('new play', () => {
     expect(body.players).toEqual([{ playerId: 1, score: 90, starting: false }, { playerId: 2, score: 75, starting: false }]);
     // po uložení se vrací na detail hry
     expect(await screen.findByRole('link', { name: 'Nový zápis' })).toHaveAttribute('href', '/games/1/new-play');
+  });
+
+  it('prefills the session number and the players of the last play of the same session', async () => {
+    mockApi({ ...routes, '/parties/3/plays/defaults*': { body: { sessionNumber: 96, playerIds: [3, 2] } } });
+    renderApp('/games/1/new-play');
+    await screen.findByRole('heading', { name: 'Nový zápis' });
+    expect(screen.getByLabelText('Číslo sezení')).toHaveValue(96);
+    expect(screen.getByLabelText('Host')).toBeChecked(); // host z minulého zápisu je vidět a vybraný
+    expect(screen.getByLabelText('Petr')).toBeChecked();
+    expect(screen.getByLabelText('Anna')).not.toBeChecked(); // v minulém zápisu nehrála
+  });
+
+  it('sends the session number only when the user changes it, and creates a new place and tags by typing', async () => {
+    const fetchMock = mockApi(routes);
+    renderApp('/games/1/new-play');
+    await screen.findByRole('heading', { name: 'Nový zápis' });
+    expect(screen.getByLabelText('Číslo sezení')).toHaveValue(95);
+    fireEvent.change(screen.getByLabelText('Skóre Anna'), { target: { value: '9' } });
+    fireEvent.change(screen.getByLabelText('Skóre Petr'), { target: { value: '5' } });
+
+    const place = screen.getByLabelText('Místo');
+    fireEvent.focus(place);
+    fireEvent.click(await screen.findByRole('option', { name: 'U Kuby' }));
+    const tags = screen.getByLabelText('Tagy');
+    fireEvent.focus(tags);
+    fireEvent.click(await screen.findByRole('option', { name: 'liga' }));
+    fireEvent.change(tags, { target: { value: 'novinka' } });
+    fireEvent.blur(tags); // klik na „Uložit“ nejdřív opustí input, rozepsaný tag se tím přidá
+    fireEvent.click(screen.getByRole('button', { name: 'Uložit zápis' }));
+
+    const isPost = ([u, init]: [string, RequestInit?]) => String(u) === '/api/parties/3/plays' && init?.method === 'POST';
+    await waitFor(() => expect(fetchMock.mock.calls.some(isPost)).toBe(true));
+    const body = JSON.parse(String(fetchMock.mock.calls.find(isPost)![1]?.body));
+    expect(body).toMatchObject({ place: 'U Kuby', tags: ['liga', 'novinka'] });
+    expect(body).not.toHaveProperty('sessionNumber');
+  });
+
+  it('sends a manually entered session number and keeps it when the times change', async () => {
+    const fetchMock = mockApi(routes);
+    renderApp('/games/1/new-play');
+    await screen.findByRole('heading', { name: 'Nový zápis' });
+    fireEvent.change(screen.getByLabelText('Číslo sezení'), { target: { value: '120' } });
+    fireEvent.change(screen.getByLabelText('Začátek'), { target: { value: '2026-03-01T10:00' } });
+    await waitFor(() => expect(fetchMock.mock.calls.filter(([u]) => String(u).includes('/plays/defaults')).length).toBeGreaterThan(1));
+    expect(screen.getByLabelText('Číslo sezení')).toHaveValue(120);
+
+    fireEvent.change(screen.getByLabelText('Skóre Anna'), { target: { value: '9' } });
+    fireEvent.change(screen.getByLabelText('Skóre Petr'), { target: { value: '5' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Uložit zápis' }));
+    const isPost = ([u, init]: [string, RequestInit?]) => String(u) === '/api/parties/3/plays' && init?.method === 'POST';
+    await waitFor(() => expect(fetchMock.mock.calls.some(isPost)).toBe(true));
+    expect(JSON.parse(String(fetchMock.mock.calls.find(isPost)![1]?.body)).sessionNumber).toBe(120);
+  });
+
+  it('updates the suggested number when the start time moves to another session', async () => {
+    const fetchMock = vi.fn(async (url: string) => {
+      const path = String(url).replace('/api', '');
+      if (path.startsWith('/parties/3/plays/defaults')) {
+        const old = new URL(path, 'http://x').searchParams.get('startedAt')!.startsWith('2026-03');
+        return new Response(JSON.stringify({ sessionNumber: old ? 12 : 96, playerIds: null }));
+      }
+      const hit = (routes as Record<string, { body: unknown }>)[path];
+      return hit ? new Response(JSON.stringify(hit.body)) : new Response('{"error":"nf"}', { status: 404 });
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    renderApp('/games/1/new-play');
+    await screen.findByRole('heading', { name: 'Nový zápis' });
+    expect(screen.getByLabelText('Číslo sezení')).toHaveValue(96);
+    fireEvent.change(screen.getByLabelText('Začátek'), { target: { value: '2026-03-01T10:00' } });
+    await waitFor(() => expect(screen.getByLabelText('Číslo sezení')).toHaveValue(12));
   });
 
   it('offers the core players first and guests only after "Přidat hosty"', async () => {
@@ -223,8 +301,6 @@ describe('new play', () => {
     const fetchMock = mockApi(routes);
     renderApp('/games/1/new-play');
     await screen.findByRole('heading', { name: 'Nový zápis' });
-    fireEvent.click(screen.getByLabelText('Anna'));
-    fireEvent.click(screen.getByLabelText('Petr'));
     fireEvent.change(screen.getByLabelText('Skóre Anna'), { target: { value: '50' } });
     fireEvent.change(screen.getByLabelText('Skóre Petr'), { target: { value: '50' } });
 
@@ -266,6 +342,7 @@ describe('game with characters and an own player', () => {
     '/parties/3/players': { body: players },
     '/parties/3/plays': { body: PLAY },
     '/parties/3/plays?limit=11&offset=0&gameId=1': { body: [PLAY] },
+    '/parties/3/plays/defaults*': { body: { sessionNumber: 95, playerIds: null } },
   };
 
   it('preselects the game own player, shows it first even though it is a guest, and sends the chosen character', async () => {
@@ -278,7 +355,7 @@ describe('game with characters and an own player', () => {
     const labels = screen.getAllByRole('checkbox').map((c) => c.closest('label')?.textContent ?? '');
     expect(labels[0]).toContain('Boss');
 
-    fireEvent.click(screen.getByLabelText('Anna'));
+    expect(screen.getByLabelText('Anna')).toBeChecked(); // člen party je předvybraný
     fireEvent.change(screen.getByLabelText('Skóre Anna'), { target: { value: '9' } });
     fireEvent.change(screen.getByLabelText('Skóre Boss'), { target: { value: '5' } });
     fireEvent.change(screen.getByLabelText('Postava Anna'), { target: { value: '22' } });

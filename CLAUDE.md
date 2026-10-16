@@ -20,15 +20,15 @@ Není tu PHP ani MySQL ani sudo. PHP 8.4 je statický binár v `~/bin/php` + `~/
 ## Backend – orientace
 - `src/Entity` – `User, Party, PartyMember, PartyInvitation, Player (hráč party, i host bez účtu), Game, GameAddon (rozšíření), GameCharacter (postavy), Place, Tag, GameSession, Play, PlayResult`.
 - `src/Domain` – čistá logika: `ResultCalculator` (pořadí/vítězové dle `ScoreType`), `PlayerInput/Outcome`, `Exception/DomainException` (→ HTTP 422).
-- `src/Service` – `PlayService` (create/update/delete zápisu), `SessionAssigner` (24h seance), `Presenter` (entity → JSON).
-- `src/Controller` – tenké kontrolery (`Party, Game, Play, Stats, Auth, Health`); vstup přes `#[MapRequestPayload]` DTO v `src/Dto`.
+- `src/Service` – `PlayService` (create/update/delete zápisu), `SessionAssigner` (24h seance, návrh čísla, ruční číslo; ADR 0013), `Presenter` (entity → JSON).
+- `src/Controller` – tenké kontrolery (`Party, Game, Play, Lookup, Stats, Auth, Health`; `Lookup` = místa a tagy pro našeptávání); vstup přes `#[MapRequestPayload]` DTO v `src/Dto`.
 - `src/Security` – `PartyVoter` (`PARTY_VIEW`/`PARTY_ADMIN`), `JsonEntryPoint` (401 JSON), `SessionLoginAuthenticator`.
 - `src/EventListener/ApiExceptionListener` – chyby pod `/api` jako JSON `{error, violations?}`.
 - `migrations/` – `…000000` přejmenuje legacy tabulky, `…000100` schéma, `…000200` import dat ze staré app. Po změně entit vygenerovat novou migraci (`doctrine:migrations:diff`, `schema_filter` ignoruje `legacy_*`).
 - Testy: `tests/Unit` (bez DB), `tests/Functional` (SQLite, `ApiFlowTest`).
 
 ## Frontend – orientace
-- `src/api` (klient + typy + endpointy) · `src/lib` (čistá logika: `playForm`, `scoring`, `activeParty`, `afterLogin`, `datetime`) · `src/pages` · `src/components` (`Skeleton`, `GameHeader`, …) · `src/AppContext.tsx` (me, parties, aktivní parta) · `src/App.tsx` (routy + gating login → přezdívka → parta).
+- `src/api` (klient + typy + endpointy) · `src/lib` (čistá logika: `playForm`, `scoring`, `activeParty`, `afterLogin`, `datetime`) · `src/pages` · `src/components` (`Skeleton`, `GameHeader`, `Autocomplete`, `TagInput`, …) · `src/AppContext.tsx` (me, parties, aktivní parta) · `src/App.tsx` (routy + gating login → přezdívka → parta).
 - Mobile-first, max. šířka 400 px, UI v češtině; vzhled převzatý ze starého prototypu (ADR 0008). Routy (ADR 0009): `/`→`/games` seznam her (hledání, filtr), `/games/:id` detail hry se zápisy, `/games/:id/cheatsheet|edit`, `/games/:id/new-play` (nový zápis, jen z detailu hry), `/games/new`, `/manage/games`, `/plays/:id/edit` (úprava zápisu, smazání je pod formulářem), `/stats`, `/parties` (správa part: seznam, přepnutí, založení), `/parties/:id` (detail party: členové, role, pozvánky, opuštění).
 
 ## Konvence a pasti
