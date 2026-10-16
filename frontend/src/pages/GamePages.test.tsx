@@ -101,7 +101,7 @@ describe('game detail', () => {
     expect(screen.getByText('Řeka')).toBeInTheDocument();
     expect(screen.getByText('rodinná')).toBeInTheDocument();
 
-    expect(screen.getByRole('link', { name: 'Nový zápis' })).toHaveAttribute('href', '/plays/new?gameId=1');
+    expect(screen.getByRole('link', { name: 'Nový zápis' })).toHaveAttribute('href', '/games/1/new-play');
     expect(screen.getByRole('link', { name: 'Taháček' })).toHaveAttribute('href', '/games/1/cheatsheet');
     expect(screen.getByRole('link', { name: 'Zpět' })).toHaveAttribute('href', '/games');
   });
@@ -130,5 +130,51 @@ describe('game detail', () => {
     expect(await screen.findByRole('heading', { name: 'Start hry' })).toBeInTheDocument();
     expect(document.querySelector('.cheatsheet script')).toBeNull();
     expect(document.querySelector('.cheatsheet img')?.getAttribute('onerror')).toBeNull();
+  });
+});
+
+describe('new play', () => {
+  const players = [{ id: 1, name: 'Anna', hasAccount: true }, { id: 2, name: 'Petr', hasAccount: false }];
+  const routes = {
+    ...base,
+    '/games/1': { body: { ...GAME, addons: [{ id: 5, name: 'Řeka' }] } },
+    '/parties/3/players': { body: players },
+    '/parties/3/plays': { body: PLAY },
+    '/parties/3/plays?limit=11&offset=0&gameId=1': { body: [PLAY] },
+  };
+
+  it('is scoped to the game: no game picker, validates and posts the scores', async () => {
+    const fetchMock = mockApi(routes);
+    renderApp('/games/1/new-play');
+    expect(await screen.findByRole('heading', { name: 'Nový zápis' })).toBeInTheDocument();
+    expect(screen.getByText('Carcassonne')).toBeInTheDocument();
+    expect(screen.queryByLabelText('Hra')).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Uložit zápis' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent('Vyber alespoň jednoho hráče.');
+
+    fireEvent.click(screen.getByLabelText('Anna'));
+    fireEvent.click(screen.getByLabelText('Petr'));
+    fireEvent.click(screen.getByLabelText('Řeka'));
+    fireEvent.change(screen.getByLabelText('Skóre Anna'), { target: { value: '90' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Uložit zápis' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent('Zadej skóre všem hráčům.');
+
+    fireEvent.change(screen.getByLabelText('Skóre Petr'), { target: { value: '75' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Uložit zápis' }));
+
+    await waitFor(() => expect(fetchMock.mock.calls.some(([u, init]) => String(u) === '/api/parties/3/plays' && init?.method === 'POST')).toBe(true));
+    const post = fetchMock.mock.calls.find(([u, init]) => String(u) === '/api/parties/3/plays' && init?.method === 'POST')!;
+    const body = JSON.parse(String(post[1]?.body));
+    expect(body).toMatchObject({ gameId: 1, addonIds: [5] });
+    expect(body.players).toEqual([{ playerId: 1, score: 90 }, { playerId: 2, score: 75 }]);
+    // po uložení se vrací na detail hry
+    expect(await screen.findByRole('link', { name: 'Nový zápis' })).toHaveAttribute('href', '/games/1/new-play');
+  });
+
+  it('shows a friendly message for an unknown game', async () => {
+    mockApi({ ...base, '/parties/3/players': { body: players }, '/games/1': { status: 404, body: { error: 'nf' } } });
+    renderApp('/games/1/new-play');
+    expect(await screen.findByText(/neexistuje nebo k ní nemáš přístup/)).toBeInTheDocument();
   });
 });

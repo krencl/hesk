@@ -8,7 +8,6 @@ import { GameDetailPage } from './pages/GameDetailPage';
 import { GameFormPage } from './pages/GameFormPage';
 import { GameListPage } from './pages/GameListPage';
 import { GamesPage } from './pages/GamesPage';
-import { HomePage } from './pages/HomePage';
 import { JoinPage } from './pages/JoinPage';
 import { LoginPage } from './pages/LoginPage';
 import { NewPlayPage } from './pages/NewPlayPage';
@@ -47,10 +46,9 @@ export function App() {
             <Route path="/games/new" element={<GameFormPage />} />
             <Route path="/games/:id" element={<GameDetailPage />} />
             <Route path="/games/:id/cheatsheet" element={<GameCheatsheetPage />} />
+            <Route path="/games/:id/new-play" element={<NewPlayPage />} />
             <Route path="/games/:id/edit" element={<GameFormPage />} />
             <Route path="/manage/games" element={<GamesPage />} />
-            <Route path="/plays" element={<HomePage />} />
-            <Route path="/plays/new" element={<NewPlayPage />} />
             <Route path="/plays/:id" element={<PlayDetailPage />} />
             <Route path="/stats" element={<StatsPage />} />
           </Route>

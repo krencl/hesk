@@ -1,9 +1,11 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { type FormEvent, useState } from 'react';
-import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useActiveParty } from '../AppContext';
 import { api } from '../api';
+import { ApiError } from '../api/client';
 import { ErrorMessage } from '../components/ErrorMessage';
+import { GameHeader } from '../components/GameHeader';
 import { ListSkeleton } from '../components/Skeleton';
 import { toLocalInput } from '../lib/datetime';
 import { refreshAfterPlayChange } from '../lib/refresh';
@@ -13,8 +15,9 @@ export function NewPlayPage() {
   const party = useActiveParty();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const presetGameId = Number(useSearchParams()[0].get('gameId')) || null;
-  const games = useQuery({ queryKey: ['games', party.id], queryFn: () => api.games(party.id) });
+  const gameId = Number(useParams().id);
+  const gameQuery = useQuery({ queryKey: ['game', gameId], queryFn: () => api.game(gameId), retry: false });
+  const game = gameQuery.data;
   const players = useQuery({ queryKey: ['players', party.id], queryFn: () => api.players(party.id) });
   const [guestName, setGuestName] = useState('');
   const addGuest = useMutation({
@@ -29,7 +32,7 @@ export function NewPlayPage() {
   const [draft, setDraft] = useState<PlayDraft>(() => {
     const end = new Date();
     return {
-      gameId: presetGameId,
+      gameId,
       startedAt: toLocalInput(new Date(end.getTime() - 60 * 60 * 1000)),
       endedAt: toLocalInput(end),
       players: [],
@@ -40,7 +43,6 @@ export function NewPlayPage() {
     };
   });
   const [formError, setFormError] = useState<string | null>(null);
-  const game = games.data?.find((g) => g.id === draft.gameId);
 
   const save = useMutation({
     mutationFn: () => api.createPlay(party.id, toPlayInput(draft, game!)),
@@ -68,22 +70,17 @@ export function NewPlayPage() {
     if (!problem) save.mutate();
   };
 
-  if (games.isPending || players.isPending) return <ListSkeleton rows={3} withImage={false} />;
-  if (games.data?.length === 0) return <p className="empty">Nejdřív přidej nějakou hru.<Link className="btn" to="/games/new">Přidat hru</Link></p>;
+  if (gameQuery.error instanceof ApiError && (gameQuery.error.status === 404 || gameQuery.error.status === 403)) {
+    return <p className="empty">Tahle hra neexistuje nebo k ní nemáš přístup.<Link className="btn" to="/games">Zpět na hry</Link></p>;
+  }
+  if (!game || players.isPending) return <ListSkeleton rows={3} withImage={false} />;
 
   return (
     <form className="form" onSubmit={submit}>
+      <GameHeader name={game.name} imageUrl={game.imageUrl} />
       <h2>Nový zápis</h2>
 
-      <label>
-        Hra
-        <select value={draft.gameId ?? ''} onChange={(e) => patch({ gameId: e.target.value ? Number(e.target.value) : null, addonIds: [] })} required>
-          <option value="">— vyber —</option>
-          {games.data?.slice().sort((a, b) => a.name.localeCompare(b.name, 'cs')).map((g) => <option key={g.id} value={g.id}>{g.name}</option>)}
-        </select>
-      </label>
-
-      {game && game.addons.length > 0 && (
+      {game.addons.length > 0 && (
         <fieldset>
           <legend>Přídavky</legend>
           {game.addons.map((a) => (
@@ -105,13 +102,13 @@ export function NewPlayPage() {
                 <input type="checkbox" checked={!!player} onChange={() => togglePlayer(m.id)} />
                 {m.name}
               </label>
-              {player && game && (game.scoreType === 'most_points' || game.scoreType === 'fewest_points') && (
+              {player && (game.scoreType === 'most_points' || game.scoreType === 'fewest_points') && (
                 <input inputMode="decimal" aria-label={`Skóre ${m.name}`} placeholder="skóre" value={player.score} onChange={(e) => patchPlayer(m.id, { score: e.target.value })} />
               )}
-              {player && game?.scoreType === 'rank_order' && (
+              {player && game.scoreType === 'rank_order' && (
                 <input type="number" min={1} aria-label={`Pořadí ${m.name}`} placeholder="pořadí" value={player.rank} onChange={(e) => patchPlayer(m.id, { rank: e.target.value })} />
               )}
-              {player && game?.scoreType === 'winner_only' && (
+              {player && game.scoreType === 'winner_only' && (
                 <label className="check">
                   <input type="checkbox" checked={player.winner} onChange={(e) => patchPlayer(m.id, { winner: e.target.checked })} /> vítěz
                 </label>
@@ -138,7 +135,7 @@ export function NewPlayPage() {
       <ErrorMessage error={save.error} />
       <div className="nav-actions">
         <button className="btn" type="submit" disabled={save.isPending}>Uložit zápis</button>
-        <Link className="btn outline-secondary" to={draft.gameId ? `/games/${draft.gameId}` : '/games'}>Zrušit</Link>
+        <Link className="btn outline-secondary" to={`/games/${gameId}`}>Zrušit</Link>
       </div>
     </form>
   );

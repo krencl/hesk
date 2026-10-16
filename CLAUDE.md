@@ -28,7 +28,7 @@ Není tu PHP ani MySQL ani sudo. PHP 8.4 je statický binár v `~/bin/php` + `~/
 
 ## Frontend – orientace
 - `src/api` (klient + typy + endpointy) · `src/lib` (čistá logika: `playForm`, `scoring`, `activeParty`, `afterLogin`, `datetime`) · `src/pages` · `src/components` (`Skeleton`, `GameHeader`, …) · `src/AppContext.tsx` (me, parties, aktivní skupina) · `src/App.tsx` (routy + gating login → přezdívka → skupina).
-- Mobile-first, max. šířka 400 px, UI v češtině; vzhled převzatý ze starého prototypu (ADR 0008). Routy (ADR 0009): `/`→`/games` seznam her (hledání, filtr), `/games/:id` detail hry se zápisy, `/games/:id/cheatsheet|edit`, `/games/new`, `/manage/games`, `/plays` chronologie, `/plays/:id`, `/plays/new?gameId=`, `/stats`, `/parties`.
+- Mobile-first, max. šířka 400 px, UI v češtině; vzhled převzatý ze starého prototypu (ADR 0008). Routy (ADR 0009): `/`→`/games` seznam her (hledání, filtr), `/games/:id` detail hry se zápisy, `/games/:id/cheatsheet|edit`, `/games/:id/new-play` (nový zápis, jen z detailu hry), `/games/new`, `/manage/games`, `/plays/:id`, `/stats`, `/parties`.
 
 ## Konvence a pasti
 - Pravidla domény patří do entit/`Domain`, ne do kontrolerů; kontrolery vrací `Presenter` pole.
