@@ -336,6 +336,13 @@ a.link:hover { text-decoration: underline; }
 
 /* Našeptávání (tagy) */
 .combo { position: relative; }
+.combo-box {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 0.25rem; padding: 0.2rem 0.4rem;
+  background: #fff; border: 1px solid var(--gray); border-radius: var(--radius); cursor: text;
+}
+.combo-box:focus-within { border-color: #93bdec; box-shadow: 0 0 0 0.25rem rgba(39, 123, 218, 0.25); }
+.combo-box input { flex: 1 1 6rem; width: auto; min-width: 6rem; padding: 0.175rem 0.35rem; border: 0; box-shadow: none; }
+.combo-box input:focus { box-shadow: none; }
 .combo-list {
   position: absolute; z-index: 10; left: 0; right: 0; top: 100%; margin: 0.15rem 0 0; padding: 0; list-style: none;
   max-height: 12rem; overflow-y: auto; background: #fff; border: 1px solid var(--gray); border-radius: var(--radius);
@@ -344,11 +351,11 @@ a.link:hover { text-decoration: underline; }
 .combo-list[hidden] { display: none; }
 .combo-list li { padding: 0.4rem 0.75rem; cursor: pointer; }
 .combo-list li:hover, .combo-list li[aria-selected='true'] { background: var(--light-blue); }
-.tag-input { display: grid; gap: 0.4rem; }
-.tag-list { display: flex; flex-wrap: wrap; gap: 0.4rem; margin: 0; padding: 0; list-style: none; }
 .tag {
   display: inline-flex; align-items: center; padding: 0.1rem 0.2rem 0.1rem 0.7rem; font-size: 0.9rem;
   background: #e8f0fb; border-radius: 1rem;
 }
 .tag button { display: inline-flex; padding: 0.1rem; font: inherit; color: var(--secondary); background: none; border: 0; cursor: pointer; }
 .tag .icon { font-size: 1.1rem; }
+/* Začátek a konec vedle sebe na úzké obrazovce */
+input[type='datetime-local'] { font-size: 0.9rem; padding-left: 0.4rem; padding-right: 0.4rem; }

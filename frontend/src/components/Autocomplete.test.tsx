@@ -70,14 +70,40 @@ describe('TagInput', () => {
     fireEvent.change(input, { target: { value: 'rodinná, ' } });
     expect(screen.getByRole('button', { name: 'Odebrat tag rodinná' })).toBeInTheDocument();
 
+    input.focus();
     fireEvent.focus(input);
     fireEvent.click(screen.getByRole('option', { name: 'liga' }));
     expect(screen.getByRole('button', { name: 'Odebrat tag liga' })).toBeInTheDocument();
-    expect(names()).toEqual([]); // přidané už se nenabízí (a nabídka se po výběru zavřela)
+    // nabídka zůstává otevřená, input zaostřený a přidané už se nenabízí
+    expect(names()).toEqual(['víkend']);
+    expect(input).toHaveFocus();
 
     fireEvent.change(input, { target: { value: 'LIGA' } });
     fireEvent.keyDown(input, { key: 'Enter' });
     expect(screen.getAllByRole('button', { name: /Odebrat tag/ })).toHaveLength(3);
+  });
+
+  it('keeps the dropdown open and the focus while picking several tags in a row', () => {
+    render(<Tags options={['a', 'b', 'c']} />);
+    const input = screen.getByLabelText('Tagy');
+    input.focus();
+    fireEvent.focus(input);
+    fireEvent.click(screen.getByRole('option', { name: 'a' }));
+    fireEvent.click(screen.getByRole('option', { name: 'c' }));
+    expect(names()).toEqual(['b']);
+    expect(input).toHaveFocus();
+    // mouseDown na nabídce ani na křížku nesmí vzít zaostření (preventDefault)
+    expect(fireEvent.mouseDown(screen.getByRole('option', { name: 'b' }))).toBe(false);
+    expect(fireEvent.mouseDown(screen.getByRole('button', { name: 'Odebrat tag a' }))).toBe(false);
+  });
+
+  it('shows the tags inside the input box and Backspace in the empty input removes the last one', () => {
+    render(<Tags options={[]} initial={['a', 'b']} />);
+    const input = screen.getByLabelText('Tagy');
+    expect(input.closest('.combo-box')).toContainElement(screen.getByRole('button', { name: 'Odebrat tag a' }));
+    fireEvent.keyDown(input, { key: 'Backspace' });
+    expect(screen.queryByRole('button', { name: 'Odebrat tag b' })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Odebrat tag a' })).toBeInTheDocument();
   });
 
   it('adds the pending text when the input loses focus, so it is not lost on save', () => {

@@ -35,27 +35,24 @@ export function TagInput({ id, tags, onChange, options }: Props) {
   const commit = (value: string) => { add([value]); setText(''); };
 
   return (
-    <div className="tag-input">
-      {tags.length > 0 && (
-        <ul className="tag-list">
-          {tags.map((t) => (
-            <li key={t} className="tag">
-              {t}
-              <button type="button" aria-label={`Odebrat tag ${t}`} onClick={() => onChange(tags.filter((x) => x !== t))}><Icon name="close" /></button>
-            </li>
-          ))}
-        </ul>
-      )}
-      <Autocomplete
-        id={id}
-        value={text}
-        onChange={type}
-        onPick={(o) => commit(o)}
-        onCommit={commit}
-        options={options.filter((o) => !tags.some((t) => normalize(t) === normalize(o)))}
-        maxLength={100}
-        placeholder="Přidat tag"
-      />
-    </div>
+    <Autocomplete
+      id={id}
+      value={text}
+      onChange={type}
+      onPick={commit}
+      onCommit={commit}
+      options={options.filter((o) => !tags.some((t) => normalize(t) === normalize(o)))}
+      maxLength={100}
+      placeholder={tags.length === 0 ? 'Přidat tag' : ''}
+      keepOpen
+      onBackspaceEmpty={() => onChange(tags.slice(0, -1))}
+      prefix={tags.map((t) => (
+        <span key={t} className="tag">
+          {t}
+          {/* mouseDown nesmí vzít zaostření inputu, ať nabídka zůstane otevřená */}
+          <button type="button" aria-label={`Odebrat tag ${t}`} onMouseDown={(e) => e.preventDefault()} onClick={() => onChange(tags.filter((x) => x !== t))}><Icon name="close" /></button>
+        </span>
+      ))}
+    />
   );
 }

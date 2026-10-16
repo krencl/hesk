@@ -1,4 +1,4 @@
-import { type KeyboardEvent, useId, useState } from 'react';
+import { type KeyboardEvent, type ReactNode, useId, useRef, useState } from 'react';
 
 /** Porovnání bez ohledu na velikost písmen a diakritiku („kuba“ najde „U Kuby“, „cesky“ najde „český“). */
 export const normalize = (text: string): string => text.normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase().trim();
@@ -15,14 +15,21 @@ interface Props {
   onCommit?: (value: string) => void;
   maxLength?: number;
   placeholder?: string;
+  /** Obsah uvnitř rámečku před inputem (např. štítky tagů). */
+  prefix?: ReactNode;
+  /** Po výběru nechat nabídku otevřenou (a input zaostřený), aby šlo vybírat dál. */
+  keepOpen?: boolean;
+  /** Backspace v prázdném inputu (v rámečku s štítky odebere poslední). */
+  onBackspaceEmpty?: () => void;
 }
 
 /**
  * Input s nabídkou (combobox): po zaostření se ukáže seznam známých hodnot a při psaní se zužuje.
  * Hodnotu, která v nabídce není, lze prostě napsat – nové se zakládá až při uložení formuláře.
  */
-export function Autocomplete({ id, value, onChange, options, onPick, onCommit, maxLength, placeholder }: Props) {
+export function Autocomplete({ id, value, onChange, options, onPick, onCommit, maxLength, placeholder, prefix, keepOpen = false, onBackspaceEmpty }: Props) {
   const listId = useId();
+  const inputRef = useRef<HTMLInputElement>(null);
   const [open, setOpen] = useState(false);
   const [filtering, setFiltering] = useState(false);
   const [active, setActive] = useState(-1);
@@ -34,7 +41,7 @@ export function Autocomplete({ id, value, onChange, options, onPick, onCommit, m
   const pick = (option: string) => {
     if (onPick) onPick(option);
     else onChange(option);
-    setOpen(false);
+    setOpen(keepOpen);
     setFiltering(false);
     setActive(-1);
   };
@@ -53,6 +60,8 @@ export function Autocomplete({ id, value, onChange, options, onPick, onCommit, m
         e.preventDefault();
         onCommit(value);
       }
+    } else if (e.key === 'Backspace' && value === '' && onBackspaceEmpty) {
+      onBackspaceEmpty();
     } else if (e.key === 'Escape' && open) {
       e.preventDefault();
       setOpen(false);
@@ -61,22 +70,27 @@ export function Autocomplete({ id, value, onChange, options, onPick, onCommit, m
 
   return (
     <div className="combo">
-      <input
-        id={id}
-        role="combobox"
-        aria-expanded={expanded}
-        aria-controls={listId}
-        aria-autocomplete="list"
-        aria-activedescendant={expanded && active >= 0 ? `${listId}-${active}` : undefined}
-        autoComplete="off"
-        value={value}
-        maxLength={maxLength}
-        placeholder={placeholder}
-        onFocus={() => { setOpen(true); setFiltering(false); }}
-        onBlur={() => { setOpen(false); setActive(-1); onCommit?.(value); }}
-        onChange={(e) => { onChange(e.target.value); setOpen(true); setFiltering(true); setActive(-1); }}
-        onKeyDown={onKeyDown}
-      />
+      {/* klik do rámečku mimo input (na volné místo vedle štítků) zaostří input */}
+      <div className="combo-box" onMouseDown={(e) => { if (e.target !== inputRef.current && !(e.target as HTMLElement).closest('button')) { e.preventDefault(); inputRef.current?.focus(); } }}>
+        {prefix}
+        <input
+          ref={inputRef}
+          id={id}
+          role="combobox"
+          aria-expanded={expanded}
+          aria-controls={listId}
+          aria-autocomplete="list"
+          aria-activedescendant={expanded && active >= 0 ? `${listId}-${active}` : undefined}
+          autoComplete="off"
+          value={value}
+          maxLength={maxLength}
+          placeholder={placeholder}
+          onFocus={() => { setOpen(true); setFiltering(false); }}
+          onBlur={() => { setOpen(false); setActive(-1); onCommit?.(value); }}
+          onChange={(e) => { onChange(e.target.value); setOpen(true); setFiltering(true); setActive(-1); }}
+          onKeyDown={onKeyDown}
+        />
+      </div>
       <ul id={listId} role="listbox" className="combo-list" hidden={!expanded}>
         {shown.map((o, i) => (
           // mouseDown nesmí přenést zaostření z inputu, jinak by se nabídka zavřela dřív než proběhne klik

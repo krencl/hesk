@@ -156,6 +156,8 @@ export interface PlayDefaults {
   sessionNumber: number;
   /** Hráči posledního zápisu stejného sezení; `null`, když sezení ještě neexistuje (první hra dne). */
   playerIds: number[] | null;
+  /** Tagy posledního zápisu stejného sezení (prázdné, když sezení ještě není). */
+  tags: string[];
 }
 
 export interface Stats {

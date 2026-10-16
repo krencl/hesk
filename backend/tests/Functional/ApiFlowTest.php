@@ -200,21 +200,23 @@ final class ApiFlowTest extends WebTestCase
         $defaults = fn (string $day, string $time = '20:00'): array => $this->api('GET', "$base/plays/defaults?startedAt=".rawurlencode("{$day}T{$time}:00+00:00"));
 
         // první hra: seance ještě není → číslo 1 a žádní předvybraní hráči
-        self::assertSame(['sessionNumber' => 1, 'playerIds' => null], $defaults('2026-03-01'));
+        self::assertSame(['sessionNumber' => 1, 'playerIds' => null, 'tags' => []], $defaults('2026-03-01'));
 
         $play = fn (string $day, string $time, array $ids, array $extra = []): array => $this->api('POST', "$base/plays", $extra + [
             'gameId' => $game['id'], 'startedAt' => "{$day}T{$time}:00+00:00", 'endedAt' => "{$day}T{$time}:00+00:00",
             'players' => array_map(static fn (int $id): array => ['playerId' => $id, 'winner' => $id === $ids[0]], $ids),
         ], 201);
         $play('2026-03-01', '18:00', [$anna, $bob]);
-        $play('2026-03-01', '20:00', [$bob]);
+        $play('2026-03-01', '20:00', [$bob], ['tags' => ['liga', 'Doma']]);
 
         // ten samý večer: stejné číslo a hráči posledního zápisu seance
-        self::assertSame(['sessionNumber' => 1, 'playerIds' => [$bob]], $defaults('2026-03-01', '21:00'));
+        $last = $defaults('2026-03-01', '21:00');
+        self::assertSame([1, [$bob]], [$last['sessionNumber'], $last['playerIds']]);
+        self::assertEqualsCanonicalizing(['liga', 'Doma'], $last['tags'], 'tagy posledního zápisu seance');
         // do 24 h od posledního zápisu je to pořád ta samá seance
         self::assertSame(1, $defaults('2026-03-02', '19:00')['sessionNumber']);
         // o měsíc později další číslo, hráči se neberou
-        self::assertSame(['sessionNumber' => 2, 'playerIds' => null], $defaults('2026-04-01'));
+        self::assertSame(['sessionNumber' => 2, 'playerIds' => null, 'tags' => []], $defaults('2026-04-01'));
 
         $this->api('GET', "$base/plays/defaults", expected: 422);
         $this->api('GET', "$base/plays/defaults?startedAt=nesmysl", expected: 422);

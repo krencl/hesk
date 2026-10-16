@@ -216,6 +216,30 @@ describe('new play', () => {
     expect(screen.getByLabelText('Anna')).not.toBeChecked(); // v minulém zápisu nehrála
   });
 
+  it('prefills the tags of the last play of the same session', async () => {
+    mockApi({ ...routes, '/parties/3/plays/defaults*': { body: { sessionNumber: 96, playerIds: [1], tags: ['liga'] } } });
+    renderApp('/games/1/new-play');
+    await screen.findByRole('heading', { name: 'Nový zápis' });
+    expect(screen.getByRole('button', { name: 'Odebrat tag liga' })).toBeInTheDocument();
+  });
+
+  it('orders the fields: session number, start and end side by side, players, add-ons', async () => {
+    mockApi(routes);
+    renderApp('/games/1/new-play');
+    await screen.findByRole('heading', { name: 'Nový zápis' });
+    const number = screen.getByLabelText('Číslo sezení');
+    const start = screen.getByLabelText('Začátek');
+    const end = screen.getByLabelText('Konec');
+    const players = screen.getByText('Hráči');
+    const addons = screen.getByText('Rozšíření');
+    const before = (a: Node, b: Node) => expect(a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    before(number, start);
+    before(start, end);
+    before(end, players);
+    before(players, addons);
+    expect(start.closest('.row')).toBe(end.closest('.row'));
+  });
+
   it('sends the session number only when the user changes it, and creates new tags by typing', async () => {
     const fetchMock = mockApi(routes);
     renderApp('/games/1/new-play');

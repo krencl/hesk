@@ -43,7 +43,7 @@ final class PlayController extends ApiController
 
     /**
      * Výchozí hodnoty nového zápisu: číslo seance, do které by zápis v daném čase spadl (jinak další v pořadí),
-     * a hráči posledního zápisu této seance (`null`, když seance ještě neexistuje = první hra dne).
+     * hráči a tagy posledního zápisu této seance (`playerIds` je `null`, když seance ještě neexistuje = první hra dne).
      */
     #[Route('/api/parties/{id}/plays/defaults', requirements: ['id' => '\d+'], methods: ['GET'])]
     #[IsGranted(PartyVoter::VIEW, 'party')]
@@ -61,6 +61,7 @@ final class PlayController extends ApiController
         return new JsonResponse([
             'sessionNumber' => $number,
             'playerIds' => null === $last ? null : array_values(array_map(static fn ($r): int => $r->getPlayer()->getId(), $last->getResults()->toArray())),
+            'tags' => null === $last ? [] : array_values(array_map(static fn ($t): string => $t->getName(), $last->getTags()->toArray())),
         ]);
     }
 

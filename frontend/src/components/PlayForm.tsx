@@ -117,17 +117,12 @@ export function PlayForm({ game, initial, heading, submitLabel, saving, error, c
       <form className="pad form" onSubmit={submit}>
         <h2>{heading}</h2>
 
-        {game.addons.length > 0 && (
-          <div className="field">
-            <span className="field-label">Rozšíření</span>
-            {game.addons.map((a) => (
-              <label key={a.id} className="check">
-                <input type="checkbox" checked={draft.addonIds.includes(a.id)} onChange={(e) => patch({ addonIds: e.target.checked ? [...draft.addonIds, a.id] : draft.addonIds.filter((id) => id !== a.id) })} />
-                {a.name}
-              </label>
-            ))}
-          </div>
-        )}
+        <label>Číslo sezení<input type="number" inputMode="numeric" min={1} step={1} value={draft.sessionNumber} onChange={(e) => patch({ sessionNumber: e.target.value, sessionNumberTouched: true })} /></label>
+
+        <div className="row">
+          <label>Začátek<input type="datetime-local" value={draft.startedAt} onChange={(e) => patch({ startedAt: e.target.value })} required /></label>
+          <label>Konec<input type="datetime-local" value={draft.endedAt} onChange={(e) => patch({ endedAt: e.target.value })} required /></label>
+        </div>
 
         <div className="field">
           <span className="field-label">Hráči</span>
@@ -185,11 +180,18 @@ export function PlayForm({ game, initial, heading, submitLabel, saving, error, c
           </div>
         </div>
 
-        <div className="row stack">
-          <label>Začátek<input type="datetime-local" value={draft.startedAt} onChange={(e) => patch({ startedAt: e.target.value })} required /></label>
-          <label>Konec<input type="datetime-local" value={draft.endedAt} onChange={(e) => patch({ endedAt: e.target.value })} required /></label>
-        </div>
-        <label>Číslo sezení<input type="number" inputMode="numeric" min={1} step={1} value={draft.sessionNumber} onChange={(e) => patch({ sessionNumber: e.target.value, sessionNumberTouched: true })} /></label>
+        {game.addons.length > 0 && (
+          <div className="field">
+            <span className="field-label">Rozšíření</span>
+            {game.addons.map((a) => (
+              <label key={a.id} className="check">
+                <input type="checkbox" checked={draft.addonIds.includes(a.id)} onChange={(e) => patch({ addonIds: e.target.checked ? [...draft.addonIds, a.id] : draft.addonIds.filter((id) => id !== a.id) })} />
+                {a.name}
+              </label>
+            ))}
+          </div>
+        )}
+
         <div className="field">
           <label htmlFor="play-tags" className="field-label">Tagy</label>
           <TagInput id="play-tags" tags={draft.tags} options={tags.data ?? []} onChange={(t) => patch({ tags: t })} />

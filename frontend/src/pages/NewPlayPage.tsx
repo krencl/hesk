@@ -47,7 +47,7 @@ export function NewPlayPage() {
   return (
     <PlayForm
       game={game.data}
-      initial={emptyDraft(game.data, now, { playerIds: defaultPlayerIds(defaults.data, players.data), sessionNumber: defaults.data?.sessionNumber })}
+      initial={emptyDraft(game.data, now, { playerIds: defaultPlayerIds(defaults.data, players.data), sessionNumber: defaults.data?.sessionNumber, tags: defaults.data?.tags })}
       suggestSessionNumber
       heading="Nový zápis"
       submitLabel="Uložit zápis"

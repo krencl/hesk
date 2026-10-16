@@ -74,15 +74,15 @@ export function defaultPlayerIds(defaults: Pick<PlayDefaults, 'playerIds'> | und
   return defaults?.playerIds ?? players.filter((p) => p.hasAccount).map((p) => p.id);
 }
 
-/** Formulář nového zápisu; vlastní hráč hry (je-li) je vždy vybraný jako první, dál `playerIds` a předvyplněné číslo sezení. */
-export function emptyDraft(game: Pick<Game, 'id' | 'player'>, now = new Date(), prefill: { playerIds?: number[]; sessionNumber?: number } = {}): PlayDraft {
+/** Formulář nového zápisu; vlastní hráč hry (je-li) je vždy vybraný jako první, dál `playerIds`, tagy a předvyplněné číslo sezení. */
+export function emptyDraft(game: Pick<Game, 'id' | 'player'>, now = new Date(), prefill: { playerIds?: number[]; sessionNumber?: number; tags?: string[] } = {}): PlayDraft {
   const playerIds = [...new Set([...(game.player ? [game.player.id] : []), ...(prefill.playerIds ?? [])])];
   return {
     gameId: game.id,
     ...defaultTimes(now),
     players: playerIds.map(newPlayerDraft),
     addonIds: [],
-    tags: [],
+    tags: prefill.tags ?? [],
     notes: '',
     sessionNumber: prefill.sessionNumber === undefined ? '' : String(prefill.sessionNumber),
     sessionNumberTouched: false,
