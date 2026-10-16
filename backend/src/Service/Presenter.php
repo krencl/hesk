@@ -115,6 +115,7 @@ final class Presenter
                 'score' => $r->getScore(),
                 'rank' => $r->getRank(),
                 'winner' => $r->isWinner(),
+                'starting' => $r->isStarting(),
             ], $results),
         ];
     }

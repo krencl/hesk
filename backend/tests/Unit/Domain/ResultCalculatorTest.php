@@ -72,6 +72,65 @@ final class ResultCalculatorTest extends TestCase
     }
 
     /** @return iterable<string, array{ScoreType, list<PlayerInput>}> */
+    public function testTiedScoresShareFirstPlaceAndAllWinByDefault(): void
+    {
+        $out = $this->calc->calculate(ScoreType::MostPoints, [
+            new PlayerInput(1, score: 30), new PlayerInput(2, score: 30), new PlayerInput(3, score: 10),
+        ]);
+
+        self::assertSame([1, 1, 3], array_map(static fn ($o) => $o->rank, $out));
+        self::assertSame([true, true, false], array_map(static fn ($o) => $o->winner, $out));
+    }
+
+    public function testManuallyChosenWinnerOverridesTieOnScore(): void
+    {
+        $out = $this->calc->calculate(ScoreType::MostPoints, [
+            new PlayerInput(1, score: 30), new PlayerInput(2, score: 30, winner: true), new PlayerInput(3, score: 10),
+        ]);
+
+        self::assertSame([1, 1, 3], array_map(static fn ($o) => $o->rank, $out), 'ranks still follow the score');
+        self::assertSame([false, true, false], array_map(static fn ($o) => $o->winner, $out));
+    }
+
+    public function testManualWinnersMayBeSeveralAndEvenNotTheHighestScore(): void
+    {
+        $out = $this->calc->calculate(ScoreType::FewestPoints, [
+            new PlayerInput(1, score: 5), new PlayerInput(2, score: 9, winner: true), new PlayerInput(3, score: 9, winner: true),
+        ]);
+
+        self::assertSame([false, true, true], array_map(static fn ($o) => $o->winner, $out));
+    }
+
+    public function testExplicitFalseWinnersDoNotDisableTheAutomaticWinner(): void
+    {
+        $out = $this->calc->calculate(ScoreType::MostPoints, [
+            new PlayerInput(1, score: 10, winner: false), new PlayerInput(2, score: 30, winner: false),
+        ]);
+
+        self::assertSame([false, true], array_map(static fn ($o) => $o->winner, $out));
+    }
+
+    public function testStartingPlayerIsPassedThroughForEveryScoreType(): void
+    {
+        foreach ([
+            [ScoreType::MostPoints, ['score' => 3.0]],
+            [ScoreType::RankOrder, ['rank' => 1]],
+            [ScoreType::WinnerOnly, ['winner' => true]],
+        ] as [$type, $fields]) {
+            $out = $this->calc->calculate($type, [new PlayerInput(1, ...$fields), new PlayerInput(2, ...$fields, starting: true)]);
+
+            self::assertSame([false, true], array_map(static fn ($o) => $o->starting, $out), $type->value);
+        }
+    }
+
+    public function testAtMostOneStartingPlayer(): void
+    {
+        $this->expectException(DomainException::class);
+        $this->calc->calculate(ScoreType::MostPoints, [
+            new PlayerInput(1, score: 1, starting: true), new PlayerInput(2, score: 2, starting: true),
+        ]);
+    }
+
     public static function invalidInputs(): iterable
     {
         yield 'no players' => [ScoreType::MostPoints, []];

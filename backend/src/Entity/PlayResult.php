@@ -27,6 +27,8 @@ class PlayResult
         private int $rank,
         #[ORM\Column]
         private bool $winner,
+        #[ORM\Column(name: 'is_starting')]
+        private bool $starting = false,
     ) {
     }
 
@@ -48,5 +50,11 @@ class PlayResult
     public function isWinner(): bool
     {
         return $this->winner;
+    }
+
+    /** Hráč, který ve hře začínal. */
+    public function isStarting(): bool
+    {
+        return $this->starting;
     }
 }

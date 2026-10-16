@@ -11,6 +11,7 @@ final readonly class PlayerOutcome
         public ?float $score,
         public int $rank,
         public bool $winner,
+        public bool $starting = false,
     ) {
     }
 }

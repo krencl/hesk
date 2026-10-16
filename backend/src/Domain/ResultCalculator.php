@@ -9,7 +9,9 @@ use App\Enum\ScoreType;
 
 /**
  * Z hrubého vstupu hráčů spočítá pořadí a vítěze podle typu bodování hry.
- * Remízy sdílí pořadí (1, 1, 3), vítězové jsou všichni s pořadím 1.
+ * Remízy sdílí pořadí (1, 1, 3), vítězové jsou všichni s pořadím 1. U her se skóre lze vítěze určit ručně
+ * (`winner = true`) – např. když při shodě skóre vyhrává jen jeden z remízujících, nebo víc hráčů podle pravidel.
+ * Začínající hráč je nejvýše jeden.
  */
 final class ResultCalculator
 {
@@ -28,12 +30,26 @@ final class ResultCalculator
             throw new DomainException('Hráč je v zápisu uveden vícekrát.');
         }
 
-        return match ($type) {
+        if (\count(array_filter($inputs, static fn (PlayerInput $i): bool => $i->starting)) > 1) {
+            throw new DomainException('Začínající hráč může být nejvýše jeden.');
+        }
+
+        $outcomes = match ($type) {
             ScoreType::MostPoints => $this->byScore($inputs, true),
             ScoreType::FewestPoints => $this->byScore($inputs, false),
             ScoreType::RankOrder => $this->byRank($inputs),
             ScoreType::WinnerOnly => $this->byWinnerFlag($inputs),
         };
+
+        $starting = [];
+        foreach ($inputs as $input) {
+            $starting[$input->playerId] = $input->starting;
+        }
+
+        return array_map(
+            static fn (PlayerOutcome $o): PlayerOutcome => new PlayerOutcome($o->playerId, $o->score, $o->rank, $o->winner, $starting[$o->playerId]),
+            $outcomes,
+        );
     }
 
     /**
@@ -59,8 +75,16 @@ final class ResultCalculator
             $ranks[$input->playerId] = $better + 1;
         }
 
+        // Ručně označení vítězové mají přednost před automatikou podle skóre.
+        $manual = array_filter($inputs, static fn (PlayerInput $i): bool => true === $i->winner);
+
         return array_map(
-            static fn (PlayerInput $i): PlayerOutcome => new PlayerOutcome($i->playerId, $i->score, $ranks[$i->playerId], 1 === $ranks[$i->playerId]),
+            static fn (PlayerInput $i): PlayerOutcome => new PlayerOutcome(
+                $i->playerId,
+                $i->score,
+                $ranks[$i->playerId],
+                [] === $manual ? 1 === $ranks[$i->playerId] : true === $i->winner,
+            ),
             $inputs,
         );
     }

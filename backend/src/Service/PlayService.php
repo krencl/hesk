@@ -98,7 +98,7 @@ final class PlayService
     {
         $outcomes = $this->calculator->calculate(
             $game->getScoreType(),
-            array_map(static fn ($p): PlayerInput => new PlayerInput($p->playerId, $p->score, $p->rank, $p->winner), $req->players),
+            array_map(static fn ($p): PlayerInput => new PlayerInput($p->playerId, $p->score, $p->rank, $p->winner, $p->starting), $req->players),
         );
 
         $results = [];
@@ -107,7 +107,7 @@ final class PlayService
             if (!$player || $player->getParty() !== $party) {
                 throw new DomainException('Hráč nepatří do této party.');
             }
-            $results[] = new PlayResult($play, $player, $o->score, $o->rank, $o->winner);
+            $results[] = new PlayResult($play, $player, $o->score, $o->rank, $o->winner, $o->starting);
         }
 
         $addons = [];

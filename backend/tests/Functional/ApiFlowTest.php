@@ -191,6 +191,36 @@ final class ApiFlowTest extends WebTestCase
         self::assertCount(2, $this->api('GET', "/api/plays/{$play['id']}")['results']);
     }
 
+    public function testStartingPlayerAndManualWinnerAreStoredAndUpdatable(): void
+    {
+        $this->login('anna@example.com', 'Anna');
+        $party = $this->api('POST', '/api/parties', ['name' => 'Pátek'], 201);
+        $base = "/api/parties/{$party['id']}";
+        $anna = $this->api('GET', "$base/players")[0]['id'];
+        $bob = $this->api('POST', "$base/players", ['name' => 'Bob'], 201)['id'];
+        $game = $this->api('POST', "$base/games", ['name' => 'Azul', 'scoreType' => 'most_points'], 201);
+        $payload = fn (array $players): array => [
+            'gameId' => $game['id'], 'startedAt' => '2026-03-01T18:00:00+00:00', 'endedAt' => '2026-03-01T19:00:00+00:00', 'players' => $players,
+        ];
+
+        // shoda skóre: automaticky vyhrají oba, začíná Bob
+        $play = $this->api('POST', "$base/plays", $payload([['playerId' => $anna, 'score' => 50], ['playerId' => $bob, 'score' => 50, 'starting' => true]]), 201);
+        self::assertSame([true, true], array_column($play['results'], 'winner'));
+        self::assertSame(['Bob'], array_column(array_filter($play['results'], static fn (array $r): bool => $r['starting']), 'name'));
+
+        // ruční výběr: vyhrává jen Anna, začínající hráč se změní
+        $edited = $this->api('PUT', "/api/plays/{$play['id']}", $payload([['playerId' => $anna, 'score' => 50, 'winner' => true, 'starting' => true], ['playerId' => $bob, 'score' => 50]]));
+        $byName = array_column($edited['results'], null, 'name');
+        self::assertTrue($byName['Anna']['winner']);
+        self::assertFalse($byName['Bob']['winner']);
+        self::assertTrue($byName['Anna']['starting']);
+        self::assertFalse($byName['Bob']['starting']);
+        self::assertSame(1, $byName['Bob']['rank'], 'rank follows the score, not the manual winner');
+
+        // dva začínající hráči nejsou možní
+        $this->api('POST', "$base/plays", $payload([['playerId' => $anna, 'score' => 1, 'starting' => true], ['playerId' => $bob, 'score' => 2, 'starting' => true]]), 422);
+    }
+
     public function testInvalidPlayIsRejected(): void
     {
         $this->login('anna@example.com', 'Anna');

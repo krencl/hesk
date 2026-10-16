@@ -11,6 +11,7 @@ final readonly class PlayerRequest
         public ?float $score = null,
         public ?int $rank = null,
         public ?bool $winner = null,
+        public bool $starting = false,
     ) {
     }
 }
