@@ -16,9 +16,9 @@ Vychází z `/hesk-dev-old/SPECIFICATION.md`; terminologie: v kódu *Play* = „
 - **Hráči zápisu** jsou `Player` z party (člen s účtem nebo host, viz ADR 0007; původní předpoklad „hráč = uživatel“ neplatí); přídavky musí patřit k vybrané hře; místo a tagy se zakládají podle názvu (find-or-create).
 - **Výsledek hráče** (`PlayResult`) ukládá `score` (nullable), `placement` (rank) a `winner`; statistiky se počítají DQL agregací.
 - **Časy** se ukládají jako UTC `DATETIME`; API používá ISO 8601 s offsetem, frontend převádí z/do lokálního času.
-- **Obrázek hry** je zatím jen URL (`imageUrl`), upload souborů později. **Taháček** je HTML; frontend ho vždy sanitizuje (DOMPurify).
+- **Obrázek hry** je zatím jen URL (`imageUrl`), upload souborů později. **Cheatsheet** je HTML; frontend ho vždy sanitizuje (DOMPurify).
 - Smazání hry se zápisy je zakázáno (422).
 
 ## Otevřené
 - Editace existujícího zápisu ve UI (API `PUT /api/plays/{id}` existuje).
-- WYSIWYG editor taháčku, upload obrázku, import dat z původní aplikace (RethinkDB).
+- WYSIWYG editor cheatsheetu, upload obrázku, import dat z původní aplikace (RethinkDB).

@@ -77,7 +77,7 @@ export function GameDetailPage() {
       <div className="pad">
         <Actions>
           <Link className="btn" to={`/games/${id}/new-play`}>Nový zápis</Link>
-          {game.data.cheatSheet && <Link className="btn outline" to={`/games/${id}/cheatsheet`}>Taháček</Link>}
+          {game.data.cheatSheet && <Link className="btn outline" to={`/games/${id}/cheatsheet`}>Cheatsheet</Link>}
           <Link className="btn outline-secondary" to="/games">Zpět</Link>
         </Actions>
       </div>

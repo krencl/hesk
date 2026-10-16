@@ -69,10 +69,10 @@ export function GameFormPage() {
         <label>URL obrázku<input type="url" value={form.imageUrl} onChange={(e) => set({ imageUrl: e.target.value })} /></label>
         <label>Popis<textarea rows={3} value={form.description} onChange={(e) => set({ description: e.target.value })} /></label>
         <label>Přídavky (jeden na řádek)<textarea rows={3} value={form.addons} onChange={(e) => set({ addons: e.target.value })} /></label>
-        <label>Taháček (Markdown nebo HTML)<textarea rows={6} value={form.cheatSheet} onChange={(e) => set({ cheatSheet: e.target.value })} /></label>
+        <label>Cheatsheet (Markdown nebo HTML)<textarea rows={6} value={form.cheatSheet} onChange={(e) => set({ cheatSheet: e.target.value })} /></label>
         {form.cheatSheet.trim() && (
           <details>
-            <summary>Náhled taháčku</summary>
+            <summary>Náhled cheatsheetu</summary>
             <SafeHtml html={renderCheatSheet(form.cheatSheet)} />
           </details>
         )}

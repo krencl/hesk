@@ -2,7 +2,7 @@ import DOMPurify from 'dompurify';
 import { marked } from 'marked';
 
 /**
- * Taháček → bezpečné HTML. Starý prototyp ukládal taháčky jako Markdown (vykresloval je knihovnou `marked`)
+ * Cheatsheet → bezpečné HTML. Starý prototyp ukládal cheatsheety jako Markdown (vykresloval je knihovnou `marked`)
  * a import je převzal beze změny; Markdown zároveň propouští vložené HTML, takže funguje i pro ručně psané HTML.
  * Obsah pochází od ostatních členů party, proto se výstup vždy sanitizuje.
  */

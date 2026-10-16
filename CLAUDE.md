@@ -35,11 +35,11 @@ Není tu PHP ani MySQL ani sudo. PHP 8.4 je statický binár v `~/bin/php` + `~/
 - Pravidla domény patří do entit/`Domain`, ne do kontrolerů; kontrolery vrací `Presenter` pole.
 - `list<DTO>` v DTO funguje jen díky `phpdocumentor/reflection-docblock` + `phpstan/phpdoc-parser` (bez nich se pole nedeserializují na objekty).
 - Funkční testy mažou a vytvářejí schéma pro každý test (pomalé, ~35 s celkem).
-- Taháček her je Markdown (import ze staré app) nebo HTML od uživatelů → vždy přes `renderCheatSheet` + `SafeHtml` (marked + DOMPurify).
+- Cheatsheet her je Markdown (import ze staré app) nebo HTML od uživatelů → vždy přes `renderCheatSheet` + `SafeHtml` (marked + DOMPurify).
 - Čísla seancí (`game_session.number`) jsou uložená, ne odvozená (stará čísla mají mezery); novou seanci číslo přiřadí `SessionAssigner` (max+1).
 - Obálky her jsou lokálně v `frontend/public/covers/` (git-ignorováno) a `game.image_url` = `/static/covers/…`; statika se servíruje pod `/static/` (Vite `base`).
 - Git: větev `master`, commity s trailerem `Co-Authored-By` dle zadání prostředí.
 
 ## Stav (2026-10-14)
-Hotovo: dev DB zmigrována na nové schéma s importem dat, hráči-hosté, auth (Google + dev login, spárování starých účtů podle e-mailu), party/členové/pozvánky, hry (+přídavky), zápisy se seancemi, statistiky (výhry, top hry), mobilní UI; UX podle prototypu (seznam her s hledáním/filtrem, detail hry se zápisy a taháčkem, čísla seancí, ADR 0009).
-Nehotovo/nápady: vynucení přezdívky na backendu, upload obrázků, WYSIWYG taháček, CI s MySQL, import z původní app, postavy.
+Hotovo: dev DB zmigrována na nové schéma s importem dat, hráči-hosté, auth (Google + dev login, spárování starých účtů podle e-mailu), party/členové/pozvánky, hry (+přídavky), zápisy se seancemi, statistiky (výhry, top hry), mobilní UI; UX podle prototypu (seznam her s hledáním/filtrem, detail hry se zápisy a cheatsheetem, čísla seancí, ADR 0009).
+Nehotovo/nápady: vynucení přezdívky na backendu, upload obrázků, WYSIWYG cheatsheet, CI s MySQL, import z původní app, postavy.

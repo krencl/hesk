@@ -128,7 +128,7 @@ describe('game detail', () => {
     expect(screen.getByText('rodinná')).toBeInTheDocument();
 
     expect(screen.getByRole('link', { name: 'Nový zápis' })).toHaveAttribute('href', '/games/1/new-play');
-    expect(screen.getByRole('link', { name: 'Taháček' })).toHaveAttribute('href', '/games/1/cheatsheet');
+    expect(screen.getByRole('link', { name: 'Cheatsheet' })).toHaveAttribute('href', '/games/1/cheatsheet');
     expect(screen.getByRole('link', { name: 'Zpět' })).toHaveAttribute('href', '/games');
   });
 
@@ -136,7 +136,7 @@ describe('game detail', () => {
     mockApi(detailRoutes(null));
     renderApp('/games/1');
     await screen.findByRole('link', { name: 'Nový zápis' });
-    expect(screen.queryByRole('link', { name: 'Taháček' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'Cheatsheet' })).not.toBeInTheDocument();
 
     // editace hry je jen ve správě her; zápis se maže až v jeho úpravě
     expect(screen.queryByRole('link', { name: 'Upravit hru' })).not.toBeInTheDocument();

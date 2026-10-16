@@ -18,7 +18,7 @@ export function GameCheatsheetPage() {
     <section className="page game-detail">
       <GameHeader name={game.data.name} imageUrl={game.data.imageUrl} />
       <div className="cheatsheet">
-        {game.data.cheatSheet ? <SafeHtml html={renderCheatSheet(game.data.cheatSheet)} /> : <p className="muted">Tahle hra nemá taháček.</p>}
+        {game.data.cheatSheet ? <SafeHtml html={renderCheatSheet(game.data.cheatSheet)} /> : <p className="muted">Tahle hra nemá cheatsheet.</p>}
       </div>
       <div className="pad">
         <Actions><Link className="btn outline-secondary" to={`/games/${id}`}>Zpět</Link></Actions>
