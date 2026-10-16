@@ -14,6 +14,7 @@ import { NewPlayPage } from './pages/NewPlayPage';
 import { PlayDetailPage } from './pages/PlayDetailPage';
 import { NicknamePage } from './pages/NicknamePage';
 import { PartiesPage } from './pages/PartiesPage';
+import { PartyDetailPage } from './pages/PartyDetailPage';
 import { SettingsPage } from './pages/SettingsPage';
 import { StatsPage } from './pages/StatsPage';
 
@@ -38,6 +39,7 @@ export function App() {
       <Routes>
         <Route element={<Layout />}>
           <Route path="/parties" element={<PartiesPage />} />
+          <Route path="/parties/:id" element={<PartyDetailPage />} />
           <Route path="/join/:token" element={<JoinPage />} />
           <Route path="/settings" element={<SettingsPage />} />
           <Route element={<RequireParty />}>

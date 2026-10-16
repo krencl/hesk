@@ -83,7 +83,7 @@ export function Layout() {
                 <button type="button" className="btn small outline" onClick={() => setChangingParty(true)}>Přepnout</button>
               </h4>
               <ul className="menu-list">
-                <li><NavLink to="/parties">Zobrazit detail</NavLink></li>
+                {activeParty && <li><NavLink to={`/parties/${activeParty.id}`}>Zobrazit detail</NavLink></li>}
                 <li><NavLink to="/stats">Statistiky</NavLink></li>
               </ul>
             </>
@@ -98,7 +98,7 @@ export function Layout() {
           <hr />
           <h4 className="primary">Správa</h4>
           <ul className="menu-list">
-            <li><NavLink to="/parties">Spravovat party</NavLink></li>
+            <li><NavLink to="/parties" end>Spravovat party</NavLink></li>
             <li><NavLink to="/manage/games">Spravovat hry</NavLink></li>
             <li><NavLink to="/settings">Nastavení</NavLink></li>
           </ul>

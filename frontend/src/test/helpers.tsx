@@ -6,11 +6,13 @@ import { App } from '../App';
 
 export type MockRoutes = Record<string, { status?: number; body: unknown }>;
 
-/** Nahradí fetch odpověďmi podle cesty (bez /api, včetně query stringu); vrací mock pro kontrolu volání. */
+/** Nahradí fetch odpověďmi podle cesty (bez /api, včetně query stringu); klíč může mít předponu metody (`POST /parties`). Vrací mock pro kontrolu volání. */
 export function mockApi(routes: MockRoutes) {
-  const fetchMock = vi.fn(async (url: string, _init?: RequestInit) => {
-    const hit = routes[url.replace('/api', '')];
+  const fetchMock = vi.fn(async (url: string, init?: RequestInit) => {
+    const path = url.replace('/api', '');
+    const hit = routes[`${init?.method ?? 'GET'} ${path}`] ?? routes[path];
     if (!hit) return new Response('{"error":"nf"}', { status: 404 });
+    if (hit.status === 204) return new Response(null, { status: 204 });
     return new Response(JSON.stringify(hit.body), { status: hit.status ?? 200 });
   });
   vi.stubGlobal('fetch', fetchMock);

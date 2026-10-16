@@ -14,6 +14,8 @@ ADR 0008 převzal jen vzhled prototypu (`/hesk-dev-old`); domovská stránka zů
 - **Obálky her:** prototyp je servíroval ze souborů (`web/public/img/cover/`), import `cover_image` nepřenesl. V dev prostředí jsou soubory zkopírované do `frontend/public/covers/` (git-ignorováno, ~13 MB) a `game.image_url` je nastaveno na `/static/covers/<soubor>`. Jde o lokální data, ne o funkci – řádné řešení je upload obrázků (viz CLAUDE.md).
 - Drobnosti z prototypu: pulzující kroužek kolem tlačítka party při načítání, kostry (skeleton) místo „Načítám…“, menu s oddíly Parta / Menu / Správa a podtrženým odhlášením, ikona vítěze `workspace_premium`.
 
+- **Parta: správa a detail jsou oddělené** (2026-10-16): `/parties` = správa part (seznam, přepnutí aktivní, založení nové; po založení se otevře její detail), `/parties/:id` = detail party (členové, změna rolí, odebrání, pozvánky, opuštění). Menu: „Zobrazit detail“ vede na detail aktivní party, „Spravovat party“ na správu. Detail se dá otevřít i pro neaktivní partu.
+
 ## Důsledky
 - Starý odkaz `/games/:id` (formulář hry) teď vede na detail; formulář je na `/games/:id/edit`.
 - Výchozí řazení `GET …/games` se změnilo na „poslední aktivita“ (správa her si žádá `sort=name`).
