@@ -11,7 +11,7 @@ import { GamesPage } from './pages/GamesPage';
 import { JoinPage } from './pages/JoinPage';
 import { LoginPage } from './pages/LoginPage';
 import { NewPlayPage } from './pages/NewPlayPage';
-import { PlayDetailPage } from './pages/PlayDetailPage';
+import { EditPlayPage } from './pages/EditPlayPage';
 import { NicknamePage } from './pages/NicknamePage';
 import { PartiesPage } from './pages/PartiesPage';
 import { PartyDetailPage } from './pages/PartyDetailPage';
@@ -51,7 +51,7 @@ export function App() {
             <Route path="/games/:id/new-play" element={<NewPlayPage />} />
             <Route path="/games/:id/edit" element={<GameFormPage />} />
             <Route path="/manage/games" element={<GamesPage />} />
-            <Route path="/plays/:id" element={<PlayDetailPage />} />
+            <Route path="/plays/:id/edit" element={<EditPlayPage />} />
             <Route path="/stats" element={<StatsPage />} />
           </Route>
           <Route path="*" element={<Navigate to="/" replace />} />

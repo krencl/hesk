@@ -260,7 +260,7 @@ a.link:hover { text-decoration: underline; }
 .round-body { padding: 0.25rem 0.8rem 0.5rem; }
 .round-body .detail-info { margin-bottom: 0.5rem; }
 .round-body .results li { grid-template-columns: 2rem 7fr 3fr; }
-.round-actions { display: flex; justify-content: space-between; align-items: center; padding-top: 0.25rem; }
+.round-actions { display: flex; justify-content: flex-end; align-items: center; padding-top: 0.25rem; }
 .game-detail .nav-actions { margin-top: 0.75rem; }
 
 /* Taháček (HTML od uživatelů) */
@@ -299,3 +299,5 @@ a.link:hover { text-decoration: underline; }
 .party-detail .member { padding: 0.5rem 1rem; }
 .party-detail .actions { display: flex; gap: 0.25rem; }
 .party-detail .invite { margin-top: 1rem; }
+.danger-zone { margin-top: 0.5rem; }
+.danger-zone .btn.block { margin-bottom: 0; }

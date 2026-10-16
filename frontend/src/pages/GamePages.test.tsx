@@ -106,16 +106,17 @@ describe('game detail', () => {
     expect(screen.getByRole('link', { name: 'Zpět' })).toHaveAttribute('href', '/games');
   });
 
-  it('hides the cheat-sheet button for games without one and confirms before deleting', async () => {
-    const fetchMock = mockApi({ ...detailRoutes(null), '/plays/9': { status: 204, body: null } });
+  it('hides the cheat-sheet button for games without one and offers editing instead of deleting', async () => {
+    mockApi(detailRoutes(null));
     renderApp('/games/1');
     await screen.findByRole('link', { name: 'Nový zápis' });
     expect(screen.queryByRole('link', { name: 'Taháček' })).not.toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Smazat zápis' }));
-    expect(requestedUrls(fetchMock).some((u) => u === '/plays/9')).toBe(false);
-    fireEvent.click(screen.getByRole('button', { name: 'Potvrď smazání' }));
-    await waitFor(() => expect(fetchMock.mock.calls.some(([u, init]) => String(u) === '/api/plays/9' && init?.method === 'DELETE')).toBe(true));
+    // editace hry je jen ve správě her; zápis se maže až v jeho úpravě
+    expect(screen.queryByRole('link', { name: 'Upravit hru' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Smazat zápis' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'Detail' })).not.toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Upravit' })).toHaveAttribute('href', '/plays/9/edit');
   });
 
   it('shows a friendly message for an unknown game', async () => {

@@ -1,4 +1,4 @@
-import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { useActiveParty } from '../AppContext';
@@ -10,7 +10,6 @@ import { GameHeader } from '../components/GameHeader';
 import { Icon } from '../components/Icon';
 import { ListSkeleton } from '../components/Skeleton';
 import { formatDateShort, formatDateTimeShort } from '../lib/datetime';
-import { refreshAfterPlayChange } from '../lib/refresh';
 import { formatScore, winners } from '../lib/scoring';
 
 const PAGE_SIZE = 10;
@@ -77,24 +76,15 @@ export function GameDetailPage() {
           {game.data.cheatSheet && <Link className="btn outline" to={`/games/${id}/cheatsheet`}>Taháček</Link>}
           <Link className="btn outline-secondary" to="/games">Zpět</Link>
         </div>
-        <p className="center"><Link className="link" to={`/games/${id}/edit`}>Upravit hru</Link></p>
       </div>
     </section>
   );
 }
 
 function Round({ play, open, onToggle }: { play: Play; open: boolean; onToggle: () => void }) {
-  const party = useActiveParty();
-  const queryClient = useQueryClient();
-  const [confirmDelete, setConfirmDelete] = useState(false);
   const scored = play.game.scoreType === 'most_points' || play.game.scoreType === 'fewest_points';
   const won = winners(play);
   const winnerScore = scored && won[0]?.score != null ? formatScore(won[0].score) : '';
-
-  const remove = useMutation({
-    mutationFn: () => api.deletePlay(play.id),
-    onSuccess: () => refreshAfterPlayChange(queryClient, party.id, play.game.id),
-  });
 
   const details: [string, string][] = [
     ['Verze hry', play.addons.map((a) => a.name).join(', ')],
@@ -129,12 +119,8 @@ function Round({ play, open, onToggle }: { play: Play; open: boolean; onToggle: 
               </li>
             ))}
           </ul>
-          <ErrorMessage error={remove.error} />
           <div className="round-actions">
-            <Link className="link" to={`/plays/${play.id}`}>Detail</Link>
-            <button type="button" className="btn small outline-secondary" disabled={remove.isPending} onClick={() => (confirmDelete ? remove.mutate() : setConfirmDelete(true))}>
-              {confirmDelete ? 'Potvrď smazání' : 'Smazat zápis'}
-            </button>
+            <Link className="btn small outline-secondary" to={`/plays/${play.id}/edit`}>Upravit</Link>
           </div>
         </div>
       )}

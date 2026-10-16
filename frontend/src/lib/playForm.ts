@@ -1,5 +1,5 @@
-import type { Game, PlayerInput, PlayInput } from '../api/types';
-import { fromLocalInput } from './datetime';
+import type { Game, Play, PlayerInput, PlayInput } from '../api/types';
+import { fromLocalInput, toLocalInput } from './datetime';
 
 export interface PlayerDraft {
   playerId: number;
@@ -17,6 +17,34 @@ export interface PlayDraft {
   place: string;
   tags: string;
   notes: string;
+}
+
+/** Prázdný formulář nového zápisu: začátek před hodinou, konec teď. */
+export function emptyDraft(gameId: number, now = new Date()): PlayDraft {
+  return {
+    gameId,
+    startedAt: toLocalInput(new Date(now.getTime() - 60 * 60 * 1000)),
+    endedAt: toLocalInput(now),
+    players: [],
+    addonIds: [],
+    place: '',
+    tags: '',
+    notes: '',
+  };
+}
+
+/** Hodnoty formuláře z existujícího zápisu (pro úpravu); opak funkce `toPlayInput`. */
+export function draftFromPlay(play: Play): PlayDraft {
+  return {
+    gameId: play.game.id,
+    startedAt: toLocalInput(new Date(play.startedAt)),
+    endedAt: toLocalInput(new Date(play.endedAt)),
+    players: play.results.map((r) => ({ playerId: r.playerId, score: r.score === null ? '' : String(r.score), rank: String(r.rank), winner: r.winner })),
+    addonIds: play.addons.map((a) => a.id),
+    place: play.place ?? '',
+    tags: play.tags.join(', '),
+    notes: play.notes ?? '',
+  };
 }
 
 /** Nejmenší nutná konzistence formuláře před odesláním; doménová pravidla hlídá backend. */

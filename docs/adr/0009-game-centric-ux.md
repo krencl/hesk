@@ -16,6 +16,8 @@ ADR 0008 převzal jen vzhled prototypu (`/hesk-dev-old`); domovská stránka zů
 
 - **Parta: správa a detail jsou oddělené** (2026-10-16): `/parties` = správa part (seznam, přepnutí aktivní, založení nové; po založení se otevře její detail), `/parties/:id` = detail party (členové, změna rolí, odebrání, pozvánky, opuštění). Menu: „Zobrazit detail“ vede na detail aktivní party, „Spravovat party“ na správu. Detail se dá otevřít i pro neaktivní partu.
 
+- **Úprava zápisu místo detailu zápisu** (2026-10-16): stránka detailu zápisu (`/plays/:id`) byla odstraněna (nic nepřidávala k rozbalenému zápisu v detailu hry). V rozbaleném zápisu je jediné tlačítko „Upravit“ → `/plays/:id/edit`, formulář sdílený se založením zápisu (`PlayForm`); „Smazat zápis“ (s potvrzením) je až pod formulářem úpravy. Hru lze upravovat jen ze správy her (`/manage/games` → `/games/:id/edit`), z detailu hry odkaz zmizel.
+
 ## Důsledky
 - Starý odkaz `/games/:id` (formulář hry) teď vede na detail; formulář je na `/games/:id/edit`.
 - Výchozí řazení `GET …/games` se změnilo na „poslední aktivita“ (správa her si žádá `sort=name`).

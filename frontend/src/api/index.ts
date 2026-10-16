@@ -39,6 +39,7 @@ export const api = {
     get<Play[]>(`/parties/${partyId}/plays${queryString({ limit, offset, gameId })}`),
   play: (id: number) => get<Play>(`/plays/${id}`),
   createPlay: (partyId: number, input: PlayInput) => post<Play>(`/parties/${partyId}/plays`, input),
+  updatePlay: (id: number, input: PlayInput) => put<Play>(`/plays/${id}`, input),
   deletePlay: (id: number) => del(`/plays/${id}`),
 
   stats: (partyId: number) => get<Stats>(`/parties/${partyId}/stats`),

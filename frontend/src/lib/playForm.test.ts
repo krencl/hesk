@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import type { Game } from '../api/types';
-import { type PlayDraft, toPlayInput, validateDraft } from './playForm';
+import type { Game, Play } from '../api/types';
+import { toLocalInput } from './datetime';
+import { draftFromPlay, emptyDraft, type PlayDraft, toPlayInput, validateDraft } from './playForm';
 
 const game = (scoreType: Game['scoreType']): Game => ({
   id: 7, name: 'G', scoreType, imageUrl: null, description: null, cheatSheet: null, addons: [{ id: 1, name: 'X' }],
@@ -55,5 +56,43 @@ describe('toPlayInput', () => {
     const d = draft({ players: [{ playerId: 1, score: '', rank: '2', winner: true }] });
     expect(toPlayInput(d, game('rank_order')).players).toEqual([{ playerId: 1, rank: 2 }]);
     expect(toPlayInput(d, game('winner_only')).players).toEqual([{ playerId: 1, winner: true }]);
+  });
+});
+
+describe('draftFromPlay', () => {
+  const play: Play = {
+    id: 1, sessionId: 2, sessionNumber: 3, game: { id: 7, name: 'G', imageUrl: null, scoreType: 'most_points' },
+    startedAt: '2026-03-01T18:00:00+00:00', endedAt: '2026-03-01T19:30:00+00:00', place: null, notes: null,
+    addons: [{ id: 1, name: 'X' }], tags: ['víkend', 'liga'],
+    results: [{ playerId: 4, name: 'Anna', score: 10.5, rank: 1, winner: true }, { playerId: 5, name: 'Bob', score: null, rank: 2, winner: false }],
+  };
+
+  it('fills the form from a play', () => {
+    expect(draftFromPlay(play)).toEqual({
+      gameId: 7,
+      startedAt: toLocalInput(new Date(play.startedAt)),
+      endedAt: toLocalInput(new Date(play.endedAt)),
+      players: [{ playerId: 4, score: '10.5', rank: '1', winner: true }, { playerId: 5, score: '', rank: '2', winner: false }],
+      addonIds: [1],
+      place: '',
+      tags: 'víkend, liga',
+      notes: '',
+    });
+  });
+
+  it('round-trips through toPlayInput', () => {
+    const input = toPlayInput(draftFromPlay(play), game('most_points'));
+    expect(input.tags).toEqual(['víkend', 'liga']);
+    expect(input.addonIds).toEqual([1]);
+    expect(input.startedAt).toBe('2026-03-01T18:00:00.000Z');
+    expect(input.endedAt).toBe('2026-03-01T19:30:00.000Z');
+    expect(input.players[0]).toEqual({ playerId: 4, score: 10.5 });
+  });
+});
+
+describe('emptyDraft', () => {
+  it('starts an hour before now and ends now', () => {
+    const now = new Date(2026, 2, 1, 20, 0);
+    expect(emptyDraft(7, now)).toMatchObject({ gameId: 7, startedAt: '2026-03-01T19:00', endedAt: '2026-03-01T20:00', players: [], addonIds: [] });
   });
 });

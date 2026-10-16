@@ -9,6 +9,8 @@ Majitel chce, aby nová aplikace vypadala jako běžící starý vývojový prot
 - Zkratka party se **počítá z názvu** (`lib/partyShortcut.ts`), protože stará `shortcut` se při importu nepřenesla (ADR 0007).
 - Detail zápisu `/plays/:id` (`PlayDetailPage`): hra, kdy/kde, přídavky, tagy, poznámka, výsledky s trofejí u vítězů a skóre/pořadím podle typu bodování; mazání s dvoukrokovým potvrzením. Seznam zápisů na úvodní stránce na detail odkazuje (mazání ze seznamu zmizelo).
 
+> _Překonáno ADR 0009:_ detail zápisu `/plays/:id` byl odstraněn a nahrazen úpravou zápisu.
+
 ## Důsledky
 - _Překonáno ADR 0009:_ domovská stránka je teď seznam her a detail hry se zápisy existuje; chronologie zápisů je na `/plays`.
 - U zápisů importovaných ze staré DB je začátek = konec, detail proto ukazuje jen jeden čas a bez délky.

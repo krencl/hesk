@@ -28,7 +28,7 @@ Není tu PHP ani MySQL ani sudo. PHP 8.4 je statický binár v `~/bin/php` + `~/
 
 ## Frontend – orientace
 - `src/api` (klient + typy + endpointy) · `src/lib` (čistá logika: `playForm`, `scoring`, `activeParty`, `afterLogin`, `datetime`) · `src/pages` · `src/components` (`Skeleton`, `GameHeader`, …) · `src/AppContext.tsx` (me, parties, aktivní parta) · `src/App.tsx` (routy + gating login → přezdívka → parta).
-- Mobile-first, max. šířka 400 px, UI v češtině; vzhled převzatý ze starého prototypu (ADR 0008). Routy (ADR 0009): `/`→`/games` seznam her (hledání, filtr), `/games/:id` detail hry se zápisy, `/games/:id/cheatsheet|edit`, `/games/:id/new-play` (nový zápis, jen z detailu hry), `/games/new`, `/manage/games`, `/plays/:id`, `/stats`, `/parties` (správa part: seznam, přepnutí, založení), `/parties/:id` (detail party: členové, role, pozvánky, opuštění).
+- Mobile-first, max. šířka 400 px, UI v češtině; vzhled převzatý ze starého prototypu (ADR 0008). Routy (ADR 0009): `/`→`/games` seznam her (hledání, filtr), `/games/:id` detail hry se zápisy, `/games/:id/cheatsheet|edit`, `/games/:id/new-play` (nový zápis, jen z detailu hry), `/games/new`, `/manage/games`, `/plays/:id/edit` (úprava zápisu, smazání je pod formulářem), `/stats`, `/parties` (správa part: seznam, přepnutí, založení), `/parties/:id` (detail party: členové, role, pozvánky, opuštění).
 
 ## Konvence a pasti
 - Terminologie v UI i dokumentaci: *Party* = **parta** (ne „skupina“), přepínání = „Přepnout“, tlačítko „Vytvořit novou partu“. V kódu zůstává anglicky `party`.
@@ -42,4 +42,4 @@ Není tu PHP ani MySQL ani sudo. PHP 8.4 je statický binár v `~/bin/php` + `~/
 
 ## Stav (2026-10-14)
 Hotovo: dev DB zmigrována na nové schéma s importem dat, hráči-hosté, auth (Google + dev login, spárování starých účtů podle e-mailu), party/členové/pozvánky, hry (+přídavky), zápisy se seancemi, statistiky (výhry, top hry), mobilní UI; UX podle prototypu (seznam her s hledáním/filtrem, detail hry se zápisy a taháčkem, čísla seancí, ADR 0009).
-Nehotovo/nápady: editace zápisu ve UI, vynucení přezdívky na backendu, upload obrázků, WYSIWYG taháček, CI s MySQL, import z původní app, postavy/„začínající hráč“.
+Nehotovo/nápady: vynucení přezdívky na backendu, upload obrázků, WYSIWYG taháček, CI s MySQL, import z původní app, postavy/„začínající hráč“.

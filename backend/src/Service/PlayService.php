@@ -44,6 +44,11 @@ final class PlayService
 
     public function update(Play $play, PlayRequest $req): Play
     {
+        return $this->em->wrapInTransaction(fn (): Play => $this->doUpdate($play, $req));
+    }
+
+    private function doUpdate(Play $play, PlayRequest $req): Play
+    {
         $party = $play->getParty();
         $game = $this->resolveGame($party, $req);
         $oldSession = $play->getSession();
@@ -112,6 +117,16 @@ final class PlayService
                 throw new DomainException('Přídavek nepatří k vybrané hře.');
             }
             $addons[] = $match;
+        }
+
+        // Při úpravě se staré výsledky musí smazat dřív, než se vloží nové (unikát play_id + player_id);
+        // proběhne až po úspěšné validaci výše, a celá úprava běží v transakci.
+        if (null !== $play->getId() && !$play->getResults()->isEmpty()) {
+            foreach ($play->getResults() as $old) {
+                $this->em->remove($old);
+            }
+            $play->replaceResults([]);
+            $this->em->flush();
         }
 
         $play->setGame($game);

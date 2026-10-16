@@ -146,6 +146,51 @@ final class ApiFlowTest extends WebTestCase
         self::assertSame([$p3['id'], $p1['id']], array_column($byGame, 'id'));
     }
 
+    public function testUpdatePlayKeepsPlayersRewritesResultsAndMovesSessions(): void
+    {
+        $this->login('anna@example.com', 'Anna');
+        $party = $this->api('POST', '/api/parties', ['name' => 'Pátek'], 201);
+        $base = "/api/parties/{$party['id']}";
+        $anna = $this->api('GET', "$base/players")[0]['id'];
+        $bob = $this->api('POST', "$base/players", ['name' => 'Bob'], 201)['id'];
+        $game = $this->api('POST', "$base/games", ['name' => 'Azul', 'scoreType' => 'most_points', 'addons' => ['Rivers', 'Opat']], 201);
+        [$rivers, $opat] = array_column($game['addons'], 'id');
+
+        $payload = fn (string $day, int $annaScore, int $bobScore, array $extra = []): array => $extra + [
+            'gameId' => $game['id'], 'startedAt' => "{$day}T18:00:00+00:00", 'endedAt' => "{$day}T19:00:00+00:00",
+            'players' => [['playerId' => $anna, 'score' => $annaScore], ['playerId' => $bob, 'score' => $bobScore]],
+            'addonIds' => [$rivers], 'tags' => ['víkend'], 'place' => 'Doma', 'notes' => null,
+        ];
+        $play = $this->api('POST', "$base/plays", $payload('2026-03-01', 80, 90), 201);
+        self::assertSame('Bob', $play['results'][0]['name']);
+
+        // stejní hráči, jiné skóre, jiné přídavky/tagy/místo: dřív padalo na unikátu play_id + player_id
+        $updated = $this->api('PUT', "/api/plays/{$play['id']}", $payload('2026-03-01', 95, 90, ['addonIds' => [$opat], 'tags' => ['víkend', 'liga'], 'place' => 'U Kuby', 'notes' => 'Upraveno']));
+        self::assertSame('Anna', $updated['results'][0]['name']);
+        self::assertTrue($updated['results'][0]['winner']);
+        self::assertFalse($updated['results'][1]['winner']);
+        self::assertSame(['Opat'], array_column($updated['addons'], 'name'));
+        self::assertEqualsCanonicalizing(['víkend', 'liga'], $updated['tags']);
+        self::assertSame('U Kuby', $updated['place']);
+        self::assertSame('Upraveno', $updated['notes']);
+        self::assertSame($play['sessionId'], $updated['sessionId']);
+
+        // odebrání hráče a stejná data znovu (idempotentní uložení)
+        $single = $payload('2026-03-01', 95, 90, ['players' => [['playerId' => $anna, 'score' => 10]]]);
+        $this->api('PUT', "/api/plays/{$play['id']}", $single);
+        $again = $this->api('PUT', "/api/plays/{$play['id']}", $single);
+        self::assertSame(['Anna'], array_column($again['results'], 'name'));
+
+        // přesun o týden dál = nová seance s dalším číslem, stará prázdná seance zmizí
+        $moved = $this->api('PUT', "/api/plays/{$play['id']}", $payload('2026-03-20', 70, 60));
+        self::assertSame(2, $moved['sessionNumber']);
+        self::assertSame([2], array_column($this->api('GET', "$base/sessions"), 'number'));
+
+        // chybná úprava (cizí hráč) nic nerozbije: hráči zůstanou
+        $this->api('PUT', "/api/plays/{$play['id']}", $payload('2026-03-20', 1, 2, ['players' => [['playerId' => 999999, 'score' => 1]]]), 422);
+        self::assertCount(2, $this->api('GET', "/api/plays/{$play['id']}")['results']);
+    }
+
     public function testInvalidPlayIsRejected(): void
     {
         $this->login('anna@example.com', 'Anna');
