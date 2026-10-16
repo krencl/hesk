@@ -128,12 +128,12 @@ describe('emptyDraft', () => {
   });
 
   it('computes default times', () => {
-    expect(defaultTimes(new Date(2026, 2, 1, 20, 0))).toEqual({ startedAt: '2026-03-01T19:00', endedAt: '2026-03-01T20:00' });
+    expect(defaultTimes(new Date(2026, 2, 1, 20, 0))).toEqual({ startedAt: '2026-03-01T20:00', endedAt: '2026-03-01T20:00' });
   });
 
-  it('starts an hour before now and ends now', () => {
+  it('starts and ends now', () => {
     const now = new Date(2026, 2, 1, 20, 0);
-    expect(emptyDraft({ id: 7, player: null }, now)).toMatchObject({ gameId: 7, startedAt: '2026-03-01T19:00', endedAt: '2026-03-01T20:00', players: [], addonIds: [] });
+    expect(emptyDraft({ id: 7, player: null }, now)).toMatchObject({ gameId: 7, startedAt: '2026-03-01T20:00', endedAt: '2026-03-01T20:00', players: [], addonIds: [] });
   });
 });
 

@@ -61,9 +61,10 @@ export function parseSessionNumber(text: string): number | null {
 
 export const newPlayerDraft = (playerId: number): PlayerDraft => ({ playerId, score: '', rank: '', winner: false, starting: false, characterId: null });
 
-/** Výchozí čas nového zápisu: začátek před hodinou, konec teď. */
+/** Výchozí čas nového zápisu: začátek i konec jsou teď. */
 export function defaultTimes(now = new Date()): { startedAt: string; endedAt: string } {
-  return { startedAt: toLocalInput(new Date(now.getTime() - 60 * 60 * 1000)), endedAt: toLocalInput(now) };
+  const local = toLocalInput(now);
+  return { startedAt: local, endedAt: local };
 }
 
 /**
