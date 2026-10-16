@@ -4,6 +4,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useApp } from '../AppContext';
 import { api } from '../api';
 import { ErrorMessage } from '../components/ErrorMessage';
+import { PageTitle } from '../components/PageTitle';
 
 /** Správa part: seznam mých part, přepnutí aktivní party a založení nové. Členy spravuje detail party. */
 export function PartiesPage() {
@@ -28,20 +29,16 @@ export function PartiesPage() {
   };
 
   return (
-    <section className="flush">
-      <div className="pad">
-        <h2>Správa part</h2>
-      </div>
+    <section className="page">
+      <PageTitle>Správa part</PageTitle>
       <ul className="list">
         {parties.map((p) => (
-          <li key={p.id} className="party-row">
+          <li key={p.id} className={`party-row${p.id === activeParty?.id ? ' selected' : ''}`} aria-current={p.id === activeParty?.id ? 'true' : undefined}>
             <Link to={`/parties/${p.id}`} className="party-link">
               <strong className="h5">{p.name}</strong>
-              <small className="muted">{p.role === 'admin' ? 'admin' : 'člen'}</small>
+              <small className="muted">{p.role === 'admin' ? 'admin' : 'člen'}{p.id === activeParty?.id && ' · aktivní'}</small>
             </Link>
-            {p.id === activeParty?.id ? (
-              <span className="badge">Aktivní</span>
-            ) : (
+            {p.id !== activeParty?.id && (
               <button type="button" className="btn small outline" onClick={() => setActiveParty(p.id)}>Přepnout</button>
             )}
           </li>

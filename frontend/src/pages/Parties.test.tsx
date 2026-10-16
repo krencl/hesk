@@ -22,7 +22,11 @@ describe('party management (/parties)', () => {
     expect(await screen.findByRole('heading', { name: 'Správa part' })).toBeInTheDocument();
     expect(await screen.findByRole('link', { name: /Pátek/ })).toHaveAttribute('href', '/parties/3');
     expect(screen.getByRole('link', { name: /Víkend/ })).toHaveAttribute('href', '/parties/4');
-    expect(screen.getByText('Aktivní')).toBeInTheDocument();
+    // aktivní parta je zvýrazněný řádek (ne tlačítko ani štítek), přepnout lze jen ostatní
+    const active = screen.getByRole('link', { name: /Pátek/ }).closest('li')!;
+    expect(active).toHaveAttribute('aria-current', 'true');
+    expect(active).toHaveClass('selected');
+    expect(screen.getByRole('link', { name: /Víkend/ }).closest('li')).not.toHaveClass('selected');
     expect(screen.getAllByRole('button', { name: 'Přepnout' })).toHaveLength(1);
     // správa part už neobsahuje členy ani pozvánky
     expect(screen.queryByText('Členové')).not.toBeInTheDocument();
@@ -34,8 +38,8 @@ describe('party management (/parties)', () => {
     renderApp('/parties');
     fireEvent.click(await screen.findByRole('button', { name: 'Přepnout' }));
     await waitFor(() => expect(localStorage.length).toBeGreaterThan(0));
-    expect(await screen.findByText('Aktivní')).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /Víkend/ }).closest('li')).toHaveTextContent('Aktivní');
+    await waitFor(() => expect(screen.getByRole('link', { name: /Víkend/ }).closest('li')).toHaveAttribute('aria-current', 'true'));
+    expect(screen.getByRole('link', { name: /Pátek/ }).closest('li')).not.toHaveAttribute('aria-current');
   });
 
   it('creates a party and opens its detail', async () => {

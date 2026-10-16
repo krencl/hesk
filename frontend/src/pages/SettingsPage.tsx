@@ -1,13 +1,16 @@
 import { useApp } from '../AppContext';
+import { PageTitle } from '../components/PageTitle';
 import { NicknamePage } from './NicknamePage';
 
 export function SettingsPage() {
   const { me } = useApp();
   return (
-    <section>
-      <h2>Profil</h2>
-      <p className="muted">{me.email}</p>
-      <NicknamePage initial={me.nickname ?? ''} />
+    <section className="page">
+      <PageTitle>Nastavení</PageTitle>
+      <div className="pad">
+        <p className="muted">{me.email}</p>
+        <NicknamePage initial={me.nickname ?? ''} />
+      </div>
     </section>
   );
 }

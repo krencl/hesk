@@ -40,7 +40,7 @@ export function GameListPage() {
   const toggleFilter = () => patch({ filterVisible: !settings.filterVisible, sessionNumber: null });
 
   return (
-    <section className="flush game-list">
+    <section className="page game-list">
       <div className="search">
         <div className="search-row">
           <button type="button" className="search-icon" aria-label={settings.query ? 'Smazat hledání' : 'Hledání'} onClick={() => patch({ query: '' })}>

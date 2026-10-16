@@ -6,6 +6,7 @@ import { GAME, mockApi, ME, PARTY, PLAY, renderApp } from '../test/helpers';
 afterEach(() => { vi.unstubAllGlobals(); sessionStorage.clear(); });
 
 const PLAYERS = [{ id: 1, name: 'Anna', hasAccount: true }, { id: 2, name: 'Petr', hasAccount: false }, { id: 3, name: 'Eva', hasAccount: false }];
+// Anna je hlavní hráč, Petr (vybraný) a Eva (nevybraná) jsou hosté
 const PLAY_FULL = { ...PLAY, addons: [{ id: 5, name: 'Řeka' }], tags: ['rodinná', 'liga'], place: 'U Kuby', notes: 'Skvělá hra', endedAt: '2022-02-06T21:36:00+00:00' };
 const routes = {
   '/me': { body: ME },
@@ -24,7 +25,10 @@ describe('edit play (/plays/:id/edit)', () => {
     expect(screen.getByText('Carcassonne')).toBeInTheDocument();
     expect(screen.getByLabelText('Anna')).toBeChecked();
     expect(screen.getByLabelText('Petr')).toBeChecked();
-    expect(screen.getByLabelText('Eva')).not.toBeChecked();
+    expect(screen.queryByLabelText('Eva')).not.toBeInTheDocument(); // nevybraný host je schovaný
+    expect(screen.getByRole('button', { name: 'Začíná Anna' })).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByRole('button', { name: 'Vítěz Anna' })).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByRole('button', { name: 'Vítěz Petr' })).toHaveAttribute('aria-pressed', 'false');
     expect(screen.getByLabelText('Skóre Anna')).toHaveValue('90');
     expect(screen.getByLabelText('Skóre Petr')).toHaveValue('75');
     expect(screen.getByLabelText('Řeka')).toBeChecked();
@@ -41,6 +45,7 @@ describe('edit play (/plays/:id/edit)', () => {
     const fetchMock = mockApi({ ...routes, 'PUT /plays/9': { body: PLAY_FULL } });
     renderApp('/plays/9/edit');
     fireEvent.change(await screen.findByLabelText('Skóre Petr'), { target: { value: '100' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Přidat hosty' }));
     fireEvent.click(screen.getByLabelText('Eva'));
     fireEvent.change(screen.getByLabelText('Skóre Eva'), { target: { value: '10' } });
     fireEvent.click(screen.getByLabelText('Řeka'));
@@ -50,7 +55,11 @@ describe('edit play (/plays/:id/edit)', () => {
     await waitFor(() => expect(fetchMock.mock.calls.some(isPut)).toBe(true));
     const body = JSON.parse(String(fetchMock.mock.calls.find(isPut)![1]?.body));
     expect(body).toMatchObject({ gameId: 1, addonIds: [], place: 'U Kuby', tags: ['rodinná', 'liga'], notes: 'Skvělá hra' });
-    expect(body.players).toEqual([{ playerId: 1, score: 90 }, { playerId: 2, score: 100 }, { playerId: 3, score: 10 }]);
+    expect(body.players).toEqual([
+      { playerId: 1, score: 90, starting: true },
+      { playerId: 2, score: 100, starting: false },
+      { playerId: 3, score: 10, starting: false },
+    ]);
     expect(await screen.findByRole('link', { name: 'Nový zápis' })).toHaveAttribute('href', '/games/1/new-play');
   });
 

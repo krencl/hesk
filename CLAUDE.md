@@ -42,4 +42,4 @@ Není tu PHP ani MySQL ani sudo. PHP 8.4 je statický binár v `~/bin/php` + `~/
 
 ## Stav (2026-10-14)
 Hotovo: dev DB zmigrována na nové schéma s importem dat, hráči-hosté, auth (Google + dev login, spárování starých účtů podle e-mailu), party/členové/pozvánky, hry (+přídavky), zápisy se seancemi, statistiky (výhry, top hry), mobilní UI; UX podle prototypu (seznam her s hledáním/filtrem, detail hry se zápisy a taháčkem, čísla seancí, ADR 0009).
-Nehotovo/nápady: vynucení přezdívky na backendu, upload obrázků, WYSIWYG taháček, CI s MySQL, import z původní app, postavy/„začínající hráč“.
+Nehotovo/nápady: vynucení přezdívky na backendu, upload obrázků, WYSIWYG taháček, CI s MySQL, import z původní app, postavy.

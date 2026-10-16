@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { type FormEvent, useState } from 'react';
 import { api } from '../api';
+import { Actions } from '../components/Actions';
 import { ErrorMessage } from '../components/ErrorMessage';
 
 /** Formulář přezdívky – povinný krok po prvním přihlášení, jinak úprava v profilu. */
@@ -25,7 +26,7 @@ export function NicknamePage({ first = false, initial = '' }: { first?: boolean;
       </label>
       <ErrorMessage error={save.error} />
       {save.isSuccess && !first && <div className="success">Uloženo.</div>}
-      <button className="btn" type="submit" disabled={save.isPending}>Uložit</button>
+      <Actions><button className="btn" type="submit" disabled={save.isPending}>Uložit</button></Actions>
     </form>
   );
 }

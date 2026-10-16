@@ -4,7 +4,9 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useApp } from '../AppContext';
 import { api } from '../api';
 import { ApiError } from '../api/client';
+import { Actions } from '../components/Actions';
 import { ErrorMessage } from '../components/ErrorMessage';
+import { PageTitle } from '../components/PageTitle';
 import { ListSkeleton } from '../components/Skeleton';
 
 /** Detail party: členové a jejich role, pozvánky a opuštění party. Seznam part a zakládání jsou ve správě part. */
@@ -32,21 +34,21 @@ export function PartyDetailPage() {
 
   if (detail.error instanceof ApiError && (detail.error.status === 404 || detail.error.status === 403)) {
     return (
-      <section className="detail">
+      <section className="page pad">
         <p className="empty">Tahle parta neexistuje nebo v ní nejsi.</p>
-        <div className="nav-actions"><Link className="btn secondary" to="/parties">Správa part</Link></div>
+        <Actions><Link className="btn outline-secondary" to="/parties">Správa part</Link></Actions>
       </section>
     );
   }
-  if (!detail.data) return detail.error ? <section className="detail"><ErrorMessage error={detail.error} /></section> : <ListSkeleton rows={3} withImage={false} />;
+  if (!detail.data) return detail.error ? <section className="page pad"><ErrorMessage error={detail.error} /></section> : <ListSkeleton rows={3} withImage={false} />;
 
   const party = detail.data;
   const isAdmin = party.role === 'admin';
 
   return (
-    <section className="flush party-detail">
+    <section className="page party-detail">
+      <PageTitle>{party.name}</PageTitle>
       <div className="pad">
-        <h2>{party.name}</h2>
         <p className="muted">
           {isAdmin ? 'Jsi admin této party.' : 'Jsi člen této party.'}
           {party.id !== activeParty?.id && (
@@ -61,7 +63,7 @@ export function PartyDetailPage() {
           <li key={m.userId} className="member">
             <span>{m.nickname} {m.role === 'admin' && <small className="muted">(admin)</small>}</span>
             {isAdmin && (
-              <span className="actions">
+              <span className="member-actions">
                 <button type="button" className="link" onClick={() => changeRole.mutate({ userId: m.userId, role: m.role === 'admin' ? 'member' : 'admin' })}>
                   {m.role === 'admin' ? 'Odebrat admina' : 'Udělat adminem'}
                 </button>
@@ -78,21 +80,17 @@ export function PartyDetailPage() {
       </ul>
 
       <div className="pad">
-        {isAdmin && (
-          <>
-            <button type="button" className="btn secondary" onClick={() => invite.mutate()}>Pozvat hráče</button>
-            <ErrorMessage error={invite.error} />
-            {inviteLink && (
-              <p className="invite">
-                Pošli tento odkaz (platí 7 dní):<br />
-                <input readOnly value={inviteLink} onFocus={(e) => e.currentTarget.select()} aria-label="Odkaz pozvánky" />
-              </p>
-            )}
-          </>
+        <ErrorMessage error={invite.error} />
+        {inviteLink && (
+          <p className="invite">
+            Pošli tento odkaz (platí 7 dní):<br />
+            <input readOnly value={inviteLink} onFocus={(e) => e.currentTarget.select()} aria-label="Odkaz pozvánky" />
+          </p>
         )}
-        <div className="nav-actions">
+        <Actions>
+          {isAdmin && <button type="button" className="btn" onClick={() => invite.mutate()}>Pozvat hráče</button>}
           <Link className="btn outline-secondary" to="/parties">Správa part</Link>
-        </div>
+        </Actions>
       </div>
     </section>
   );

@@ -25,7 +25,7 @@ export function NewPlayPage() {
   });
 
   if (game.error instanceof ApiError && (game.error.status === 404 || game.error.status === 403)) {
-    return <p className="empty">Tahle hra neexistuje nebo k ní nemáš přístup.<Link className="btn" to="/games">Zpět na hry</Link></p>;
+    return <p className="page pad empty">Tahle hra neexistuje nebo k ní nemáš přístup.<Link className="btn" to="/games">Zpět na hry</Link></p>;
   }
   if (!game.data) return <ListSkeleton rows={3} withImage={false} />;
 

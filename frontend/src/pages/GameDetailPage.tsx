@@ -5,6 +5,7 @@ import { useActiveParty } from '../AppContext';
 import { api } from '../api';
 import { ApiError } from '../api/client';
 import type { Play } from '../api/types';
+import { Actions } from '../components/Actions';
 import { ErrorMessage } from '../components/ErrorMessage';
 import { GameHeader } from '../components/GameHeader';
 import { Icon } from '../components/Icon';
@@ -35,18 +36,18 @@ export function GameDetailPage() {
 
   if (game.error instanceof ApiError && (game.error.status === 404 || game.error.status === 403)) {
     return (
-      <section className="detail">
+      <section className="page pad">
         <p className="empty">Tahle hra neexistuje nebo k ní nemáš přístup.</p>
-        <div className="nav-actions"><Link className="btn secondary" to="/games">Zpět</Link></div>
+        <Actions><Link className="btn outline-secondary" to="/games">Zpět</Link></Actions>
       </section>
     );
   }
-  if (!game.data) return game.error ? <section className="detail"><ErrorMessage error={game.error} /></section> : <ListSkeleton rows={1} />;
+  if (!game.data) return game.error ? <section className="page pad"><ErrorMessage error={game.error} /></section> : <ListSkeleton rows={1} />;
 
   const remaining = Math.max(0, game.data.playCount - plays.length);
 
   return (
-    <section className="flush game-detail">
+    <section className="page game-detail">
       <GameHeader name={game.data.name} imageUrl={game.data.imageUrl} />
 
       {rounds.isPending && <ListSkeleton rows={4} withImage={false} />}
@@ -71,11 +72,11 @@ export function GameDetailPage() {
       )}
 
       <div className="pad">
-        <div className="nav-actions">
+        <Actions>
           <Link className="btn" to={`/games/${id}/new-play`}>Nový zápis</Link>
           {game.data.cheatSheet && <Link className="btn outline" to={`/games/${id}/cheatsheet`}>Taháček</Link>}
           <Link className="btn outline-secondary" to="/games">Zpět</Link>
-        </div>
+        </Actions>
       </div>
     </section>
   );
@@ -112,16 +113,19 @@ function Round({ play, open, onToggle }: { play: Play; open: boolean; onToggle: 
           <ul className="results" aria-label={`Výsledky ${formatDateShort(play.startedAt)}`}>
             {play.results.map((r) => (
               <li key={r.playerId} className={r.winner ? 'winner' : ''}>
-                <span className="result-icon">{r.winner && <Icon name="workspace_premium" />}</span>
-                <span className="result-name">{r.name}{r.winner && <span className="sr-only"> (vítěz)</span>}</span>
+                <span className="result-icons">
+                  <span>{r.winner && <Icon name="workspace_premium" />}</span>
+                  <span>{r.starting && <Icon name="looks_one" />}</span>
+                </span>
+                <span className="result-name">{r.name}{r.winner && <span className="sr-only"> (vítěz)</span>}{r.starting && <span className="sr-only"> (začínal)</span>}</span>
                 {scored && <span className="result-score">{r.score === null ? '' : formatScore(r.score)}</span>}
                 {play.game.scoreType === 'rank_order' && <span className="result-score muted">{r.rank}.</span>}
               </li>
             ))}
           </ul>
-          <div className="round-actions">
-            <Link className="btn small outline-secondary" to={`/plays/${play.id}/edit`}>Upravit</Link>
-          </div>
+          <Actions>
+            <Link className="btn outline-secondary" to={`/plays/${play.id}/edit`}>Upravit</Link>
+          </Actions>
         </div>
       )}
     </div>

@@ -91,6 +91,8 @@ export interface PlayResult {
   score: number | null;
   rank: number;
   winner: boolean;
+  /** Hráč, který ve hře začínal. */
+  starting: boolean;
 }
 
 export interface Play {
@@ -111,7 +113,9 @@ export interface PlayerInput {
   playerId: number;
   score?: number | null;
   rank?: number | null;
+  /** U her se skóre jen ručně určený vítěz (jinak se vítězové dopočítají ze skóre). */
   winner?: boolean | null;
+  starting?: boolean;
 }
 
 export interface PlayInput {

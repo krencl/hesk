@@ -31,9 +31,9 @@ export function EditPlayPage() {
   const remove = useMutation({ mutationFn: () => api.deletePlay(id), onSuccess: () => finish(gameId!) });
 
   if (play.error instanceof ApiError && (play.error.status === 404 || play.error.status === 403)) {
-    return <p className="empty">Tenhle zápis neexistuje nebo k němu nemáš přístup.<Link className="btn" to="/games">Zpět na hry</Link></p>;
+    return <p className="page pad empty">Tenhle zápis neexistuje nebo k němu nemáš přístup.<Link className="btn" to="/games">Zpět na hry</Link></p>;
   }
-  if (!play.data || !game.data) return play.error || game.error ? <section className="detail"><ErrorMessage error={play.error ?? game.error} /></section> : <ListSkeleton rows={3} withImage={false} />;
+  if (!play.data || !game.data) return play.error || game.error ? <section className="page pad"><ErrorMessage error={play.error ?? game.error} /></section> : <ListSkeleton rows={3} withImage={false} />;
 
   return (
     <PlayForm
@@ -46,12 +46,12 @@ export function EditPlayPage() {
       cancelTo={`/games/${play.data.game.id}`}
       onSubmit={(input) => save.mutate(input)}
     >
-      <div className="danger-zone">
-        <ErrorMessage error={remove.error} />
-        <button type="button" className="btn block outline-secondary" disabled={remove.isPending} onClick={() => (confirmDelete ? remove.mutate() : setConfirmDelete(true))}>
+      <ErrorMessage error={remove.error} />
+      <p className="subtle-action">
+        <button type="button" className={`link subtle${confirmDelete ? ' confirm' : ''}`} disabled={remove.isPending} onClick={() => (confirmDelete ? remove.mutate() : setConfirmDelete(true))}>
           {confirmDelete ? 'Potvrď smazání' : 'Smazat zápis'}
         </button>
-      </div>
+      </p>
     </PlayForm>
   );
 }

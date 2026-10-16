@@ -16,7 +16,7 @@ Dev DB (MariaDB 11) obsahovala schéma prototypu `hesk-dev-old` s reálnými dat
   - seance se berou ze starého `session_number` (ručně udržované), hranice z časů kol; `started_at = ended_at = created_at` (start/konec ve staré DB nebyly);
   - časy se převádí z Europe/Prague do UTC; ID zápisů = ID kol;
   - pořadí (`rank`) se dopočítá podle typu bodování (skóre u `rank_order` se použije jako pořadí), `winner` se přebírá ze staré DB;
-  - nepřevedeno (zůstává v `legacy_*`): postavy, „začínající hráč“, překlady, `party_player/party_tag/user_player` počítadla, `bgg_id`, `shortcut` party, tagy her.
+  - nepřevedeno (zůstává v `legacy_*`): postavy, překlady, `party_player/party_tag/user_player` počítadla, `bgg_id`, `shortcut` party, tagy her.
 - Ověřeno po migraci: počty (544 zápisů, 2071 výsledků, 553 tagů) sedí, každý zápis má vítěze, `doctrine:schema:validate` je v pořádku, API vrací převedená data.
 
 ## Důsledky

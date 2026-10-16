@@ -135,7 +135,7 @@ describe('game detail', () => {
 });
 
 describe('new play', () => {
-  const players = [{ id: 1, name: 'Anna', hasAccount: true }, { id: 2, name: 'Petr', hasAccount: false }];
+  const players = [{ id: 1, name: 'Anna', hasAccount: true }, { id: 2, name: 'Petr', hasAccount: true }, { id: 3, name: 'Host', hasAccount: false }];
   const routes = {
     ...base,
     '/games/1': { body: { ...GAME, addons: [{ id: 5, name: 'Řeka' }] } },
@@ -168,9 +168,60 @@ describe('new play', () => {
     const post = fetchMock.mock.calls.find(([u, init]) => String(u) === '/api/parties/3/plays' && init?.method === 'POST')!;
     const body = JSON.parse(String(post[1]?.body));
     expect(body).toMatchObject({ gameId: 1, addonIds: [5] });
-    expect(body.players).toEqual([{ playerId: 1, score: 90 }, { playerId: 2, score: 75 }]);
+    expect(body.players).toEqual([{ playerId: 1, score: 90, starting: false }, { playerId: 2, score: 75, starting: false }]);
     // po uložení se vrací na detail hry
     expect(await screen.findByRole('link', { name: 'Nový zápis' })).toHaveAttribute('href', '/games/1/new-play');
+  });
+
+  it('offers the core players first and guests only after "Přidat hosty"', async () => {
+    const fetchMock = mockApi({ ...routes, 'POST /parties/3/players': { status: 201, body: { id: 4, name: 'Nový', hasAccount: false } } });
+    renderApp('/games/1/new-play');
+    await screen.findByRole('heading', { name: 'Nový zápis' });
+    expect(screen.getByLabelText('Anna')).toBeInTheDocument();
+    expect(screen.queryByLabelText('Host')).not.toBeInTheDocument();
+    expect(screen.queryByLabelText('Jméno nového hosta')).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Přidat hosty' }));
+    expect(screen.getByLabelText('Host')).toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText('Jméno nového hosta'), { target: { value: 'Nový' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Přidat' }));
+    await waitFor(() => expect(fetchMock.mock.calls.some(([u, init]) => String(u) === '/api/parties/3/players' && init?.method === 'POST')).toBe(true));
+
+    // vybraný host zůstane vidět i po skrytí hostů
+    fireEvent.click(screen.getByLabelText('Host'));
+    fireEvent.click(screen.getByRole('button', { name: 'Skrýt hosty' }));
+    expect(screen.getByLabelText('Host')).toBeChecked();
+  });
+
+  it('lets the user pick the winner of a tie and the starting player', async () => {
+    const fetchMock = mockApi(routes);
+    renderApp('/games/1/new-play');
+    await screen.findByRole('heading', { name: 'Nový zápis' });
+    fireEvent.click(screen.getByLabelText('Anna'));
+    fireEvent.click(screen.getByLabelText('Petr'));
+    fireEvent.change(screen.getByLabelText('Skóre Anna'), { target: { value: '50' } });
+    fireEvent.change(screen.getByLabelText('Skóre Petr'), { target: { value: '50' } });
+
+    // při shodě skóre jsou automaticky vítězi oba
+    expect(screen.getByRole('button', { name: 'Vítěz Anna' })).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByRole('button', { name: 'Vítěz Petr' })).toHaveAttribute('aria-pressed', 'true');
+
+    // ručně zůstane jen Petr; začínající hráč je nejvýše jeden
+    fireEvent.click(screen.getByRole('button', { name: 'Vítěz Anna' }));
+    expect(screen.getByRole('button', { name: 'Vítěz Anna' })).toHaveAttribute('aria-pressed', 'false');
+    expect(screen.getByRole('button', { name: 'Vítěz Petr' })).toHaveAttribute('aria-pressed', 'true');
+    fireEvent.click(screen.getByRole('button', { name: 'Začíná Anna' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Začíná Petr' }));
+    expect(screen.getByRole('button', { name: 'Začíná Anna' })).toHaveAttribute('aria-pressed', 'false');
+    expect(screen.getByRole('button', { name: 'Začíná Petr' })).toHaveAttribute('aria-pressed', 'true');
+
+    fireEvent.click(screen.getByRole('button', { name: 'Uložit zápis' }));
+    await waitFor(() => expect(fetchMock.mock.calls.some(([u, init]) => String(u) === '/api/parties/3/plays' && init?.method === 'POST')).toBe(true));
+    const post = fetchMock.mock.calls.find(([u, init]) => String(u) === '/api/parties/3/plays' && init?.method === 'POST')!;
+    expect(JSON.parse(String(post[1]?.body)).players).toEqual([
+      { playerId: 1, score: 50, starting: false, winner: false },
+      { playerId: 2, score: 50, starting: true, winner: true },
+    ]);
   });
 
   it('shows a friendly message for an unknown game', async () => {

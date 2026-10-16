@@ -3,9 +3,9 @@ import type { Play } from '../api/types';
 import { formatScore, winners } from './scoring';
 
 const results: Play['results'] = [
-  { playerId: 1, name: 'Anna', score: 90, rank: 1, winner: true },
-  { playerId: 2, name: 'Bob', score: 90, rank: 1, winner: true },
-  { playerId: 3, name: 'Cyril', score: 70, rank: 3, winner: false },
+  { playerId: 1, name: 'Anna', score: 90, rank: 1, winner: true, starting: false },
+  { playerId: 2, name: 'Bob', score: 90, rank: 1, winner: true, starting: false },
+  { playerId: 3, name: 'Cyril', score: 70, rank: 3, winner: false, starting: false },
 ];
 
 describe('winners', () => {

@@ -6,7 +6,7 @@ export function RequireParty() {
   const { activeParty } = useApp();
   if (!activeParty) {
     return (
-      <div className="empty">
+      <div className="page pad empty">
         <p>Zatím nejsi v žádné partě.</p>
         <Link className="btn" to="/parties">Vytvořit partu</Link>
       </div>

@@ -41,14 +41,17 @@ body {
   position: relative;
 }
 .splash { padding: 2rem 1rem; text-align: center; }
+/* Kostra stránky: každá stránka je `.page` bez vlastního odsazení; obsah v `.pad` (1 rem po stranách,
+   1 rem nad blokem), seznamy a záhlaví jdou přes celou šířku. */
 main { padding-bottom: 2rem; }
-main > :not(.flush):not(.detail) { padding: 1rem 1rem 0; }
 .pad { padding: 1rem 1rem 0; }
 h1, h2, h3, h4 { margin: 0.5rem 0; font-weight: 500; line-height: 1.2; }
-h2 { font-size: 1.5rem; }
-h3 { font-size: 1.05rem; color: var(--secondary); }
-h4 { font-size: 1.25rem; }
-.h5 { font-size: 1.25rem; font-weight: 500; line-height: 1.2; }
+h2, h3, h4, .h5 { font-size: 1.25rem; }
+h2, h3 { color: var(--text); }
+/* Záhlaví stránky (nadpis, nebo náhled a název hry): vždy stejná výška a odsazení */
+.page-head { display: flex; align-items: center; gap: 1rem; min-height: var(--image-size-small); margin: 0.5rem 0; padding-right: 1rem; }
+.page-head:not(.with-image) { padding-left: 1rem; min-height: 0; margin-bottom: 0; }
+.page-title { margin: 0; font-size: 1.25rem; font-weight: 500; line-height: 1.2; }
 .muted, .secondary { color: var(--secondary); }
 .primary { color: var(--main); }
 .small, small { font-size: 0.8em; }
@@ -117,7 +120,7 @@ hr { border: 0; border-top: 1px solid rgba(0, 0, 0, 0.15); margin: 1rem 0; }
 }
 .btn:hover { background: var(--main-dark); border-color: var(--main-dark); }
 .btn:disabled { opacity: .65; cursor: default; }
-.btn.block { display: block; width: 100%; margin-bottom: 1rem; }
+.btn.block { display: block; width: 100%; }
 .btn.small { padding: 0.25rem 0.5rem; font-size: 0.875rem; }
 .btn.secondary { background: var(--secondary); border-color: var(--secondary); }
 .btn.secondary:hover { background: #5c5c5c; border-color: #5c5c5c; }
@@ -129,8 +132,15 @@ hr { border: 0; border-top: 1px solid rgba(0, 0, 0, 0.15); margin: 1rem 0; }
 .btn.danger:hover { background: var(--error); color: #fff; }
 .link { background: none; border: 0; color: var(--main); font: inherit; cursor: pointer; padding: 0.25rem 0.5rem; }
 .link.danger { color: var(--error); }
-.nav-actions { display: flex; gap: 0.25rem; margin: 0.5rem 0; }
-.nav-actions > * { flex: 1; }
+/* Hlavní tlačítka stránky: mřížka 2×2, stejně velká; pozice podle pořadí (1 TL, 2 TR, 3 BR, 4 BL) */
+.actions { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 0.5rem; margin-top: 1rem; }
+.actions > .btn { width: 100%; margin: 0; }
+.actions > :nth-child(3) { grid-column: 2; grid-row: 2; }
+.actions > :nth-child(4) { grid-column: 1; grid-row: 2; }
+/* Tichá akce pod tlačítky (např. smazání): šedý text bez rámečku */
+.link.subtle { color: var(--secondary); text-decoration: underline; padding: 0.25rem 0; }
+.link.subtle.confirm { color: var(--error); }
+.subtle-action { margin: 1rem 0 0; text-align: center; }
 
 .login { padding: 1.5rem; display: flex; flex-direction: column; gap: 1rem; text-align: center; }
 .login-logo { width: 100%; margin: 2rem 0 1rem; }
@@ -170,22 +180,18 @@ legend { color: var(--secondary); font-size: 0.85rem; padding: 0 0.3rem; }
 .list-item-body { flex: 1; min-width: 0; display: flex; flex-direction: column; padding: 0.5rem 1rem; }
 .game-image { width: var(--image-size); height: var(--image-size); object-fit: cover; flex: none; background: var(--light-gray); }
 .game-image.small { width: var(--image-size-small); height: var(--image-size-small); }
-.list-btn { width: 100%; background: none; border: 0; text-align: left; font: inherit; padding: 0.5rem 0.2rem; cursor: pointer; }
-.list-btn:hover { background: var(--light-blue); }
-.list-btn.active { font-weight: 600; color: var(--main); }
 .member { display: flex; justify-content: space-between; align-items: center; padding: 0.5rem 0; }
 .invite input { margin-top: 0.4rem; }
 .safe-html { padding: 0.5rem 0; }
 
-/* Detail zápisu */
-.detail { padding: 0.5rem 1rem 0; }
-.detail-game { display: flex; gap: 1rem; align-items: center; margin: 0.5rem 0 1rem; }
-.detail-game > div { display: flex; flex-direction: column; }
+/* Výsledky zápisu */
 .detail-info { margin-bottom: 1rem; font-weight: 300; }
 .results { list-style: none; margin: 0 0 1rem; padding: 0; }
-.results li { display: grid; grid-template-columns: 2rem 1fr auto; gap: 0.25rem; align-items: center; padding: 0.15rem 0; font-weight: 500; }
+.results li { display: grid; grid-template-columns: 3.2rem 1fr auto; gap: 0.25rem; align-items: center; padding: 0.15rem 0; font-weight: 500; }
 .results li.winner { color: var(--main); }
-.result-icon .icon { font-size: 1.4rem; vertical-align: top; }
+.result-icons { display: flex; gap: 0.2rem; }
+.result-icons > span { width: 1.5rem; height: 1.5rem; display: grid; place-items: center; }
+.result-icons .icon { font-size: 1.4rem; }
 .result-score { text-align: right; font-variant-numeric: tabular-nums; }
 
 /* Statistiky */
@@ -243,10 +249,9 @@ a.link:hover { text-decoration: underline; }
 .game-list .empty { padding: 2rem 1rem; }
 .last-play { font-weight: 500; }
 .more { margin: 0.5rem 0 0; border-radius: 0; }
+.list-top { margin-top: 1rem; border-top: 1px solid var(--light-gray); }
 
-/* Detail hry: záhlaví, rozbalovací zápisy */
-.game-header { display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem 1rem 0.5rem 0; margin: 0.5rem 0; }
-.game-header .game-image { margin-right: 0.25rem; }
+/* Detail hry: rozbalovací zápisy */
 .round { border-left: 0.2rem solid transparent; border-bottom: 1px solid transparent; }
 .round:hover { border-left-color: var(--main); }
 .round.selected { border-left-color: var(--main); background: #e8f0fb; }
@@ -259,15 +264,13 @@ a.link:hover { text-decoration: underline; }
 .round-score { text-align: right; font-variant-numeric: tabular-nums; }
 .round-body { padding: 0.25rem 0.8rem 0.5rem; }
 .round-body .detail-info { margin-bottom: 0.5rem; }
-.round-body .results li { grid-template-columns: 2rem 7fr 3fr; }
-.round-actions { display: flex; justify-content: flex-end; align-items: center; padding-top: 0.25rem; }
-.game-detail .nav-actions { margin-top: 0.75rem; }
+.round-body .results li { grid-template-columns: 3.2rem 7fr 3fr; }
+.round-body .actions { margin-top: 0.5rem; }
 
 /* Taháček (HTML od uživatelů) */
-.cheatsheet { padding: 0 1rem; }
+.cheatsheet { padding: 0 1rem; margin-top: 0.5rem; }
 .cheatsheet h1, .cheatsheet h2 { font-size: 1.25rem; }
-.cheatsheet h3 { font-size: 1.2rem; color: var(--text); }
-.cheatsheet h4 { font-size: 1.15rem; }
+.cheatsheet h3, .cheatsheet h4 { font-size: 1.1rem; }
 .cheatsheet img { max-width: 100%; height: auto; }
 .cheatsheet table { width: 100%; border-collapse: collapse; margin-bottom: 1rem; }
 .cheatsheet th, .cheatsheet td { border: 1px solid var(--gray); padding: 0.5rem; text-align: left; vertical-align: top; }
@@ -285,19 +288,31 @@ a.link:hover { text-decoration: underline; }
 .skeleton-image { width: var(--image-size); height: var(--image-size); flex: none; border-radius: 0; }
 .skeleton-row.with-image .skeleton-lines { padding: 0.5rem 0; }
 
-/* Nový zápis: řádek hráče */
-.player-row { padding: 0.35rem 0.5rem; border-radius: var(--radius); }
-.player-row.selected { background: #e8f0fb; }
+/* Formulář zápisu: pole bez rámečků, hráči jako řádky s přepínači */
 .form > label { font-weight: 500; }
 .form > label > input, .form > label > select, .form > label > textarea { font-weight: 400; }
+.field { display: grid; gap: 0.25rem; }
+.field-label { font-size: 0.9rem; color: var(--secondary); }
+.player {
+  display: grid; grid-template-columns: minmax(0, 1fr) 6.5rem; gap: 0.25rem 0.5rem; align-items: center;
+  padding: 0.25rem 0.5rem; margin: 0 -0.5rem; border-radius: var(--radius);
+}
+.player.selected { background: #e8f0fb; }
+.chips { grid-column: 1 / -1; display: flex; gap: 0.5rem; padding-bottom: 0.25rem; }
+.chip {
+  display: inline-flex; align-items: center; gap: 0.25rem; padding: 0.1rem 0.6rem 0.1rem 0.4rem; font: inherit; font-size: 0.875rem;
+  color: var(--secondary); background: #fff; border: 1px solid var(--gray); border-radius: 1rem; cursor: pointer;
+}
+.chip .icon { font-size: 1.2rem; }
+.chip[aria-pressed='true'] { color: #fff; background: var(--main); border-color: var(--main); }
+.field-actions { display: flex; align-items: center; gap: 0.75rem; margin-top: 0.25rem; }
+.guest-add { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 0.5rem; margin-top: 0.5rem; }
 
 /* Správa part a detail party */
-.party-row { display: flex; align-items: center; gap: 0.5rem; padding-right: 1rem; }
-.party-link { flex: 1; min-width: 0; display: flex; flex-direction: column; padding: 0.5rem 1rem; color: inherit; text-decoration: none; }
+.party-row { display: flex; align-items: center; gap: 0.5rem; padding-right: 1rem; border-left: 0.2rem solid transparent; }
+.party-row.selected { background: #e8f0fb; border-left-color: var(--main); }
+.party-link { flex: 1; min-width: 0; display: flex; flex-direction: column; padding: 0.5rem 0.8rem; color: inherit; text-decoration: none; }
 .party-link:hover { background: var(--light-blue); }
-.badge { font-size: 0.8rem; color: var(--main); border: 1px solid var(--main); border-radius: var(--radius); padding: 0.1rem 0.5rem; }
 .party-detail .member { padding: 0.5rem 1rem; }
-.party-detail .actions { display: flex; gap: 0.25rem; }
+.party-detail .member-actions { display: flex; gap: 0.25rem; }
 .party-detail .invite { margin-top: 1rem; }
-.danger-zone { margin-top: 0.5rem; }
-.danger-zone .btn.block { margin-bottom: 0; }

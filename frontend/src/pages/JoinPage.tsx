@@ -29,7 +29,7 @@ export function JoinPage() {
   }, [accept]);
 
   return (
-    <section className="empty">
+    <section className="page pad empty">
       {accept.isError ? (
         <>
           <ErrorMessage error={accept.error} />
