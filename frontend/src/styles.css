@@ -255,6 +255,7 @@ a.link:hover { text-decoration: underline; }
 .list-item-body .h5 { font-size: 1.1rem; line-height: 1.15; }
 .list-item-body .secondary { line-height: 1.35; }
 .more { margin: 0.5rem 0 0; border-radius: 0; }
+.load-more { min-height: 3rem; display: grid; place-items: center; }
 .list-top { margin-top: 1rem; border-top: 1px solid var(--light-gray); }
 
 /* Detail hry: rozbalovací zápisy */

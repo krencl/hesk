@@ -1,4 +1,4 @@
-import { fireEvent, screen, waitFor, within } from '@testing-library/react';
+import { act, fireEvent, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { GAME, mockApi, ME, PARTY, PLAY, renderApp, requestedUrls } from '../test/helpers';
 
@@ -29,6 +29,32 @@ describe('game list', () => {
     expect(screen.getByText('Zatím nehráno')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Načíst další' })).not.toBeInTheDocument();
     expect(requestedUrls(fetchMock)).toContain('/parties/3/games?sort=activity&limit=21&offset=20');
+  });
+
+  it('loads further pages by scrolling instead of a button', async () => {
+    const observers: { callback: IntersectionObserverCallback; disconnected: boolean }[] = [];
+    vi.stubGlobal('IntersectionObserver', class {
+      entry = { callback: undefined as unknown as IntersectionObserverCallback, disconnected: false };
+      constructor(callback: IntersectionObserverCallback) { this.entry.callback = callback; observers.push(this.entry); }
+      observe() {}
+      disconnect() { this.entry.disconnected = true; }
+    });
+    const fetchMock = mockApi({
+      ...base,
+      '/parties/3/games?sort=activity&limit=21&offset=0': { body: [...games(20), { ...GAME, id: 99, name: 'Dvacátá první' }] },
+      '/parties/3/games?sort=activity&limit=21&offset=20': { body: [{ ...GAME, id: 99, name: 'Dvacátá první', lastPlay: null, playCount: 0 }] },
+    });
+    renderApp('/games');
+    expect(await screen.findByText('Hra 20')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Načíst další' })).not.toBeInTheDocument();
+    expect(requestedUrls(fetchMock)).not.toContain('/parties/3/games?sort=activity&limit=21&offset=20');
+
+    // hlídač na konci seznamu se objeví ve výhledu
+    const active = observers.filter((o) => !o.disconnected).at(-1)!;
+    act(() => active.callback([{ isIntersecting: true } as IntersectionObserverEntry], {} as IntersectionObserver));
+    expect(await screen.findByText('Dvacátá první')).toBeInTheDocument();
+    expect(requestedUrls(fetchMock)).toContain('/parties/3/games?sort=activity&limit=21&offset=20');
+    expect(observers.filter((o) => !o.disconnected)).toHaveLength(0); // poslední stránka: hlídač zmizel
   });
 
   it('searches by name and says so when nothing is found', async () => {

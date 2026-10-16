@@ -7,6 +7,7 @@ import type { GameSort, GameWithStats } from '../api/types';
 import { ErrorMessage } from '../components/ErrorMessage';
 import { GameImage } from '../components/GameImage';
 import { Icon } from '../components/Icon';
+import { LoadMore } from '../components/LoadMore';
 import { ListSkeleton } from '../components/Skeleton';
 import { formatDateTimeShort } from '../lib/datetime';
 import { loadGameListSettings, saveGameListSettings } from '../lib/listSettings';
@@ -98,11 +99,7 @@ export function GameListPage() {
         ))}
       </ul>
 
-      {games.hasNextPage && (
-        <button type="button" className="btn light block more" disabled={games.isFetchingNextPage} onClick={() => games.fetchNextPage()}>
-          Načíst další
-        </button>
-      )}
+      <LoadMore hasMore={games.hasNextPage} loading={games.isFetchingNextPage} failed={games.isFetchNextPageError} onLoad={() => games.fetchNextPage()} />
     </section>
   );
 }

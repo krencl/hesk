@@ -7,6 +7,7 @@ import { ApiError } from '../api/client';
 import type { Play } from '../api/types';
 import { Actions } from '../components/Actions';
 import { ErrorMessage } from '../components/ErrorMessage';
+import { LoadMore } from '../components/LoadMore';
 import { GameHeader } from '../components/GameHeader';
 import { Icon } from '../components/Icon';
 import { ListSkeleton } from '../components/Skeleton';
@@ -65,11 +66,13 @@ export function GameDetailPage() {
         ))}
       </div>
 
-      {rounds.hasNextPage && (
-        <button type="button" className="btn light block more" disabled={rounds.isFetchingNextPage} onClick={() => rounds.fetchNextPage()}>
-          Načíst další záznamy {remaining > 0 && <span className="secondary">(zbývá {remaining})</span>}
-        </button>
-      )}
+      <LoadMore
+        hasMore={rounds.hasNextPage}
+        loading={rounds.isFetchingNextPage}
+        failed={rounds.isFetchNextPageError}
+        onLoad={() => rounds.fetchNextPage()}
+        label={`Načíst další záznamy${remaining > 0 ? ` (zbývá ${remaining})` : ''}`}
+      />
 
       <div className="pad">
         <Actions>
