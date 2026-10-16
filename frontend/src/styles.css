@@ -334,7 +334,7 @@ a.link:hover { text-decoration: underline; }
 .icon-button:hover { background: var(--light-gray); color: var(--error); }
 .hint { font-size: 0.8rem; }
 
-/* Našeptávání (místo, tagy) */
+/* Našeptávání (tagy) */
 .combo { position: relative; }
 .combo-list {
   position: absolute; z-index: 10; left: 0; right: 0; top: 100%; margin: 0.15rem 0 0; padding: 0; list-style: none;

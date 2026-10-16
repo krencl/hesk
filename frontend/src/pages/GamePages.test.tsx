@@ -169,7 +169,6 @@ describe('new play', () => {
     '/parties/3/plays': { body: PLAY },
     '/parties/3/plays?limit=11&offset=0&gameId=1': { body: [PLAY] },
     '/parties/3/plays/defaults*': { body: { sessionNumber: 95, playerIds: null } },
-    '/parties/3/places': { body: ['Doma', 'U Kuby'] },
     '/parties/3/tags': { body: ['liga', 'víkend'] },
   };
 
@@ -217,7 +216,7 @@ describe('new play', () => {
     expect(screen.getByLabelText('Anna')).not.toBeChecked(); // v minulém zápisu nehrála
   });
 
-  it('sends the session number only when the user changes it, and creates a new place and tags by typing', async () => {
+  it('sends the session number only when the user changes it, and creates new tags by typing', async () => {
     const fetchMock = mockApi(routes);
     renderApp('/games/1/new-play');
     await screen.findByRole('heading', { name: 'Nový zápis' });
@@ -225,9 +224,6 @@ describe('new play', () => {
     fireEvent.change(screen.getByLabelText('Skóre Anna'), { target: { value: '9' } });
     fireEvent.change(screen.getByLabelText('Skóre Petr'), { target: { value: '5' } });
 
-    const place = screen.getByLabelText('Místo');
-    fireEvent.focus(place);
-    fireEvent.click(await screen.findByRole('option', { name: 'U Kuby' }));
     const tags = screen.getByLabelText('Tagy');
     fireEvent.focus(tags);
     fireEvent.click(await screen.findByRole('option', { name: 'liga' }));
@@ -238,7 +234,7 @@ describe('new play', () => {
     const isPost = ([u, init]: [string, RequestInit?]) => String(u) === '/api/parties/3/plays' && init?.method === 'POST';
     await waitFor(() => expect(fetchMock.mock.calls.some(isPost)).toBe(true));
     const body = JSON.parse(String(fetchMock.mock.calls.find(isPost)![1]?.body));
-    expect(body).toMatchObject({ place: 'U Kuby', tags: ['liga', 'novinka'] });
+    expect(body).toMatchObject({ tags: ['liga', 'novinka'] });
     expect(body).not.toHaveProperty('sessionNumber');
   });
 

@@ -22,10 +22,6 @@ class Play
     #[ORM\JoinColumn(nullable: false)]
     private GameSession $session;
 
-    #[ORM\ManyToOne]
-    #[ORM\JoinColumn(onDelete: 'SET NULL')]
-    private ?Place $place = null;
-
     #[ORM\Column(type: Types::TEXT, nullable: true)]
     private ?string $notes = null;
 
@@ -106,16 +102,6 @@ class Play
     public function setSession(GameSession $session): void
     {
         $this->session = $session;
-    }
-
-    public function getPlace(): ?Place
-    {
-        return $this->place;
-    }
-
-    public function setPlace(?Place $place): void
-    {
-        $this->place = $place;
     }
 
     public function getNotes(): ?string

@@ -7,14 +7,13 @@ afterEach(() => { vi.unstubAllGlobals(); sessionStorage.clear(); });
 
 const PLAYERS = [{ id: 1, name: 'Anna', hasAccount: true }, { id: 2, name: 'Petr', hasAccount: false }, { id: 3, name: 'Eva', hasAccount: false }];
 // Anna je hlavní hráč, Petr (vybraný) a Eva (nevybraná) jsou hosté
-const PLAY_FULL = { ...PLAY, addons: [{ id: 5, name: 'Řeka' }], tags: ['rodinná', 'liga'], place: 'U Kuby', notes: 'Skvělá hra', endedAt: '2022-02-06T21:36:00+00:00' };
+const PLAY_FULL = { ...PLAY, addons: [{ id: 5, name: 'Řeka' }], tags: ['rodinná', 'liga'], notes: 'Skvělá hra', endedAt: '2022-02-06T21:36:00+00:00' };
 const routes = {
   '/me': { body: ME },
   '/parties': { body: [PARTY] },
   '/plays/9': { body: PLAY_FULL },
   '/games/1': { body: { ...GAME, addons: [{ id: 5, name: 'Řeka' }, { id: 6, name: 'Opat' }] } },
   '/parties/3/players': { body: PLAYERS },
-  '/parties/3/places': { body: ['Doma', 'U Kuby'] },
   '/parties/3/tags': { body: ['liga', 'rodinná', 'víkend'] },
   '/parties/3/plays?limit=11&offset=0&gameId=1': { body: [PLAY_FULL] },
 };
@@ -35,7 +34,6 @@ describe('edit play (/plays/:id/edit)', () => {
     expect(screen.getByLabelText('Skóre Petr')).toHaveValue('75');
     expect(screen.getByLabelText('Řeka')).toBeChecked();
     expect(screen.getByLabelText('Opat')).not.toBeChecked();
-    expect(screen.getByLabelText('Místo')).toHaveValue('U Kuby');
     expect(screen.getByLabelText('Číslo sezení')).toHaveValue(69);
     expect(screen.getByRole('button', { name: 'Odebrat tag rodinná' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Odebrat tag liga' })).toBeInTheDocument();
@@ -58,7 +56,7 @@ describe('edit play (/plays/:id/edit)', () => {
     const isPut = ([u, init]: [string, RequestInit?]) => String(u) === '/api/plays/9' && init?.method === 'PUT';
     await waitFor(() => expect(fetchMock.mock.calls.some(isPut)).toBe(true));
     const body = JSON.parse(String(fetchMock.mock.calls.find(isPut)![1]?.body));
-    expect(body).toMatchObject({ gameId: 1, addonIds: [], place: 'U Kuby', tags: ['rodinná', 'liga'], notes: 'Skvělá hra' });
+    expect(body).toMatchObject({ gameId: 1, addonIds: [], tags: ['rodinná', 'liga'], notes: 'Skvělá hra' });
     expect(body.players).toEqual([
       { playerId: 1, score: 90, starting: true },
       { playerId: 2, score: 100, starting: false },

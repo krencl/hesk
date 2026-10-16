@@ -7,7 +7,6 @@ import type { Game, PlayInput } from '../api/types';
 import { fromLocalInput } from '../lib/datetime';
 import { isScored, isWinner, newPlayerDraft, type PlayDraft, toPlayInput, validateDraft } from '../lib/playForm';
 import { Actions } from './Actions';
-import { Autocomplete } from './Autocomplete';
 import { ErrorMessage } from './ErrorMessage';
 import { GameHeader } from './GameHeader';
 import { Icon } from './Icon';
@@ -41,7 +40,6 @@ export function PlayForm({ game, initial, heading, submitLabel, saving, error, c
   const party = useActiveParty();
   const queryClient = useQueryClient();
   const players = useQuery({ queryKey: ['players', party.id], queryFn: () => api.players(party.id) });
-  const places = useQuery({ queryKey: ['places', party.id], queryFn: () => api.places(party.id) });
   const tags = useQuery({ queryKey: ['tags', party.id], queryFn: () => api.tags(party.id) });
   const [draft, setDraft] = useState<PlayDraft>(initial);
 
@@ -192,10 +190,6 @@ export function PlayForm({ game, initial, heading, submitLabel, saving, error, c
           <label>Konec<input type="datetime-local" value={draft.endedAt} onChange={(e) => patch({ endedAt: e.target.value })} required /></label>
         </div>
         <label>Číslo sezení<input type="number" inputMode="numeric" min={1} step={1} value={draft.sessionNumber} onChange={(e) => patch({ sessionNumber: e.target.value, sessionNumberTouched: true })} /></label>
-        <div className="field">
-          <label htmlFor="play-place" className="field-label">Místo</label>
-          <Autocomplete id="play-place" value={draft.place} maxLength={100} options={places.data ?? []} onChange={(place) => patch({ place })} />
-        </div>
         <div className="field">
           <label htmlFor="play-tags" className="field-label">Tagy</label>
           <TagInput id="play-tags" tags={draft.tags} options={tags.data ?? []} onChange={(t) => patch({ tags: t })} />

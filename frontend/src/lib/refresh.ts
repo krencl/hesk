@@ -12,8 +12,7 @@ export async function refreshAfterPlayChange(queryClient: QueryClient, partyId: 
     queryClient.invalidateQueries({ queryKey: ['game', gameId] }),
     queryClient.invalidateQueries({ queryKey: ['plays', partyId] }),
     queryClient.invalidateQueries({ queryKey: ['stats', partyId] }),
-    // nová místa/tagy z uloženého zápisu a posun čísla sezení pro další zápis
-    queryClient.invalidateQueries({ queryKey: ['places', partyId] }),
+    // nové tagy z uloženého zápisu a posun čísla sezení pro další zápis
     queryClient.invalidateQueries({ queryKey: ['tags', partyId] }),
     queryClient.invalidateQueries({ queryKey: ['playDefaults', partyId] }),
   ]);

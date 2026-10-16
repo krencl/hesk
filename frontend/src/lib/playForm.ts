@@ -17,7 +17,6 @@ export interface PlayDraft {
   endedAt: string;
   players: PlayerDraft[];
   addonIds: number[];
-  place: string;
   tags: string[];
   notes: string;
   /** Číslo sezení jako text z inputu; prázdné = určí backend. */
@@ -83,7 +82,6 @@ export function emptyDraft(game: Pick<Game, 'id' | 'player'>, now = new Date(), 
     ...defaultTimes(now),
     players: playerIds.map(newPlayerDraft),
     addonIds: [],
-    place: '',
     tags: [],
     notes: '',
     sessionNumber: prefill.sessionNumber === undefined ? '' : String(prefill.sessionNumber),
@@ -112,7 +110,6 @@ export function draftFromPlay(play: Play): PlayDraft {
       characterId: r.character?.id ?? null,
     })),
     addonIds: play.addons.map((a) => a.id),
-    place: play.place ?? '',
     tags: play.tags,
     notes: play.notes ?? '',
     sessionNumber: String(play.sessionNumber),
@@ -158,7 +155,6 @@ export function toPlayInput(draft: PlayDraft, game: Game): PlayInput {
     endedAt: fromLocalInput(draft.endedAt),
     players,
     addonIds: draft.addonIds.filter((id) => game.addons.some((a) => a.id === id)),
-    place: draft.place.trim() || null,
     tags: draft.tags,
     notes: draft.notes.trim() || null,
     ...(draft.sessionNumberTouched ? { sessionNumber: parseSessionNumber(draft.sessionNumber) } : {}),

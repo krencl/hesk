@@ -10,7 +10,6 @@ use App\Domain\ResultCalculator;
 use App\Dto\PlayRequest;
 use App\Entity\Game;
 use App\Entity\Party;
-use App\Entity\Place;
 use App\Entity\Play;
 use App\Entity\PlayResult;
 use App\Entity\Tag;
@@ -143,8 +142,7 @@ final class PlayService
         $play->setGame($game);
         $play->replaceResults($results);
         $play->setAddons($addons);
-        $play->setTags(array_map(fn (string $n): Tag => $this->findOrCreate(Tag::class, $party, $n), $this->cleanNames($req->tags)));
-        $play->setPlace($req->place && '' !== trim($req->place) ? $this->findOrCreate(Place::class, $party, trim($req->place)) : null);
+        $play->setTags(array_map(fn (string $n): Tag => $this->findOrCreateTag($party, $n), $this->cleanNames($req->tags)));
         $play->setNotes($req->notes);
     }
 
@@ -154,21 +152,14 @@ final class PlayService
         return array_values(array_unique(array_filter(array_map('trim', $names), static fn (string $n): bool => '' !== $n)));
     }
 
-    /**
-     * @template T of Tag|Place
-     *
-     * @param class-string<T> $class
-     *
-     * @return T
-     */
-    private function findOrCreate(string $class, Party $party, string $name): Tag|Place
+    private function findOrCreateTag(Party $party, string $name): Tag
     {
-        $entity = $this->em->getRepository($class)->findOneBy(['party' => $party, 'name' => $name]);
-        if (!$entity) {
-            $entity = new $class($party, $name);
-            $this->em->persist($entity);
+        $tag = $this->em->getRepository(Tag::class)->findOneBy(['party' => $party, 'name' => $name]);
+        if (!$tag) {
+            $tag = new Tag($party, $name);
+            $this->em->persist($tag);
         }
 
-        return $entity;
+        return $tag;
     }
 }

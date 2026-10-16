@@ -93,7 +93,6 @@ function Round({ play, open, onToggle }: { play: Play; open: boolean; onToggle: 
   const details: [string, string][] = [
     ['Rozšíření', play.addons.map((a) => a.name).join(', ')],
     ['Číslo sezení', String(play.sessionNumber)],
-    ['Místo', play.place ?? ''],
     ['Tagy', play.tags.join(', ')],
     ['Poznámka', play.notes ?? ''],
   ];

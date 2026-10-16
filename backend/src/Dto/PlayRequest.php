@@ -21,8 +21,6 @@ final readonly class PlayRequest
         #[Assert\Valid]
         public array $players = [],
         public array $addonIds = [],
-        #[Assert\Length(max: 100)]
-        public ?string $place = null,
         #[Assert\All([new Assert\NotBlank(), new Assert\Length(max: 100)])]
         public array $tags = [],
         public ?string $notes = null,

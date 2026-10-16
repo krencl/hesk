@@ -111,7 +111,6 @@ final class Presenter
             'sessionNumber' => $play->getSession()->getNumber(),
             'startedAt' => $play->getStartedAt()->format(\DATE_ATOM),
             'endedAt' => $play->getEndedAt()->format(\DATE_ATOM),
-            'place' => $play->getPlace()?->getName(),
             'notes' => $play->getNotes(),
             'addons' => array_values(array_map(static fn ($a): array => ['id' => $a->getId(), 'name' => $a->getName()], $play->getAddons()->toArray())),
             'tags' => array_values(array_map(static fn ($t): string => $t->getName(), $play->getTags()->toArray())),

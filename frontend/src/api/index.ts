@@ -39,7 +39,6 @@ export const api = {
     get<Play[]>(`/parties/${partyId}/plays${queryString({ limit, offset, gameId })}`),
   playDefaults: (partyId: number, startedAt: string, endedAt: string) =>
     get<PlayDefaults>(`/parties/${partyId}/plays/defaults${queryString({ startedAt, endedAt })}`),
-  places: (partyId: number) => get<string[]>(`/parties/${partyId}/places`),
   tags: (partyId: number) => get<string[]>(`/parties/${partyId}/tags`),
   play: (id: number) => get<Play>(`/plays/${id}`),
   createPlay: (partyId: number, input: PlayInput) => post<Play>(`/parties/${partyId}/plays`, input),

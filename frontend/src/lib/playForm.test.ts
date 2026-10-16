@@ -13,7 +13,6 @@ const draft = (over: Partial<PlayDraft> = {}): PlayDraft => ({
   endedAt: '2026-03-01T19:00',
   players: [{ playerId: 1, score: '10,5', rank: '', winner: false, starting: false, characterId: null }],
   addonIds: [1, 99],
-  place: ' Doma ',
   tags: ['víkend', 'liga'],
   notes: '  ',
   sessionNumber: '95',
@@ -49,7 +48,6 @@ describe('toPlayInput', () => {
     const input = toPlayInput(draft(), game('most_points'));
     expect(input.players).toEqual([{ playerId: 1, score: 10.5, starting: false }]);
     expect(input.addonIds).toEqual([1]);
-    expect(input.place).toBe('Doma');
     expect(input.tags).toEqual(['víkend', 'liga']);
     expect(input.notes).toBeNull();
     expect(input.startedAt).toMatch(/Z$/);
@@ -65,7 +63,7 @@ describe('toPlayInput', () => {
 describe('draftFromPlay', () => {
   const play: Play = {
     id: 1, sessionId: 2, sessionNumber: 3, game: { id: 7, name: 'G', imageUrl: null, scoreType: 'most_points' },
-    startedAt: '2026-03-01T18:00:00+00:00', endedAt: '2026-03-01T19:30:00+00:00', place: null, notes: null,
+    startedAt: '2026-03-01T18:00:00+00:00', endedAt: '2026-03-01T19:30:00+00:00', notes: null,
     addons: [{ id: 1, name: 'X' }], tags: ['víkend', 'liga'],
     results: [{ playerId: 4, name: 'Anna', score: 10.5, rank: 1, winner: true, starting: true, character: null }, { playerId: 5, name: 'Bob', score: null, rank: 2, winner: false, starting: false, character: null }],
   };
@@ -77,7 +75,6 @@ describe('draftFromPlay', () => {
       endedAt: toLocalInput(new Date(play.endedAt)),
       players: [{ playerId: 4, score: '10.5', rank: '1', winner: true, starting: true, characterId: null }, { playerId: 5, score: '', rank: '2', winner: false, starting: false, characterId: null }],
       addonIds: [1],
-      place: '',
       tags: ['víkend', 'liga'],
       notes: '',
       sessionNumber: '3',
@@ -179,7 +176,7 @@ describe('winners of scored games', () => {
   it('detects a manual winner when editing a play (tie decided by hand)', () => {
     const base: Play = {
       id: 1, sessionId: 2, sessionNumber: 3, game: { id: 7, name: 'G', imageUrl: null, scoreType: 'most_points' },
-      startedAt: '2026-03-01T18:00:00+00:00', endedAt: '2026-03-01T19:00:00+00:00', place: null, notes: null, addons: [], tags: [],
+      startedAt: '2026-03-01T18:00:00+00:00', endedAt: '2026-03-01T19:00:00+00:00', notes: null, addons: [], tags: [],
       results: [
         { playerId: 1, name: 'A', score: 50, rank: 1, winner: true, starting: false, character: null },
         { playerId: 2, name: 'B', score: 50, rank: 1, winner: false, starting: false, character: null },
@@ -216,7 +213,7 @@ describe('characters and the game player', () => {
   it('fills the character when editing a play', () => {
     const play: Play = {
       id: 1, sessionId: 2, sessionNumber: 3, game: { id: 7, name: 'G', imageUrl: null, scoreType: 'winner_only' },
-      startedAt: '2026-03-01T18:00:00+00:00', endedAt: '2026-03-01T19:00:00+00:00', place: null, notes: null, addons: [], tags: [],
+      startedAt: '2026-03-01T18:00:00+00:00', endedAt: '2026-03-01T19:00:00+00:00', notes: null, addons: [], tags: [],
       results: [{ playerId: 1, name: 'A', score: null, rank: 1, winner: true, starting: false, character: { id: 3, name: 'Gigazaur' } }],
     };
     expect(draftFromPlay(play).players[0].characterId).toBe(3);

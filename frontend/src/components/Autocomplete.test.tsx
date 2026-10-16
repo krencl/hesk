@@ -4,9 +4,9 @@ import { describe, expect, it } from 'vitest';
 import { Autocomplete } from './Autocomplete';
 import { TagInput } from './TagInput';
 
-function Place({ options }: { options: string[] }) {
+function Field({ options }: { options: string[] }) {
   const [value, setValue] = useState('');
-  return <><label htmlFor="p">Místo</label><Autocomplete id="p" value={value} onChange={setValue} options={options} /></>;
+  return <><label htmlFor="p">Pole</label><Autocomplete id="p" value={value} onChange={setValue} options={options} /></>;
 }
 
 function Tags({ options, initial = [] }: { options: string[]; initial?: string[] }) {
@@ -18,20 +18,20 @@ const names = () => screen.queryAllByRole('option').map((o) => o.textContent);
 
 describe('Autocomplete', () => {
   it('shows all known values on focus and narrows them while typing (ignoring case and diacritics)', () => {
-    render(<Place options={['Doma', 'U Kuby', 'Kavárna Čapek']} />);
+    render(<Field options={['Doma', 'Klub', 'Kavárna Čapek']} />);
     expect(names()).toEqual([]);
-    fireEvent.focus(screen.getByLabelText('Místo'));
-    expect(names()).toEqual(['Doma', 'U Kuby', 'Kavárna Čapek']);
-    fireEvent.change(screen.getByLabelText('Místo'), { target: { value: 'capek' } });
+    fireEvent.focus(screen.getByLabelText('Pole'));
+    expect(names()).toEqual(['Doma', 'Klub', 'Kavárna Čapek']);
+    fireEvent.change(screen.getByLabelText('Pole'), { target: { value: 'capek' } });
     expect(names()).toEqual(['Kavárna Čapek']);
   });
 
   it('picks a suggestion by click and keeps a brand new typed value as it is', () => {
-    render(<Place options={['Doma', 'U Kuby']} />);
-    const input = screen.getByLabelText('Místo');
+    render(<Field options={['Doma', 'Klub']} />);
+    const input = screen.getByLabelText('Pole');
     fireEvent.focus(input);
-    fireEvent.click(screen.getByRole('option', { name: 'U Kuby' }));
-    expect(input).toHaveValue('U Kuby');
+    fireEvent.click(screen.getByRole('option', { name: 'Klub' }));
+    expect(input).toHaveValue('Klub');
     expect(names()).toEqual([]);
 
     fireEvent.change(input, { target: { value: 'Na chatě' } });
@@ -41,12 +41,12 @@ describe('Autocomplete', () => {
   });
 
   it('supports the keyboard: arrows, Enter, Escape', () => {
-    render(<Place options={['Doma', 'U Kuby']} />);
-    const input = screen.getByLabelText('Místo');
+    render(<Field options={['Doma', 'Klub']} />);
+    const input = screen.getByLabelText('Pole');
     fireEvent.focus(input);
     fireEvent.keyDown(input, { key: 'ArrowDown' });
     fireEvent.keyDown(input, { key: 'ArrowDown' });
-    expect(screen.getByRole('option', { name: 'U Kuby' })).toHaveAttribute('aria-selected', 'true');
+    expect(screen.getByRole('option', { name: 'Klub' })).toHaveAttribute('aria-selected', 'true');
     fireEvent.keyDown(input, { key: 'ArrowUp' });
     fireEvent.keyDown(input, { key: 'Enter' });
     expect(input).toHaveValue('Doma');

@@ -123,7 +123,6 @@ export interface Play {
   sessionNumber: number;
   startedAt: string;
   endedAt: string;
-  place: string | null;
   notes: string | null;
   addons: Addon[];
   tags: string[];
@@ -146,7 +145,6 @@ export interface PlayInput {
   endedAt: string;
   players: PlayerInput[];
   addonIds: number[];
-  place: string | null;
   tags: string[];
   notes: string | null;
   /** Ručně zadané číslo sezení; bez něj ho určí backend podle 24h pravidla. */
