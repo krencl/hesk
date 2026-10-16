@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom';
 import { useActiveParty } from '../AppContext';
 import { api } from '../api';
 import type { Game, PlayInput } from '../api/types';
-import { isScored, isWinner, type PlayDraft, toPlayInput, validateDraft } from '../lib/playForm';
+import { isScored, isWinner, newPlayerDraft, type PlayDraft, toPlayInput, validateDraft } from '../lib/playForm';
 import { Actions } from './Actions';
 import { ErrorMessage } from './ErrorMessage';
 import { GameHeader } from './GameHeader';
@@ -43,7 +43,7 @@ export function PlayForm({ game, initial, heading, submitLabel, saving, error, c
       ...d,
       players: d.players.some((p) => p.playerId === playerId)
         ? d.players.filter((p) => p.playerId !== playerId)
-        : [...d.players, { playerId, score: '', rank: '', winner: false, starting: false }],
+        : [...d.players, newPlayerDraft(playerId)],
     }));
   const patchPlayer = (playerId: number, changes: Partial<PlayDraft['players'][number]>) =>
     patch({ players: draft.players.map((p) => (p.playerId === playerId ? { ...p, ...changes } : p)) });
@@ -79,9 +79,12 @@ export function PlayForm({ game, initial, heading, submitLabel, saving, error, c
 
   // Hlavní hráči (členové s účtem) jsou vidět vždy, hosté až po „Přidat hosty“ (vybraní hosté ale vždy).
   const isSelected = (id: number) => draft.players.some((p) => p.playerId === id);
+  // Vlastní hráč hry (kooperativní hry) je vidět vždy a první.
+  const gamePlayerId = game.player?.id;
+  const rank = (m: { id: number; hasAccount: boolean }) => (m.id === gamePlayerId ? 0 : m.hasAccount ? 1 : 2);
   const visible = (players.data ?? [])
-    .filter((m) => m.hasAccount || isSelected(m.id) || showGuests)
-    .sort((a, b) => Number(a.hasAccount ? 0 : 1) - Number(b.hasAccount ? 0 : 1));
+    .filter((m) => m.id === gamePlayerId || m.hasAccount || isSelected(m.id) || showGuests)
+    .sort((a, b) => rank(a) - rank(b));
 
   return (
     <section className="page">
@@ -91,7 +94,7 @@ export function PlayForm({ game, initial, heading, submitLabel, saving, error, c
 
         {game.addons.length > 0 && (
           <div className="field">
-            <span className="field-label">Přídavky</span>
+            <span className="field-label">Rozšíření</span>
             {game.addons.map((a) => (
               <label key={a.id} className="check">
                 <input type="checkbox" checked={draft.addonIds.includes(a.id)} onChange={(e) => patch({ addonIds: e.target.checked ? [...draft.addonIds, a.id] : draft.addonIds.filter((id) => id !== a.id) })} />
@@ -110,12 +113,19 @@ export function PlayForm({ game, initial, heading, submitLabel, saving, error, c
                 <label className="check">
                   <input type="checkbox" checked={!!player} onChange={() => togglePlayer(m.id)} />
                   {m.name}
+                  {m.id === gamePlayerId && <span className="muted hint"> hráč hry</span>}
                 </label>
                 {player && scored && (
                   <input inputMode="decimal" aria-label={`Skóre ${m.name}`} placeholder="skóre" value={player.score} onChange={(e) => patchPlayer(m.id, { score: e.target.value })} />
                 )}
                 {player && game.scoreType === 'rank_order' && (
                   <input type="number" min={1} aria-label={`Pořadí ${m.name}`} placeholder="pořadí" value={player.rank} onChange={(e) => patchPlayer(m.id, { rank: e.target.value })} />
+                )}
+                {player && game.characters.length > 0 && (
+                  <select className="character" aria-label={`Postava ${m.name}`} value={player.characterId ?? ''} onChange={(e) => patchPlayer(m.id, { characterId: e.target.value ? Number(e.target.value) : null })}>
+                    <option value="">— postava —</option>
+                    {game.characters.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+                  </select>
                 )}
                 {player && (
                   <div className="chips">

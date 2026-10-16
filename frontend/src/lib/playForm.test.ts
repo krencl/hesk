@@ -4,14 +4,14 @@ import { toLocalInput } from './datetime';
 import { bestScoreIds, draftFromPlay, emptyDraft, isWinner, type PlayDraft, toPlayInput, validateDraft } from './playForm';
 
 const game = (scoreType: Game['scoreType']): Game => ({
-  id: 7, name: 'G', scoreType, imageUrl: null, description: null, cheatSheet: null, addons: [{ id: 1, name: 'X' }],
+  id: 7, name: 'G', shortName: null, scoreType, imageUrl: null, description: null, cheatSheet: null, addons: [{ id: 1, name: 'X' }], characters: [{ id: 3, name: 'Gigazaur' }], player: null,
 });
 
 const draft = (over: Partial<PlayDraft> = {}): PlayDraft => ({
   gameId: 7,
   startedAt: '2026-03-01T18:00',
   endedAt: '2026-03-01T19:00',
-  players: [{ playerId: 1, score: '10,5', rank: '', winner: false, starting: false }],
+  players: [{ playerId: 1, score: '10,5', rank: '', winner: false, starting: false, characterId: null }],
   addonIds: [1, 99],
   place: ' Doma ',
   tags: 'víkend, , liga',
@@ -35,7 +35,7 @@ describe('validateDraft', () => {
   });
 
   it('requires scores / ranks / a winner depending on score type', () => {
-    const noScore = draft({ players: [{ playerId: 1, score: '', rank: '', winner: false, starting: false }] });
+    const noScore = draft({ players: [{ playerId: 1, score: '', rank: '', winner: false, starting: false, characterId: null }] });
     expect(validateDraft(noScore, game('fewest_points'))).toMatch(/skóre/);
     expect(validateDraft(noScore, game('rank_order'))).toMatch(/pořadí/);
     expect(validateDraft(noScore, game('winner_only'))).toMatch(/vítěze/);
@@ -54,7 +54,7 @@ describe('toPlayInput', () => {
   });
 
   it('maps rank and winner games', () => {
-    const d = draft({ players: [{ playerId: 1, score: '', rank: '2', winner: true, starting: false }] });
+    const d = draft({ players: [{ playerId: 1, score: '', rank: '2', winner: true, starting: false, characterId: null }] });
     expect(toPlayInput(d, game('rank_order')).players).toEqual([{ playerId: 1, rank: 2, starting: false }]);
     expect(toPlayInput(d, game('winner_only')).players).toEqual([{ playerId: 1, winner: true, starting: false }]);
   });
@@ -65,7 +65,7 @@ describe('draftFromPlay', () => {
     id: 1, sessionId: 2, sessionNumber: 3, game: { id: 7, name: 'G', imageUrl: null, scoreType: 'most_points' },
     startedAt: '2026-03-01T18:00:00+00:00', endedAt: '2026-03-01T19:30:00+00:00', place: null, notes: null,
     addons: [{ id: 1, name: 'X' }], tags: ['víkend', 'liga'],
-    results: [{ playerId: 4, name: 'Anna', score: 10.5, rank: 1, winner: true, starting: true }, { playerId: 5, name: 'Bob', score: null, rank: 2, winner: false, starting: false }],
+    results: [{ playerId: 4, name: 'Anna', score: 10.5, rank: 1, winner: true, starting: true, character: null }, { playerId: 5, name: 'Bob', score: null, rank: 2, winner: false, starting: false, character: null }],
   };
 
   it('fills the form from a play', () => {
@@ -73,7 +73,7 @@ describe('draftFromPlay', () => {
       gameId: 7,
       startedAt: toLocalInput(new Date(play.startedAt)),
       endedAt: toLocalInput(new Date(play.endedAt)),
-      players: [{ playerId: 4, score: '10.5', rank: '1', winner: true, starting: true }, { playerId: 5, score: '', rank: '2', winner: false, starting: false }],
+      players: [{ playerId: 4, score: '10.5', rank: '1', winner: true, starting: true, characterId: null }, { playerId: 5, score: '', rank: '2', winner: false, starting: false, characterId: null }],
       addonIds: [1],
       place: '',
       tags: 'víkend, liga',
@@ -95,13 +95,13 @@ describe('draftFromPlay', () => {
 describe('emptyDraft', () => {
   it('starts an hour before now and ends now', () => {
     const now = new Date(2026, 2, 1, 20, 0);
-    expect(emptyDraft(7, now)).toMatchObject({ gameId: 7, startedAt: '2026-03-01T19:00', endedAt: '2026-03-01T20:00', players: [], addonIds: [] });
+    expect(emptyDraft({ id: 7, player: null }, now)).toMatchObject({ gameId: 7, startedAt: '2026-03-01T19:00', endedAt: '2026-03-01T20:00', players: [], addonIds: [] });
   });
 });
 
 describe('winners of scored games', () => {
   const two = (a: string, b: string, over: Partial<PlayDraft> = {}) => draft({
-    players: [{ playerId: 1, score: a, rank: '', winner: false, starting: false }, { playerId: 2, score: b, rank: '', winner: false, starting: false }],
+    players: [{ playerId: 1, score: a, rank: '', winner: false, starting: false, characterId: null }, { playerId: 2, score: b, rank: '', winner: false, starting: false, characterId: null }],
     ...over,
   });
 
@@ -115,7 +115,7 @@ describe('winners of scored games', () => {
     const tied = two('10', '10,0');
     expect(isWinner(tied, game('most_points'), 1)).toBe(true);
     expect(isWinner(tied, game('most_points'), 2)).toBe(true);
-    const manual = two('10', '10', { winnersTouched: true, players: [{ playerId: 1, score: '10', rank: '', winner: false, starting: false }, { playerId: 2, score: '10', rank: '', winner: true, starting: false }] });
+    const manual = two('10', '10', { winnersTouched: true, players: [{ playerId: 1, score: '10', rank: '', winner: false, starting: false, characterId: null }, { playerId: 2, score: '10', rank: '', winner: true, starting: false, characterId: null }] });
     expect(isWinner(manual, game('most_points'), 1)).toBe(false);
     expect(isWinner(manual, game('most_points'), 2)).toBe(true);
   });
@@ -123,14 +123,14 @@ describe('winners of scored games', () => {
   it('sends winner flags only for a manual choice, and the starting player always', () => {
     const auto = toPlayInput(two('10', '10'), game('most_points'));
     expect(auto.players).toEqual([{ playerId: 1, score: 10, starting: false }, { playerId: 2, score: 10, starting: false }]);
-    const manual = toPlayInput(two('10', '10', { winnersTouched: true, players: [{ playerId: 1, score: '10', rank: '', winner: true, starting: true }, { playerId: 2, score: '10', rank: '', winner: false, starting: false }] }), game('most_points'));
+    const manual = toPlayInput(two('10', '10', { winnersTouched: true, players: [{ playerId: 1, score: '10', rank: '', winner: true, starting: true, characterId: null }, { playerId: 2, score: '10', rank: '', winner: false, starting: false, characterId: null }] }), game('most_points'));
     expect(manual.players).toEqual([{ playerId: 1, score: 10, starting: true, winner: true }, { playerId: 2, score: 10, starting: false, winner: false }]);
   });
 
   it('requires a winner after manual selection and rejects two starting players', () => {
     const none = two('10', '10', { winnersTouched: true });
     expect(validateDraft(none, game('most_points'))).toMatch(/vítěze/);
-    const two_starting = two('1', '2', { players: [{ playerId: 1, score: '1', rank: '', winner: false, starting: true }, { playerId: 2, score: '2', rank: '', winner: false, starting: true }] });
+    const two_starting = two('1', '2', { players: [{ playerId: 1, score: '1', rank: '', winner: false, starting: true, characterId: null }, { playerId: 2, score: '2', rank: '', winner: false, starting: true, characterId: null }] });
     expect(validateDraft(two_starting, game('most_points'))).toMatch(/Začínající/);
     expect(validateDraft(two('1', 'abc'), game('most_points'))).toMatch(/číslo/);
   });
@@ -140,8 +140,8 @@ describe('winners of scored games', () => {
       id: 1, sessionId: 2, sessionNumber: 3, game: { id: 7, name: 'G', imageUrl: null, scoreType: 'most_points' },
       startedAt: '2026-03-01T18:00:00+00:00', endedAt: '2026-03-01T19:00:00+00:00', place: null, notes: null, addons: [], tags: [],
       results: [
-        { playerId: 1, name: 'A', score: 50, rank: 1, winner: true, starting: false },
-        { playerId: 2, name: 'B', score: 50, rank: 1, winner: false, starting: false },
+        { playerId: 1, name: 'A', score: 50, rank: 1, winner: true, starting: false, character: null },
+        { playerId: 2, name: 'B', score: 50, rank: 1, winner: false, starting: false, character: null },
       ],
     };
     expect(draftFromPlay(base).winnersTouched).toBe(true);
@@ -149,5 +149,35 @@ describe('winners of scored games', () => {
     expect(draftFromPlay(natural).winnersTouched).toBe(false);
     const winnerOnly = { ...base, game: { ...base.game, scoreType: 'winner_only' as const } };
     expect(draftFromPlay(winnerOnly).winnersTouched).toBe(false);
+  });
+});
+
+describe('characters and the game player', () => {
+  it('keeps a chosen character only when it belongs to the game', () => {
+    const d = draft({ players: [
+      { playerId: 1, score: '1', rank: '', winner: false, starting: false, characterId: 3 },
+      { playerId: 2, score: '2', rank: '', winner: false, starting: false, characterId: 999 },
+      { playerId: 3, score: '3', rank: '', winner: false, starting: false, characterId: null },
+    ] });
+    expect(toPlayInput(d, game('most_points')).players).toEqual([
+      { playerId: 1, score: 1, starting: false, characterId: 3 },
+      { playerId: 2, score: 2, starting: false },
+      { playerId: 3, score: 3, starting: false },
+    ]);
+  });
+
+  it('starts a new play with the own player of the game selected', () => {
+    const now = new Date(2026, 2, 1, 20, 0);
+    expect(emptyDraft({ id: 7, player: { id: 9, name: 'Boss' } }, now).players).toEqual([{ playerId: 9, score: '', rank: '', winner: false, starting: false, characterId: null }]);
+    expect(emptyDraft({ id: 7, player: null }, now).players).toEqual([]);
+  });
+
+  it('fills the character when editing a play', () => {
+    const play: Play = {
+      id: 1, sessionId: 2, sessionNumber: 3, game: { id: 7, name: 'G', imageUrl: null, scoreType: 'winner_only' },
+      startedAt: '2026-03-01T18:00:00+00:00', endedAt: '2026-03-01T19:00:00+00:00', place: null, notes: null, addons: [], tags: [],
+      results: [{ playerId: 1, name: 'A', score: null, rank: 1, winner: true, starting: false, character: { id: 3, name: 'Gigazaur' } }],
+    };
+    expect(draftFromPlay(play).players[0].characterId).toBe(3);
   });
 });

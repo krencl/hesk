@@ -91,7 +91,7 @@ function Round({ play, open, onToggle }: { play: Play; open: boolean; onToggle: 
   const winnerScore = scored && won[0]?.score != null ? formatScore(won[0].score) : '';
 
   const details: [string, string][] = [
-    ['Verze hry', play.addons.map((a) => a.name).join(', ')],
+    ['Rozšíření', play.addons.map((a) => a.name).join(', ')],
     ['Číslo sezení', String(play.sessionNumber)],
     ['Místo', play.place ?? ''],
     ['Tagy', play.tags.join(', ')],
@@ -120,7 +120,12 @@ function Round({ play, open, onToggle }: { play: Play; open: boolean; onToggle: 
                   {r.starting && <Icon name="looks_one" className="icon-starting" />}
                   {r.winner && <Icon name="workspace_premium" className="icon-winner" />}
                 </span>
-                <span className="result-name">{r.name}{r.winner && <span className="sr-only"> (vítěz)</span>}{r.starting && <span className="sr-only"> (začínal)</span>}</span>
+                <span className="result-name">
+                  {r.name}
+                  {r.character && <span className="result-character">{r.character.name}</span>}
+                  {r.winner && <span className="sr-only"> (vítěz)</span>}
+                  {r.starting && <span className="sr-only"> (začínal)</span>}
+                </span>
                 {scored && <span className="result-score">{r.score === null ? '' : formatScore(r.score)}</span>}
                 {play.game.scoreType === 'rank_order' && <span className="result-score muted">{r.rank}.</span>}
               </li>

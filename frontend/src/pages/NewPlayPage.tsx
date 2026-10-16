@@ -32,7 +32,7 @@ export function NewPlayPage() {
   return (
     <PlayForm
       game={game.data}
-      initial={emptyDraft(gameId)}
+      initial={emptyDraft(game.data)}
       heading="Nový zápis"
       submitLabel="Uložit zápis"
       saving={save.isPending}

@@ -12,11 +12,11 @@ Dev DB (MariaDB 11) obsahovala schéma prototypu `hesk-dev-old` s reálnými dat
   - uživatelé a party se zachovají včetně ID; `owner` → `admin`; přezdívka = jméno hráče navázaného na účet; účty nemají `google_id` → při prvním přihlášení se spáruje podle **e-mailu** (`User.googleId` je nullable, identifikátor uživatele v session je e-mail);
   - starý hráč je globální → nový hráč vzniká pro každou dvojici (hráč, parta), kde se hrál/byl členem; „herní“ hráči (Boss, T.I.M.E…) jsou obyčejní hráči;
   - hry: starý katalog je globální, nový model per-parta → hra se založí v každé partě, kde se hrála (nehrané hry zůstaly jen v `legacy_game`); `cover_image` se nepřenáší (v DB je jen název souboru);
-  - `game_version` → přídavek (verze „Základní“ přídavek nevytvoří);
+  - `game_version` → rozšíření (verze „Základní“ rozšíření nevytvoří);
   - seance se berou ze starého `session_number` (ručně udržované), hranice z časů kol; `started_at = ended_at = created_at` (start/konec ve staré DB nebyly);
   - časy se převádí z Europe/Prague do UTC; ID zápisů = ID kol;
   - pořadí (`rank`) se dopočítá podle typu bodování (skóre u `rank_order` se použije jako pořadí), `winner` se přebírá ze staré DB;
-  - nepřevedeno (zůstává v `legacy_*`): postavy, překlady, `party_player/party_tag/user_player` počítadla, `bgg_id`, `shortcut` party, tagy her.
+  - nepřevedeno (zůstává v `legacy_*`): překlady, `party_player/party_tag/user_player` počítadla, `bgg_id`, `shortcut` party, tagy her.
 - Ověřeno po migraci: počty (544 zápisů, 2071 výsledků, 553 tagů) sedí, každý zápis má vítěze, `doctrine:schema:validate` je v pořádku, API vrací převedená data.
 
 ## Důsledky

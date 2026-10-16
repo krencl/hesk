@@ -8,5 +8,5 @@ Symfony 5 + Dibi + Vue 3. Koncept „Party“, mobilní GUI (max. šířka 400 p
 
 ## Převzato / změněno
 - Převzato: koncept part a rolí, mobile-first, top bar s přepínačem party, statistiky (výhry, nejhranější hry), barvy a font.
-- Nově: Doctrine místo Dibi, React místo Vue, seance (24 h), přídavky místo „verzí hry“.
+- Nově: Doctrine místo Dibi, React místo Vue, seance (24 h), rozšíření místo „verzí hry“.
 - Zatím nepřevzato z originálu: postavy, „začínající hráč“, porovnání her, filtry – kandidáti na další iterace (po ujasnění s uživatelem).

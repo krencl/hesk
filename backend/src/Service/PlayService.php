@@ -121,7 +121,7 @@ final class PlayService
         foreach (array_unique($req->addonIds) as $addonId) {
             $match = $game->getAddons()->filter(static fn ($a): bool => $a->getId() === $addonId)->first();
             if (!$match) {
-                throw new DomainException('Přídavek nepatří k vybrané hře.');
+                throw new DomainException('Rozšíření nepatří k vybrané hře.');
             }
             $addons[] = $match;
         }

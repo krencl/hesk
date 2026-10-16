@@ -29,14 +29,24 @@ export interface Addon {
   name: string;
 }
 
+export interface Character {
+  id: number;
+  name: string;
+}
+
 export interface Game {
   id: number;
   name: string;
+  /** Zkrácený název (statistiky); bez něj se použije celý. */
+  shortName: string | null;
   scoreType: ScoreType;
   imageUrl: string | null;
   description: string | null;
   cheatSheet: string | null;
   addons: Addon[];
+  characters: Character[];
+  /** Vlastní hráč hry (kooperativní hry s „protihráčem“). */
+  player: { id: number; name: string } | null;
 }
 
 export type GameSort = 'activity' | 'name';
@@ -70,13 +80,22 @@ export interface SessionInfo {
   endedAt: string;
 }
 
+/** Rozšíření nebo postava při ukládání hry: s `id` se přejmenuje, bez něj vznikne nová. */
+export interface NamedItemInput {
+  id?: number;
+  name: string;
+}
+
 export interface GameInput {
   name: string;
+  shortName: string | null;
   scoreType: ScoreType;
   imageUrl: string | null;
   description: string | null;
   cheatSheet: string | null;
-  addons: string[];
+  addons: NamedItemInput[];
+  characters: NamedItemInput[];
+  playerId: number | null;
 }
 
 export interface Player {
@@ -93,6 +112,8 @@ export interface PlayResult {
   winner: boolean;
   /** Hráč, který ve hře začínal. */
   starting: boolean;
+  /** Postava, kterou hráč hrál (jen u her s postavami). */
+  character: Character | null;
 }
 
 export interface Play {
@@ -116,6 +137,7 @@ export interface PlayerInput {
   /** U her se skóre jen ručně určený vítěz (jinak se vítězové dopočítají ze skóre). */
   winner?: boolean | null;
   starting?: boolean;
+  characterId?: number | null;
 }
 
 export interface PlayInput {
@@ -131,5 +153,5 @@ export interface PlayInput {
 
 export interface Stats {
   wins: { playerId: number; name: string; wins: number; plays: number }[];
-  topGames: { gameId: number; name: string; plays: number }[];
+  topGames: { gameId: number; name: string; shortName: string | null; plays: number }[];
 }

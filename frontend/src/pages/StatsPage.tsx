@@ -20,7 +20,7 @@ export function StatsPage() {
             <h3>Výhry hráčů</h3>
             <BarChart items={data.wins.map((w) => ({ key: w.playerId, label: w.name, value: w.wins }))} />
             <h3>Nejhranější hry</h3>
-            <BarChart items={data.topGames.map((g) => ({ key: g.gameId, label: g.name, value: g.plays }))} />
+            <BarChart items={data.topGames.map((g) => ({ key: g.gameId, label: g.shortName ?? g.name, value: g.plays }))} />
           </>
         )}
       </div>

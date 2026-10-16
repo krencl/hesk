@@ -17,7 +17,7 @@ Webová aplikace pro zapisování výsledků z hraní deskových her a statistik
 Není tu PHP ani MySQL ani sudo. PHP 8.4 je statický binár v `~/bin/php` + `~/bin/composer` (`export PATH=$HOME/bin:$PATH`; nepřežije nový kontejner – znovu stáhnout z `dl.static-php.dev`, viz ADR 0001). MySQL tu neběží, proto testy používají SQLite; Chromium nelze spustit (chybí systémové knihovny).
 
 ## Backend – orientace
-- `src/Entity` – `User, Party, PartyMember, PartyInvitation, Player (hráč party, i host bez účtu), Game, GameAddon, Place, Tag, GameSession, Play, PlayResult`.
+- `src/Entity` – `User, Party, PartyMember, PartyInvitation, Player (hráč party, i host bez účtu), Game, GameAddon (rozšíření), GameCharacter (postavy), Place, Tag, GameSession, Play, PlayResult`.
 - `src/Domain` – čistá logika: `ResultCalculator` (pořadí/vítězové dle `ScoreType`), `PlayerInput/Outcome`, `Exception/DomainException` (→ HTTP 422).
 - `src/Service` – `PlayService` (create/update/delete zápisu), `SessionAssigner` (24h seance), `Presenter` (entity → JSON).
 - `src/Controller` – tenké kontrolery (`Party, Game, Play, Stats, Auth, Health`); vstup přes `#[MapRequestPayload]` DTO v `src/Dto`.
@@ -41,5 +41,5 @@ Není tu PHP ani MySQL ani sudo. PHP 8.4 je statický binár v `~/bin/php` + `~/
 - Git: větev `master`, commity s trailerem `Co-Authored-By` dle zadání prostředí.
 
 ## Stav (2026-10-14)
-Hotovo: dev DB zmigrována na nové schéma s importem dat, hráči-hosté, auth (Google + dev login, spárování starých účtů podle e-mailu), party/členové/pozvánky, hry (+přídavky), zápisy se seancemi, statistiky (výhry, top hry), mobilní UI; UX podle prototypu (seznam her s hledáním/filtrem, detail hry se zápisy a cheatsheetem, čísla seancí, ADR 0009).
-Nehotovo/nápady: vynucení přezdívky na backendu, upload obrázků, WYSIWYG cheatsheet, CI s MySQL, import z původní app, postavy.
+Hotovo: dev DB zmigrována na nové schéma s importem dat, hráči-hosté, auth (Google + dev login, spárování starých účtů podle e-mailu), party/členové/pozvánky, hry (+rozšíření), zápisy se seancemi, statistiky (výhry, top hry), mobilní UI; UX podle prototypu (seznam her s hledáním/filtrem, detail hry se zápisy a cheatsheetem, čísla seancí, ADR 0009).
+Nehotovo/nápady: vynucení přezdívky na backendu, upload obrázků, WYSIWYG cheatsheet, CI s MySQL, import z původní app.

@@ -164,7 +164,7 @@ final class ApiFlowTest extends WebTestCase
         $play = $this->api('POST', "$base/plays", $payload('2026-03-01', 80, 90), 201);
         self::assertSame('Bob', $play['results'][0]['name']);
 
-        // stejní hráči, jiné skóre, jiné přídavky/tagy/místo: dřív padalo na unikátu play_id + player_id
+        // stejní hráči, jiné skóre, jiné rozšíření/tagy/místo: dřív padalo na unikátu play_id + player_id
         $updated = $this->api('PUT', "/api/plays/{$play['id']}", $payload('2026-03-01', 95, 90, ['addonIds' => [$opat], 'tags' => ['víkend', 'liga'], 'place' => 'U Kuby', 'notes' => 'Upraveno']));
         self::assertSame('Anna', $updated['results'][0]['name']);
         self::assertTrue($updated['results'][0]['winner']);
@@ -274,6 +274,20 @@ final class ApiFlowTest extends WebTestCase
         $this->api('PUT', "/api/games/{$game['id']}", ['name' => 'King of Tokyo', 'scoreType' => 'winner_only', 'shortName' => 'Tokyo', 'addons' => [['id' => $game['addons'][0]['id'], 'name' => 'Power Up 2']], 'characters' => [['id' => $giga, 'name' => 'Giga']]]);
         $stats = $this->api('GET', "$base/stats");
         self::assertSame(['Tokyo'], array_column($stats['topGames'], 'shortName'));
+    }
+
+    public function testGameImageUrlAcceptsHttpLinksAndLocalPathsOnly(): void
+    {
+        $this->login('anna@example.com', 'Anna');
+        $party = $this->api('POST', '/api/parties', ['name' => 'Pátek'], 201);
+        $base = "/api/parties/{$party['id']}";
+
+        foreach (['https://example.com/a.jpg', '/static/covers/a.jpg', '', null] as $i => $url) {
+            $this->api('POST', "$base/games", ['name' => "Hra $i", 'scoreType' => 'most_points', 'imageUrl' => $url], 201);
+        }
+        foreach (['javascript:alert(1)', '//evil.example/a.jpg', 'data:text/html;base64,AAAA', 'obrazek.jpg'] as $i => $url) {
+            $this->api('POST', "$base/games", ['name' => "Zlá $i", 'scoreType' => 'most_points', 'imageUrl' => $url], 422);
+        }
     }
 
     public function testInvalidPlayIsRejected(): void

@@ -17,7 +17,7 @@ final readonly class GameRequest
         #[Assert\NotBlank, Assert\Length(max: 150)]
         public string $name = '',
         public ScoreType $scoreType = ScoreType::MostPoints,
-        #[Assert\Url(requireTld: false), Assert\Length(max: 255)]
+        #[Assert\Regex(pattern: '~^(https?://\S+|/(?!/)\S*)$~', message: 'Adresa obrázku musí být http(s) odkaz nebo cesta začínající /.'), Assert\Length(max: 255)]
         public ?string $imageUrl = null,
         public ?string $description = null,
         public ?string $cheatSheet = null,

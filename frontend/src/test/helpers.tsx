@@ -34,12 +34,12 @@ export const ME = { id: 1, nickname: 'Anna', email: 'a@b.cz', hasNickname: true 
 export const PARTY = { id: 3, name: 'Pátek', role: 'admin' };
 
 export const GAME = {
-  id: 1, name: 'Carcassonne', scoreType: 'most_points', imageUrl: null, description: null, cheatSheet: null, addons: [],
+  id: 1, name: 'Carcassonne', shortName: null, scoreType: 'most_points', imageUrl: null, description: null, cheatSheet: null, addons: [], characters: [], player: null,
   playCount: 2, lastPlay: { id: 9, startedAt: '2022-02-06T20:06:00+00:00', sessionNumber: 69, winners: ['Anna'], winnerScore: 90 },
 };
 
 export const PLAY = {
   id: 9, sessionId: 7, sessionNumber: 69, game: { id: 1, name: 'Carcassonne', imageUrl: null, scoreType: 'most_points' },
   startedAt: '2022-02-06T20:06:00+00:00', endedAt: '2022-02-06T20:06:00+00:00', place: null, notes: null, addons: [], tags: [],
-  results: [{ playerId: 1, name: 'Anna', score: 90, rank: 1, winner: true, starting: true }, { playerId: 2, name: 'Petr', score: 75, rank: 2, winner: false, starting: false }],
+  results: [{ playerId: 1, name: 'Anna', score: 90, rank: 1, winner: true, starting: true, character: null }, { playerId: 2, name: 'Petr', score: 75, rank: 2, winner: false, starting: false, character: null }],
 };

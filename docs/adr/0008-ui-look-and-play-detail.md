@@ -7,7 +7,7 @@ Majitel chce, aby nová aplikace vypadala jako běžící starý vývojový prot
 - Přebíráme **vzhled**, ne strukturu starého UI: logo v hlavičce, kulaté tlačítko aktivní party vpravo nahoře (zkratka 1–2 znaky) otevírající celoobrazovkové průhledné menu (přepínání part je v něm), ostré rohy (`0.1rem`), bootstrapová tlačítka a formuláře, barvy `#277bda / #777 / #c4dbff`, font Signika, ikony Material Symbols (z Google Fonts), šířka 400 px, seznamy s velkým čtvercovým náhledem (7,2 rem) a modrým hoverem. Bootstrap samotný nepřidáváme – stačí vlastní CSS (`styles.css`), aby bundle zůstal malý.
 - Logo a placeholder obálky se kopírují do `frontend/public/` (ze starého prototypu).
 - Zkratka party se **počítá z názvu** (`lib/partyShortcut.ts`), protože stará `shortcut` se při importu nepřenesla (ADR 0007).
-- Detail zápisu `/plays/:id` (`PlayDetailPage`): hra, kdy/kde, přídavky, tagy, poznámka, výsledky s trofejí u vítězů a skóre/pořadím podle typu bodování; mazání s dvoukrokovým potvrzením. Seznam zápisů na úvodní stránce na detail odkazuje (mazání ze seznamu zmizelo).
+- Detail zápisu `/plays/:id` (`PlayDetailPage`): hra, kdy/kde, rozšíření, tagy, poznámka, výsledky s trofejí u vítězů a skóre/pořadím podle typu bodování; mazání s dvoukrokovým potvrzením. Seznam zápisů na úvodní stránce na detail odkazuje (mazání ze seznamu zmizelo).
 
 > _Překonáno ADR 0009:_ detail zápisu `/plays/:id` byl odstraněn a nahrazen úpravou zápisu.
 

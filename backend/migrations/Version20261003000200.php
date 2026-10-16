@@ -91,7 +91,7 @@ final class Version20261003000200 extends AbstractMigration
             $gameMap[$pair['game_id'].':'.$pair['party_id']] = [(int) $db->lastInsertId(), $scoreTypes[$g['scoring_type']]];
         }
 
-        // --- verze hry → přídavky (verze „Základní“ = hra sama, přídavek nevzniká) ---
+        // --- verze hry → rozšíření (verze „Základní“ = hra sama, rozšíření nevzniká) ---
         $versions = array_column($db->fetchAllAssociative('SELECT id, game_id, name FROM legacy_game_version'), null, 'id');
         $addonMap = []; // "version:party" => addon id
         foreach ($db->fetchAllAssociative('SELECT DISTINCT game_version_id, party_id FROM legacy_round') as $pair) {

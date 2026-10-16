@@ -7,6 +7,8 @@ export interface PlayerDraft {
   rank: string;
   winner: boolean;
   starting: boolean;
+  /** Postava hráče (jen u her s postavami). */
+  characterId: number | null;
 }
 
 export interface PlayDraft {
@@ -48,13 +50,15 @@ export function isWinner(draft: PlayDraft, game: Pick<Game, 'scoreType'>, player
   return bestScoreIds(draft.players.map((p) => ({ playerId: p.playerId, score: parseScore(p.score) })), game.scoreType).has(playerId);
 }
 
-/** Prázdný formulář nového zápisu: začátek před hodinou, konec teď. */
-export function emptyDraft(gameId: number, now = new Date()): PlayDraft {
+export const newPlayerDraft = (playerId: number): PlayerDraft => ({ playerId, score: '', rank: '', winner: false, starting: false, characterId: null });
+
+/** Prázdný formulář nového zápisu: začátek před hodinou, konec teď; vlastní hráč hry (je-li) je rovnou vybraný. */
+export function emptyDraft(game: Pick<Game, 'id' | 'player'>, now = new Date()): PlayDraft {
   return {
-    gameId,
+    gameId: game.id,
     startedAt: toLocalInput(new Date(now.getTime() - 60 * 60 * 1000)),
     endedAt: toLocalInput(now),
-    players: [],
+    players: game.player ? [newPlayerDraft(game.player.id)] : [],
     addonIds: [],
     place: '',
     tags: '',
@@ -80,6 +84,7 @@ export function draftFromPlay(play: Play): PlayDraft {
       rank: String(r.rank),
       winner: r.winner,
       starting: r.starting,
+      characterId: r.character?.id ?? null,
     })),
     addonIds: play.addons.map((a) => a.id),
     place: play.place ?? '',
@@ -108,14 +113,15 @@ export function validateDraft(draft: PlayDraft, game: Game | undefined): string 
 
 export function toPlayInput(draft: PlayDraft, game: Game): PlayInput {
   const players: PlayerInput[] = draft.players.map((p) => {
+    const character = p.characterId !== null && game.characters.some((c) => c.id === p.characterId) ? { characterId: p.characterId } : {};
     switch (game.scoreType) {
       case 'most_points':
       case 'fewest_points':
-        return { playerId: p.playerId, score: Number(p.score.replace(',', '.')), starting: p.starting, ...(draft.winnersTouched ? { winner: p.winner } : {}) };
+        return { playerId: p.playerId, score: Number(p.score.replace(',', '.')), starting: p.starting, ...(draft.winnersTouched ? { winner: p.winner } : {}), ...character };
       case 'rank_order':
-        return { playerId: p.playerId, rank: Number(p.rank), starting: p.starting };
+        return { playerId: p.playerId, rank: Number(p.rank), starting: p.starting, ...character };
       case 'winner_only':
-        return { playerId: p.playerId, winner: p.winner, starting: p.starting };
+        return { playerId: p.playerId, winner: p.winner, starting: p.starting, ...character };
     }
   });
   return {
