@@ -113,9 +113,9 @@ function Round({ play, open, onToggle }: { play: Play; open: boolean; onToggle: 
           <ul className="results" aria-label={`Výsledky ${formatDateShort(play.startedAt)}`}>
             {play.results.map((r) => (
               <li key={r.playerId} className={r.winner ? 'winner' : ''}>
-                <span className="result-icons">
-                  <span>{r.winner && <Icon name="workspace_premium" />}</span>
-                  <span>{r.starting && <Icon name="looks_one" />}</span>
+                <span className={`result-icons${r.winner && r.starting ? ' both' : ''}`}>
+                  {r.starting && <Icon name="looks_one" className="icon-starting" />}
+                  {r.winner && <Icon name="workspace_premium" className="icon-winner" />}
                 </span>
                 <span className="result-name">{r.name}{r.winner && <span className="sr-only"> (vítěz)</span>}{r.starting && <span className="sr-only"> (začínal)</span>}</span>
                 {scored && <span className="result-score">{r.score === null ? '' : formatScore(r.score)}</span>}

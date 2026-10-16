@@ -19,6 +19,7 @@ UI vznikalo po částech a nesedělo si: různé velikosti nadpisů, odsazení z
 - Backend: `play_result.is_starting` (sloupec nese `is_` kvůli rezervovanému slovu `STARTING`), `PlayerRequest.starting`/`winner`, validace „nejvýše jeden začínající“. Migrace přebírá začínající hráče ze `legacy_round_player` (144 zápisů), spárování podle pozice výsledku v zápisu.
 
 ## Důsledky
-- Detail hry ukazuje u hráče ikonu vítěze i začínajícího (dvě pevné pozice, aby jména lícovala).
+- Detail hry ukazuje ikony vítěze a začínajícího hráče v jednom (úzkém) sloupci; má-li hráč obě, vítěz je vpředu s obrysem barvy pozadí a začínající za ním trochu vykukuje vpravo.
+- Názvy her v seznamu mají 1,1 rem a řádkování 1,15, takže se výška řádku (obrázek 7,2 rem) nemění ani u dvouřádkového názvu.
 - Úprava hry se po uložení/smazání vrací do správy her (`/manage/games`), odkud je jediný vstup.
 - Při 3 tlačítkách zůstává pole vlevo dole prázdné (pozice jsou pevné).

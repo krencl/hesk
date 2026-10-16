@@ -187,11 +187,14 @@ legend { color: var(--secondary); font-size: 0.85rem; padding: 0 0.3rem; }
 /* Výsledky zápisu */
 .detail-info { margin-bottom: 1rem; font-weight: 300; }
 .results { list-style: none; margin: 0 0 1rem; padding: 0; }
-.results li { display: grid; grid-template-columns: 3.2rem 1fr auto; gap: 0.25rem; align-items: center; padding: 0.15rem 0; font-weight: 500; }
+.results li { display: grid; grid-template-columns: 2.4rem 1fr auto; gap: 0.25rem; align-items: center; padding: 0.15rem 0; font-weight: 500; }
 .results li.winner { color: var(--main); }
-.result-icons { display: flex; gap: 0.2rem; }
-.result-icons > span { width: 1.5rem; height: 1.5rem; display: grid; place-items: center; }
-.result-icons .icon { font-size: 1.4rem; }
+.result-icons { position: relative; display: block; height: 1.5rem; }
+.result-icons .icon { position: absolute; top: 0; left: 0; font-size: 1.4rem; }
+/* Vítěz i začínající v jednom sloupci: vítěz vpředu s obrysem barvy pozadí, začínající za ním a trochu vykukuje */
+.result-icons.both .icon-starting { left: 0.7rem; z-index: 1; }
+.result-icons .icon-winner { z-index: 2; text-shadow: -1px -1px 0 var(--row-bg, #fff), 1px -1px 0 var(--row-bg, #fff), 1px 1px 0 var(--row-bg, #fff), -1px 1px 0 var(--row-bg, #fff); }
+.round.selected { --row-bg: #e8f0fb; }
 .result-score { text-align: right; font-variant-numeric: tabular-nums; }
 
 /* Statistiky */
@@ -248,6 +251,9 @@ a.link:hover { text-decoration: underline; }
 .game-list .list.stale { opacity: 0.55; transition: opacity var(--animation); }
 .game-list .empty { padding: 2rem 1rem; }
 .last-play { font-weight: 500; }
+/* Názvy her v seznamu: menší písmo a řádkování, aby se box u dvouřádkového názvu nezvětšoval */
+.list-item-body .h5 { font-size: 1.1rem; line-height: 1.15; }
+.list-item-body .secondary { line-height: 1.35; }
 .more { margin: 0.5rem 0 0; border-radius: 0; }
 .list-top { margin-top: 1rem; border-top: 1px solid var(--light-gray); }
 
@@ -264,7 +270,7 @@ a.link:hover { text-decoration: underline; }
 .round-score { text-align: right; font-variant-numeric: tabular-nums; }
 .round-body { padding: 0.25rem 0.8rem 0.5rem; }
 .round-body .detail-info { margin-bottom: 0.5rem; }
-.round-body .results li { grid-template-columns: 3.2rem 7fr 3fr; }
+.round-body .results li { grid-template-columns: 2.4rem 7fr 3fr; }
 .round-body .actions { margin-top: 0.5rem; }
 
 /* Taháček (HTML od uživatelů) */
