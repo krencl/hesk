@@ -1,8 +1,9 @@
 import { useIsFetching, useIsMutating, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
-import { Link, NavLink, Outlet, useLocation } from 'react-router-dom';
+import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useApp } from '../AppContext';
 import { api } from '../api';
+import { pathForSwitchedParty } from '../lib/partyPath';
 import { Icon } from './Icon';
 
 export function Layout() {
@@ -12,6 +13,7 @@ export function Layout() {
   const queryClient = useQueryClient();
   const loading = useIsFetching() + useIsMutating() > 0;
   const location = useLocation();
+  const navigate = useNavigate();
   const [lastPath, setLastPath] = useState(location.pathname);
   if (lastPath !== location.pathname) {
     setLastPath(location.pathname);
@@ -29,6 +31,13 @@ export function Layout() {
   const toggleMenu = () => {
     setMenuOpen(!menuOpen);
     setChangingParty(false);
+  };
+  // Na stránce správy party (/parties/:id) přepnutí party přepne i stránku, jinak by zůstala u původní party.
+  const switchParty = (id: number) => {
+    setActiveParty(id);
+    const path = pathForSwitchedParty(location.pathname, id);
+    if (path) navigate(path);
+    closeMenu();
   };
   // Odkaz na stránku, na které už jsem, nezmění adresu, a menu by tak zůstalo otevřené – zavřeme ho vždy.
   const closeMenu = () => {
@@ -68,7 +77,7 @@ export function Layout() {
               <ul className="menu-list">
                 {parties.filter((p) => p.id !== activeParty?.id).map((p) => (
                   <li key={p.id}>
-                    <button type="button" onClick={() => { setActiveParty(p.id); toggleMenu(); }}>
+                    <button type="button" onClick={() => switchParty(p.id)}>
                       {p.name}
                     </button>
                   </li>

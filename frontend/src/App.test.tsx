@@ -53,6 +53,24 @@ describe('App gating', () => {
     expect(screen.getByRole('button', { name: /Menu – Pátek/ })).toHaveAttribute('aria-expanded', 'false');
   });
 
+  it('moves the party management page under the newly selected party', async () => {
+    const other = { id: 4, name: 'Víkend', shortName: 'Ví', role: 'admin' };
+    const detail = (p: { id: number; name: string }) => ({ ...p, shortName: 'xx', role: 'admin', members: [{ userId: 1, nickname: 'Anna', role: 'admin' }] });
+    mockApi({
+      '/me': { body: ME },
+      '/parties': { body: [PARTY, other] },
+      '/parties/3': { body: detail(PARTY) },
+      '/parties/4': { body: detail(other) },
+    });
+    renderApp('/parties/3');
+    expect(await screen.findByRole('heading', { name: 'Parta Pátek' })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: /Menu – Pátek/ }));
+    fireEvent.click(screen.getByRole('button', { name: 'Přepnout' }));
+    fireEvent.click(screen.getByRole('button', { name: /Víkend/ }));
+    expect(await screen.findByRole('heading', { name: 'Parta Víkend' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Upravit partu' })).toHaveAttribute('href', '/parties/4/edit');
+  });
+
   it('switches the party in the menu and offers creating a new one like the old prototype', async () => {
     mockApi({
       '/me': { body: ME },
