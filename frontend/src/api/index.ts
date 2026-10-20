@@ -26,6 +26,8 @@ export const api = {
   removeMember: (partyId: number, userId: number) => del(`/parties/${partyId}/members/${userId}`),
 
   players: (partyId: number) => get<Player[]>(`/parties/${partyId}/players`),
+  renamePlayer: (id: number, name: string) => patch<Player>(`/players/${id}`, { name }),
+  deletePlayer: (id: number) => del(`/players/${id}`),
   createGuest: (partyId: number, name: string) => post<Player>(`/parties/${partyId}/players`, { name }),
 
   games: (partyId: number, query: GameListQuery = {}) => get<GameWithStats[]>(`/parties/${partyId}/games${queryString(query)}`),

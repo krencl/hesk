@@ -68,7 +68,7 @@ describe('App gating', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Přepnout' }));
     fireEvent.click(screen.getByRole('button', { name: /Víkend/ }));
     expect(await screen.findByRole('heading', { name: 'Parta Víkend' })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Upravit partu' })).toHaveAttribute('href', '/parties/4/edit');
+    expect(screen.getByRole('link', { name: 'Nastavení' })).toHaveAttribute('href', '/parties/4/edit');
   });
 
   it('switches the party in the menu and offers creating a new one like the old prototype', async () => {

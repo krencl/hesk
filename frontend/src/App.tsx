@@ -17,6 +17,7 @@ import { NicknamePage } from './pages/NicknamePage';
 import { PartiesPage } from './pages/PartiesPage';
 import { PartyDetailPage } from './pages/PartyDetailPage';
 import { PartyEditPage } from './pages/PartyEditPage';
+import { PartyGuestsPage } from './pages/PartyGuestsPage';
 import { SettingsPage } from './pages/SettingsPage';
 import { StatsPage } from './pages/StatsPage';
 
@@ -51,6 +52,7 @@ function AppContent() {
           <Route path="/parties" element={<PartiesPage />} />
           <Route path="/parties/:id" element={<PartyDetailPage />} />
           <Route path="/parties/:id/edit" element={<PartyEditPage />} />
+          <Route path="/parties/:id/guests" element={<PartyGuestsPage />} />
           <Route path="/join/:token" element={<JoinPage />} />
           <Route path="/settings" element={<SettingsPage />} />
           <Route element={<RequireParty />}>

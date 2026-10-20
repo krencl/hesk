@@ -1,4 +1,4 @@
-import { fireEvent, screen, waitFor } from '@testing-library/react';
+import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { GAME, mockApi, ME, PARTY, renderApp } from '../test/helpers';
 
@@ -96,8 +96,7 @@ describe('party detail (/parties/:id)', () => {
       '/parties/3/games?sort=activity&limit=21&offset=0': { body: [GAME] },
     });
     renderApp('/parties/3');
-    expect(screen.queryByRole('button', { name: 'Upravit partu' })).not.toBeInTheDocument();
-    fireEvent.click(await screen.findByRole('link', { name: 'Upravit partu' }));
+    fireEvent.click(await screen.findByRole('link', { name: 'Nastavení' }));
     expect(await screen.findByLabelText('Název')).toHaveValue('Pátek');
     expect(screen.getByLabelText(/Zkratka/)).toHaveValue('Pá'); // zkratka vygenerovaná při založení
     fireEvent.change(screen.getByLabelText('Název'), { target: { value: ' Pátek večer ' } });
@@ -114,8 +113,26 @@ describe('party detail (/parties/:id)', () => {
   it('opens the edit page directly by its URL', async () => {
     mockApi({ ...base, '/parties/3': { body: detail(PARTY) } });
     renderApp('/parties/3/edit');
-    expect(await screen.findByRole('heading', { name: 'Upravit partu Pátek' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'Parta Pátek' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Nastavení' })).toHaveClass('active');
     expect(screen.getByRole('link', { name: 'Zrušit' })).toHaveAttribute('href', '/parties/3');
+  });
+
+  it('offers the sections as tabs with their own addresses; settings only for an admin', async () => {
+    mockApi({ ...base, '/parties/3': { body: detail(PARTY) }, '/parties/4': { body: detail(MEMBER_PARTY) } });
+    const { unmount } = renderApp('/parties/3');
+    await screen.findByRole('heading', { name: 'Parta Pátek' });
+    const tabs = within(screen.getByRole('navigation', { name: 'Správa party' }));
+    expect(tabs.getAllByRole('link').map((a) => [a.textContent, a.getAttribute('href')])).toEqual([
+      ['Členové', '/parties/3'], ['Hosté', '/parties/3/guests'], ['Nastavení', '/parties/3/edit'],
+    ]);
+    expect(tabs.getByRole('link', { name: 'Členové' })).toHaveClass('active');
+    expect(screen.queryByRole('link', { name: 'Upravit partu' })).not.toBeInTheDocument();
+    unmount();
+
+    renderApp('/parties/4');
+    await screen.findByRole('heading', { name: 'Parta Víkend' });
+    expect(within(screen.getByRole('navigation', { name: 'Správa party' })).getAllByRole('link').map((a) => a.textContent)).toEqual(['Členové', 'Hosté']);
   });
 
   it('sends a plain member from the edit page back to the detail', async () => {

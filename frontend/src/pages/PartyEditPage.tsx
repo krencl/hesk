@@ -6,7 +6,7 @@ import { ApiError } from '../api/client';
 import type { PartyDetail } from '../api/types';
 import { Actions } from '../components/Actions';
 import { ErrorMessage } from '../components/ErrorMessage';
-import { PageTitle } from '../components/PageTitle';
+import { PartyHeader } from '../components/PartyHeader';
 import { ListSkeleton } from '../components/Skeleton';
 
 /** Úprava názvu a zkratky party (jen admin); po uložení se vrací na detail party. */
@@ -48,7 +48,7 @@ function PartyEditForm({ party }: { party: PartyDetail }) {
 
   return (
     <section className="page">
-      <PageTitle label="Upravit partu">{party.name}</PageTitle>
+      <PartyHeader party={party} />
       <form className="pad form" onSubmit={submit}>
         <label>Název<input value={name} maxLength={100} required onChange={(e) => setName(e.target.value)} /></label>
         <label>

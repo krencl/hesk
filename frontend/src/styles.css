@@ -451,3 +451,19 @@ input[type='datetime-local'] { font-size: 0.9rem; padding-left: 0.4rem; padding-
 @keyframes toast-in { from { transform: translateY(-100%); opacity: 0; } to { transform: none; opacity: 1; } }
 @keyframes toast-countdown { to { transform: scaleX(0); } }
 @media (prefers-reduced-motion: reduce) { .toast { animation: none; } .toast-bar { display: none; } .toast-slot, .toast { transition: none; } }
+
+/* Správa party: přepínač sekcí (členové / hosté / nastavení), každá je samostatná stránka */
+.tabs { display: flex; margin: 1rem 1rem 0; border: 1px solid var(--main); border-radius: var(--radius); overflow: hidden; }
+.tabs a {
+  flex: 1; padding: 0.35rem 0.5rem; text-align: center; color: var(--main); text-decoration: none;
+  transition: background-color 0.15s, color 0.15s;
+}
+.tabs a + a { border-left: 1px solid var(--main); }
+.tabs a:hover { background: var(--light-blue); }
+.tabs a.active { background: var(--main); color: #fff; }
+
+/* Hosté party */
+.guest-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.5rem; }
+.guest-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 0.5rem; align-items: center; }
+.guest-plays { min-width: 4.5rem; text-align: right; font-size: 0.9rem; }
+.party-guests .guest-add { margin-top: 0; }

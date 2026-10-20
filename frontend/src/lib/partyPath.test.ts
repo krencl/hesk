@@ -6,6 +6,7 @@ describe('pathForSwitchedParty', () => {
     expect(pathForSwitchedParty('/parties/6', 1)).toBe('/parties/1');
     expect(pathForSwitchedParty('/parties/6/', 1)).toBe('/parties/1');
     expect(pathForSwitchedParty('/parties/6/edit', 1)).toBe('/parties/1/edit');
+    expect(pathForSwitchedParty('/parties/6/guests', 1)).toBe('/parties/1/guests');
   });
 
   it('leaves other pages alone', () => {

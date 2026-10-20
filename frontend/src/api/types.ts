@@ -104,6 +104,8 @@ export interface Player {
   id: number;
   name: string;
   hasAccount: boolean;
+  /** Počet zápisů, ve kterých hráč hrál (jen v seznamu hráčů party). */
+  playCount: number;
 }
 
 export interface PlayResult {

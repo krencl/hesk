@@ -6,7 +6,7 @@ import { api } from '../api';
 import { ApiError } from '../api/client';
 import { Actions } from '../components/Actions';
 import { ErrorMessage } from '../components/ErrorMessage';
-import { PageTitle } from '../components/PageTitle';
+import { PartyHeader } from '../components/PartyHeader';
 import { ListSkeleton } from '../components/Skeleton';
 
 /** Detail party: členové a jejich role, pozvánky a opuštění party. Seznam part a zakládání jsou ve správě part. */
@@ -47,9 +47,8 @@ export function PartyDetailPage() {
 
   return (
     <section className="page party-detail">
-      <PageTitle label="Parta">{party.name}</PageTitle>
+      <PartyHeader party={party} />
       <div className="pad">
-        <h3>Členové</h3>
         <ErrorMessage error={changeRole.error ?? remove.error} />
       </div>
       <ul className="list">
@@ -84,7 +83,6 @@ export function PartyDetailPage() {
       </div>
       <Actions>
         {isAdmin && <button type="button" className="btn" onClick={() => invite.mutate()}>Pozvat hráče</button>}
-        {isAdmin && <Link className="btn outline" to={`/parties/${party.id}/edit`}>Upravit partu</Link>}
         <Link className="btn outline-secondary" to="/parties">Správa part</Link>
       </Actions>
     </section>

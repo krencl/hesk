@@ -19,6 +19,7 @@ Primárně architektonická rozhodnutí (ADR). Aplikační dokumentace je zámě
 | [0013](adr/0013-play-form-defaults.md) | Výchozí hodnoty formuláře zápisu: číslo sezení, předvybraní hráči, tagy s našeptáváním, zrušení míst |
 | [0014](adr/0014-party-short-name-and-page-title.md) | Zkratka a úprava party, nadpis stránky s modrou linkou |
 | [0015](adr/0015-menu-sticky-actions-toasts.md) | Menu, přichycená hlavní tlačítka, toast zprávy |
+| [0016](adr/0016-party-management-tabs-and-guests.md) | Správa party po záložkách, správa hostů |
 
 Poznámky ke vzoru z předchozích verzí: [prototype-notes.md](prototype-notes.md).
 
