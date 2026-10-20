@@ -3,6 +3,7 @@ import { consumeAfterLoginPath, rememberAfterLoginPath } from './lib/afterLogin'
 import { AppProvider, useCurrentUserQuery } from './AppContext';
 import { Layout } from './components/Layout';
 import { RequireParty } from './components/RequireParty';
+import { ToastProvider } from './components/Toasts';
 import { GameCheatsheetPage } from './pages/GameCheatsheetPage';
 import { GameDetailPage } from './pages/GameDetailPage';
 import { GameFormPage } from './pages/GameFormPage';
@@ -20,6 +21,14 @@ import { SettingsPage } from './pages/SettingsPage';
 import { StatsPage } from './pages/StatsPage';
 
 export function App() {
+  return (
+    <ToastProvider>
+      <AppContent />
+    </ToastProvider>
+  );
+}
+
+function AppContent() {
   const { data: me, isPending, isError } = useCurrentUserQuery();
   const { pathname } = useLocation();
 

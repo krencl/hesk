@@ -18,6 +18,7 @@ Primárně architektonická rozhodnutí (ADR). Aplikační dokumentace je zámě
 | [0012](adr/0012-repeatable-legacy-import.md) | Opakovatelný import ze staré aplikace (`app:legacy:import`) |
 | [0013](adr/0013-play-form-defaults.md) | Výchozí hodnoty formuláře zápisu: číslo sezení, předvybraní hráči, tagy s našeptáváním, zrušení míst |
 | [0014](adr/0014-party-short-name-and-page-title.md) | Zkratka a úprava party, nadpis stránky s modrou linkou |
+| [0015](adr/0015-menu-sticky-actions-toasts.md) | Menu, přichycená hlavní tlačítka, toast zprávy |
 
 Poznámky ke vzoru z předchozích verzí: [prototype-notes.md](prototype-notes.md).
 

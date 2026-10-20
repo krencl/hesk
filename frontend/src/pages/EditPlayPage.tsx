@@ -33,7 +33,7 @@ export function EditPlayPage() {
   if (play.error instanceof ApiError && (play.error.status === 404 || play.error.status === 403)) {
     return <p className="page pad empty">Tenhle zápis neexistuje nebo k němu nemáš přístup.<Link className="btn" to="/games">Zpět na hry</Link></p>;
   }
-  if (!play.data || !game.data) return play.error || game.error ? <section className="page pad"><ErrorMessage error={play.error ?? game.error} /></section> : <ListSkeleton rows={3} withImage={false} />;
+  if (!play.data || !game.data) return play.error || game.error ? <section className="page pad"><ErrorMessage inline error={play.error ?? game.error} /></section> : <ListSkeleton rows={3} withImage={false} />;
 
   return (
     <PlayForm

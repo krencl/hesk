@@ -40,7 +40,7 @@ export function PartyDetailPage() {
       </section>
     );
   }
-  if (!detail.data) return detail.error ? <section className="page pad"><ErrorMessage error={detail.error} /></section> : <ListSkeleton rows={3} withImage={false} />;
+  if (!detail.data) return detail.error ? <section className="page pad"><ErrorMessage inline error={detail.error} /></section> : <ListSkeleton rows={3} withImage={false} />;
 
   const party = detail.data;
   const isAdmin = party.role === 'admin';

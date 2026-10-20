@@ -12,6 +12,7 @@ import { GameHeader } from './GameHeader';
 import { Icon } from './Icon';
 import { ListSkeleton } from './Skeleton';
 import { TagInput } from './TagInput';
+import { useToasts } from './Toasts';
 
 interface Props {
   game: Game;
@@ -57,7 +58,7 @@ export function PlayForm({ game, initial, heading, submitLabel, saving, error, c
   useEffect(() => {
     if (suggested !== undefined) setDraft((d) => (d.sessionNumberTouched || d.sessionNumber === String(suggested) ? d : { ...d, sessionNumber: String(suggested) }));
   }, [suggested]);
-  const [formError, setFormError] = useState<string | null>(null);
+  const { showError } = useToasts();
   const [showGuests, setShowGuests] = useState(false);
   const [guestName, setGuestName] = useState('');
 
@@ -96,8 +97,8 @@ export function PlayForm({ game, initial, heading, submitLabel, saving, error, c
   const submit = (e: FormEvent) => {
     e.preventDefault();
     const problem = validateDraft(draft, game);
-    setFormError(problem);
-    if (!problem) onSubmit(toPlayInput(draft, game));
+    if (problem) showError(problem);
+    else onSubmit(toPlayInput(draft, game));
   };
 
   if (players.isPending) return <ListSkeleton rows={3} withImage={false} />;
@@ -198,7 +199,6 @@ export function PlayForm({ game, initial, heading, submitLabel, saving, error, c
         </div>
         <label>Poznámka<textarea value={draft.notes} rows={3} onChange={(e) => patch({ notes: e.target.value })} /></label>
 
-        {formError && <div className="error" role="alert">{formError}</div>}
         <ErrorMessage error={error} />
         <Actions>
           <button className="btn" type="submit" disabled={saving}>{submitLabel}</button>

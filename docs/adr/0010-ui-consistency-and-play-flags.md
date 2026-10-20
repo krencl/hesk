@@ -9,7 +9,7 @@ UI vznikalo po částech a nesedělo si: různé velikosti nadpisů, odsazení z
 **Kostra stránky** (`frontend/src/styles.css`, komponenty `PageTitle`, `GameHeader`, `Actions`)
 - Každá stránka je `<section class="page">` bez vlastního odsazení; obsah je v blocích `.pad` (1 rem po stranách, 1 rem nad blokem), seznamy a záhlaví jdou přes celou šířku.
 - Nadpisy `h2`/`h3` mají vždy 1,25 rem, váhu 500 a barvu textu (žádné šedé podnadpisy) – stejné písmo jako název hry. Výjimka (ADR 0014): nadpis stránky `PageTitle` je 1,5 rem a podtržený modrou linkou. Záhlaví stránky je `PageTitle` (text) nebo `GameHeader` (náhled + název hry, i ve formulářích zápisu); oba sdílí třídu `.page-head`.
-- **Hlavní tlačítka (CTA) jsou vždy v mřížce 2×2** (`Actions`), stejně velká, nejvýše čtyři: 1. vlevo nahoře (primární, `btn`), 2. vpravo nahoře (sekundární, `btn outline`), 3. vpravo dole (terciální, `btn outline-secondary`), 4. vlevo dole. Malá tlačítka (`btn small`) jsou jen vložené ovladače v řádcích a menu (Přepnout, Přidat hosty). Destruktivní akce (smazání hry/zápisu) jsou šedý podtržený text pod tlačítky, ne CTA.
+- **Hlavní tlačítka (CTA) jsou vždy v mřížce 2×2** (a přichycená ke spodku obrazovky, ADR 0015) (`Actions`), stejně velká, nejvýše čtyři: 1. vlevo nahoře (primární, `btn`), 2. vpravo nahoře (sekundární, `btn outline`), 3. vpravo dole (terciální, `btn outline-secondary`), 4. vlevo dole. Malá tlačítka (`btn small`) jsou jen vložené ovladače v řádcích a menu (Přepnout, Přidat hosty). Destruktivní akce (smazání hry/zápisu) jsou šedý podtržený text pod tlačítky, ne CTA.
 - Aktivní položka seznamu (parta ve správě part, rozbalený zápis) se označuje pozadím a levým proužkem, ne tlačítkem ani štítkem.
 
 **Formulář zápisu** (`PlayForm`, sdílený pro nový zápis i úpravu)

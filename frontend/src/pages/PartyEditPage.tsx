@@ -22,7 +22,7 @@ export function PartyEditPage() {
       </section>
     );
   }
-  if (!detail.data) return detail.error ? <section className="page pad"><ErrorMessage error={detail.error} /></section> : <ListSkeleton rows={2} withImage={false} />;
+  if (!detail.data) return detail.error ? <section className="page pad"><ErrorMessage inline error={detail.error} /></section> : <ListSkeleton rows={2} withImage={false} />;
   if (detail.data.role !== 'admin') return <Navigate to={`/parties/${id}`} replace />;
 
   return <PartyEditForm party={detail.data} />;

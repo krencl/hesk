@@ -43,7 +43,7 @@ export function GameDetailPage() {
       </section>
     );
   }
-  if (!game.data) return game.error ? <section className="page pad"><ErrorMessage error={game.error} /></section> : <ListSkeleton rows={1} />;
+  if (!game.data) return game.error ? <section className="page pad"><ErrorMessage inline error={game.error} /></section> : <ListSkeleton rows={1} />;
 
   const remaining = Math.max(0, game.data.playCount - plays.length);
 

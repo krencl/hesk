@@ -12,7 +12,7 @@ export function GameCheatsheetPage() {
   const id = Number(useParams().id);
   const game = useQuery({ queryKey: ['game', id], queryFn: () => api.game(id), retry: false });
 
-  if (!game.data) return game.error ? <section className="page pad"><ErrorMessage error={game.error} /></section> : <ListSkeleton rows={1} />;
+  if (!game.data) return game.error ? <section className="page pad"><ErrorMessage inline error={game.error} /></section> : <ListSkeleton rows={1} />;
 
   return (
     <section className="page game-detail">

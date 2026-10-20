@@ -185,14 +185,15 @@ describe('new play', () => {
     fireEvent.click(screen.getByLabelText('Anna'));
     fireEvent.click(screen.getByLabelText('Petr'));
     fireEvent.click(screen.getByRole('button', { name: 'Uložit zápis' }));
-    expect(await screen.findByRole('alert')).toHaveTextContent('Vyber alespoň jednoho hráče.');
+    expect(await screen.findByText('Vyber alespoň jednoho hráče.')).toBeInTheDocument();
 
     fireEvent.click(screen.getByLabelText('Anna'));
     fireEvent.click(screen.getByLabelText('Petr'));
     fireEvent.click(screen.getByLabelText('Řeka'));
     fireEvent.change(screen.getByLabelText('Skóre Anna'), { target: { value: '90' } });
     fireEvent.click(screen.getByRole('button', { name: 'Uložit zápis' }));
-    expect(await screen.findByRole('alert')).toHaveTextContent('Zadej skóre všem hráčům.');
+    expect(await screen.findByText('Zadej skóre všem hráčům.')).toBeInTheDocument();
+    expect(screen.getAllByRole('alert')).toHaveLength(2); // zprávy se mohou zobrazit najednou
 
     fireEvent.change(screen.getByLabelText('Skóre Petr'), { target: { value: '75' } });
     fireEvent.click(screen.getByRole('button', { name: 'Uložit zápis' }));

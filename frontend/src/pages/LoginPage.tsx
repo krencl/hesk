@@ -1,11 +1,12 @@
 import { useQueryClient } from '@tanstack/react-query';
 import { type FormEvent, useState } from 'react';
 import { ApiError, post } from '../api/client';
+import { useToasts } from '../components/Toasts';
 
 export function LoginPage() {
   const queryClient = useQueryClient();
   const [email, setEmail] = useState('dev@example.com');
-  const [error, setError] = useState<string | null>(null);
+  const { showError } = useToasts();
 
   // Pouze ve vývoji: přihlášení bez Googlu (backend endpoint existuje jen v env dev/test).
   const devLogin = async (e: FormEvent) => {
@@ -14,7 +15,7 @@ export function LoginPage() {
       await post('/auth/dev-login', { email, nickname: email.split('@')[0] });
       await queryClient.invalidateQueries({ queryKey: ['me'] });
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Přihlášení selhalo.');
+      showError(err instanceof ApiError ? err.message : 'Přihlášení selhalo.');
     }
   };
 
@@ -28,7 +29,6 @@ export function LoginPage() {
           <small>Vývojové přihlášení</small>
           <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} aria-label="E-mail" />
           <button type="submit" className="btn secondary">Přihlásit (dev)</button>
-          {error && <div className="error">{error}</div>}
         </form>
       )}
     </div>
