@@ -40,9 +40,10 @@ describe('game management (/manage/games)', () => {
     renderApp('/manage/games');
     await screen.findByText('Carcassonne');
     fireEvent.click(screen.getByRole('button', { name: 'Filtr' }));
-    expect(screen.getByLabelText('Řazení')).toHaveValue('name');
-    expect(screen.queryByLabelText('Sezení')).not.toBeInTheDocument();
-    fireEvent.change(screen.getByLabelText('Řazení'), { target: { value: 'activity' } });
+    expect(screen.getByRole('button', { name: 'Řazení' })).toHaveTextContent('Název');
+    expect(screen.queryByRole('button', { name: 'Sezení' })).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Řazení' }));
+    fireEvent.click(screen.getByRole('option', { name: 'Aktivita' }));
     await screen.findByText('Carcassonne');
     expect(requestedUrls(fetchMock)).toContain('/parties/3/games?sort=activity&limit=21&offset=0');
     expect(JSON.parse(sessionStorage.getItem('hesk.manageGames')!)).toMatchObject({ sort: 'activity', filterVisible: true });

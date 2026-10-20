@@ -1,4 +1,4 @@
-import { act, fireEvent, screen, waitFor, within } from '@testing-library/react';
+import { act, fireEvent, screen, waitFor } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { GAME, mockApi, ME, PARTY, PLAY, renderApp, requestedUrls } from '../test/helpers';
 
@@ -84,14 +84,16 @@ describe('game list', () => {
     });
     renderApp('/games');
     await screen.findByText('Carcassonne');
-    expect(screen.queryByLabelText('Řazení')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Řazení' })).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('button', { name: 'Filtr' }));
-    fireEvent.change(await screen.findByLabelText('Řazení'), { target: { value: 'name' } });
+    fireEvent.click(await screen.findByRole('button', { name: 'Řazení' }));
+    fireEvent.click(screen.getByRole('option', { name: 'Název' }));
     await waitFor(() => expect(requestedUrls(fetchMock)).toContain('/parties/3/games?sort=name&limit=21&offset=0'));
 
-    await within(screen.getByLabelText('Sezení')).findByRole('option', { name: '69' });
-    fireEvent.change(screen.getByLabelText('Sezení'), { target: { value: '3' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Sezení' }));
+    await screen.findByRole('option', { name: '69' });
+    fireEvent.click(screen.getByRole('option', { name: '3' }));
     expect(await screen.findByText('V tomhle sezení se nehrála žádná hra.')).toBeInTheDocument();
     expect(JSON.parse(sessionStorage.getItem('hesk.gameList')!)).toMatchObject({ filterVisible: true, sort: 'name', sessionNumber: 3 });
 

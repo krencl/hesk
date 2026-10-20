@@ -3,6 +3,7 @@ import { api } from '../api';
 import type { GameSort } from '../api/types';
 import type { GameListSettings } from '../lib/listSettings';
 import { Icon } from './Icon';
+import { type SelectOption, SelectPopup } from './SelectPopup';
 
 interface Props {
   partyId: number;
@@ -12,7 +13,12 @@ interface Props {
   withSession?: boolean;
 }
 
-/** Hledání her podle názvu a rozbalovací filtr (řazení, seance); sdílí ho seznam her i správa her. */
+const SORT_OPTIONS: SelectOption<GameSort>[] = [
+  { value: 'activity', label: 'Aktivita' },
+  { value: 'name', label: 'Název' },
+];
+
+/** Hledání her podle názvu a filtr (řazení, seance) s výběrem v popupu; sdílí ho seznam her i správa her. */
 export function GameSearch({ partyId, settings, onChange, withSession = false }: Props) {
   const sessions = useQuery({ queryKey: ['sessions', partyId], queryFn: () => api.sessions(partyId), enabled: withSession && settings.filterVisible });
 
@@ -42,18 +48,25 @@ export function GameSearch({ partyId, settings, onChange, withSession = false }:
       </div>
       {settings.filterVisible && (
         <div className={`search-filter${withSession ? '' : ' single'}`}>
-          <label className="filter-label" htmlFor="sort">Řazení</label>
-          <select id="sort" value={settings.sort} onChange={(e) => onChange({ sort: e.target.value as GameSort })}>
-            <option value="activity">Aktivita</option>
-            <option value="name">Název</option>
-          </select>
+          <span className="filter-label">Řazení</span>
+          <SelectPopup
+            title="Řazení"
+            value={settings.sort}
+            options={SORT_OPTIONS}
+            onChange={(sort) => onChange({ sort })}
+            className="filter-select"
+          />
           {withSession && (
             <>
-              <label className="filter-label" htmlFor="session">Sezení</label>
-              <select id="session" value={settings.sessionNumber ?? ''} onChange={(e) => onChange({ sessionNumber: e.target.value ? Number(e.target.value) : null })}>
-                <option value="">Všechny</option>
-                {sessions.data?.map((s) => <option key={s.id} value={s.number}>{s.number}</option>)}
-              </select>
+              <span className="filter-label">Sezení</span>
+              <SelectPopup
+                title="Sezení"
+                value={settings.sessionNumber}
+                pinned={{ value: null, label: 'Všechny' }}
+                options={(sessions.data ?? []).map((s) => ({ value: s.number as number | null, label: String(s.number) }))}
+                onChange={(sessionNumber) => onChange({ sessionNumber })}
+                className="filter-select"
+              />
             </>
           )}
         </div>
