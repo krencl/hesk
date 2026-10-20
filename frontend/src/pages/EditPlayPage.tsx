@@ -6,10 +6,12 @@ import { api } from '../api';
 import { ApiError } from '../api/client';
 import type { PlayInput } from '../api/types';
 import { ErrorMessage } from '../components/ErrorMessage';
+import { Actions } from '../components/Actions';
 import { PlayForm } from '../components/PlayForm';
 import { ListSkeleton } from '../components/Skeleton';
 import { draftFromPlay } from '../lib/playForm';
 import { refreshAfterPlayChange } from '../lib/refresh';
+import { canWrite } from '../lib/roles';
 
 /** Úprava zápisu; smazání zápisu je až pod formulářem. */
 export function EditPlayPage() {
@@ -32,6 +34,14 @@ export function EditPlayPage() {
 
   if (play.error instanceof ApiError && (play.error.status === 404 || play.error.status === 403)) {
     return <p className="page pad empty">Tenhle zápis neexistuje nebo k němu nemáš přístup.<Link className="btn" to="/games">Zpět na hry</Link></p>;
+  }
+  if (!canWrite(party.role)) {
+    return (
+      <section className="page pad">
+        <p className="empty">Upravovat zápisy může jen zapisovač nebo admin.</p>
+        <Actions><Link className="btn outline-secondary" to="/games">Zpět na hry</Link></Actions>
+      </section>
+    );
   }
   if (!play.data || !game.data) return play.error || game.error ? <section className="page pad"><ErrorMessage inline error={play.error ?? game.error} /></section> : <ListSkeleton rows={3} withImage={false} />;
 

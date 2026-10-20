@@ -78,13 +78,38 @@ describe('party detail (/parties/:id)', () => {
     expect(await screen.findByRole('heading', { name: 'Parta Pátek' })).toBeInTheDocument();
     expect(screen.queryByText(/Jsi (admin|člen)/)).not.toBeInTheDocument(); // role je vidět ze seznamu členů
     expect(screen.getByText('Petr')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Udělat adminem' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Role – Anna' })).toHaveTextContent('Admin');
+    expect(screen.getByRole('button', { name: 'Role – Petr' })).toHaveTextContent('Člen');
     expect(screen.getAllByRole('button', { name: 'Odebrat' })).toHaveLength(1); // sebe odebrat nelze
 
     fireEvent.click(screen.getByRole('button', { name: 'Pozvat hráče' }));
     const link = (await screen.findByLabelText('Odkaz pozvánky')) as HTMLInputElement;
     expect(link.value).toMatch(/\/join\/abc$/);
     expect(screen.getByRole('link', { name: 'Správa part' })).toHaveAttribute('href', '/parties');
+  });
+
+  it('lets an admin change a member role in a popup with the three roles', async () => {
+    const fetchMock = mockApi({
+      ...base,
+      '/parties/3': { body: detail(PARTY) },
+      'PATCH /parties/3/members/2': { body: detail(PARTY, [{ userId: 1, nickname: 'Anna', role: 'admin' }, { userId: 2, nickname: 'Petr', role: 'writer' }]) },
+    });
+    renderApp('/parties/3');
+    fireEvent.click(await screen.findByRole('button', { name: 'Role – Petr' }));
+    expect(screen.getAllByRole('option').map((o) => o.textContent?.replace(/radio_button_(un)?checked/, ''))).toEqual(['Člen', 'Zapisovač', 'Admin']);
+    expect(screen.queryByRole('searchbox')).not.toBeInTheDocument(); // u tří rolí se nehledá
+    fireEvent.click(screen.getByRole('option', { name: 'Zapisovač' }));
+
+    await waitFor(() => expect(fetchMock.mock.calls.some(([u, init]) => String(u) === '/api/parties/3/members/2' && init?.method === 'PATCH')).toBe(true));
+    expect(JSON.parse(String(fetchMock.mock.calls.find(([, init]) => init?.method === 'PATCH')![1]?.body))).toEqual({ role: 'writer' });
+  });
+
+  it('does not send anything when the same role is picked again', async () => {
+    const fetchMock = mockApi({ ...base, '/parties/3': { body: detail(PARTY) } });
+    renderApp('/parties/3');
+    fireEvent.click(await screen.findByRole('button', { name: 'Role – Petr' }));
+    fireEvent.click(screen.getByRole('option', { name: 'Člen' }));
+    expect(fetchMock.mock.calls.some(([, init]) => init?.method === 'PATCH')).toBe(false);
   });
 
   it('lets an admin edit the name and the short name on a separate page and returns to the detail', async () => {
@@ -160,13 +185,15 @@ describe('party detail (/parties/:id)', () => {
   });
 
   it('gives a plain member no admin actions but offers leaving', async () => {
-    mockApi({ ...base, '/parties/4': { body: detail(MEMBER_PARTY, [{ userId: 1, nickname: 'Anna', role: 'member' }, { userId: 2, nickname: 'Petr', role: 'admin' }]) } });
+    mockApi({ ...base, '/parties/4': { body: detail(MEMBER_PARTY, [{ userId: 1, nickname: 'Anna', role: 'member' }, { userId: 2, nickname: 'Petr', role: 'writer' }]) } });
     renderApp('/parties/4');
     expect(await screen.findByRole('heading', { name: 'Parta Víkend' })).toBeInTheDocument();
     expect(screen.queryByText(/Jsi (admin|člen)/)).not.toBeInTheDocument();
     expect(screen.queryByRole('link', { name: 'Upravit partu' })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Pozvat hráče' })).not.toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Udělat adminem' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /^Role – / })).not.toBeInTheDocument();
+    // běžný člen vidí role ostatních jako text
+    expect(screen.getByText('Zapisovač')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Opustit' })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /Přepnout na tuto partu/ })).not.toBeInTheDocument();
   });

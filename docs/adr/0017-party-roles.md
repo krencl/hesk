@@ -1,0 +1,15 @@
+# ADR 0017: Role v partě (člen, zapisovač, admin)
+
+Stav: přijato (2026-10-23)
+
+## Kontext
+Do té doby byla role jen admin / člen a zapisovat mohl každý člen. Potřeba je rozlišit členy, kteří výsledky jen čtou.
+
+## Rozhodnutí
+- **Role:** `admin` (spravuje partu a může vše), `writer` = **Zapisovač** (přidává, upravuje a maže zápisy her) a `member` = **Člen** (zápisy jen čte). Hry, hosty, statistiky a čtení vidí všichni členové jako dřív.
+- **Backend:** `PartyRole::Writer`, oprávnění `PartyVoter::WRITE` (admin nebo zapisovač) vyžaduje vytvoření, úprava a smazání zápisu i `GET /parties/{id}/plays/defaults` (předvyplnění nového zápisu); čtení zápisu zůstává `VIEW`. Správa party (`ADMIN`) se nemění. Parta musí mít vždy admina: změna posledního admina na jakoukoli jinou roli se odmítne.
+- **Migrace** `Version20261023000000`: dosavadní členové (`member`) se mění na zapisovače, protože zapisovat mohli všichni a jinak by o to přišli. Nově přidaní členy (pozvánkou) jsou `member`, admin je povyšuje. Import ze staré aplikace mapuje uživatele na zapisovače (ve staré aplikaci mohl zapisovat každý) a existující role jen povyšuje na admina, nepřepisuje role změněné v nové aplikaci.
+- **Frontend:** v seznamu členů admin mění roli popupem (`SelectPopup` bez hledání: Člen / Zapisovač / Admin), ostatní vidí roli jako text. Člen nemá na detailu hry tlačítko „Nový zápis“ ani „Upravit“ u zápisu a stránky nového/upraveného zápisu mu místo formuláře ukážou vysvětlení (`canWrite` v `lib/roles.ts`).
+
+## Důsledky
+- Správa hostů (přidání, přejmenování, skrytí, smazání) zůstává otevřená každému členu; zpřísnit ji na zapisovače a admina je jedna změna v `PlayerController`.

@@ -277,6 +277,7 @@ a.link:hover { text-decoration: underline; }
   overscroll-behavior: contain; animation: popup-in 0.2s ease-out;
 }
 @keyframes popup-in { from { opacity: 0; } to { opacity: 1; } }
+.select-popup:focus { outline: 0; }
 .select-popup-title { margin: 0 4.5rem 1rem 0; color: var(--secondary); font-size: 1.25rem; min-height: 2.5rem; display: flex; align-items: center; }
 .select-popup-search { margin-bottom: 0.75rem; }
 .select-popup-list { list-style: none; margin: 0; padding: 0; }
@@ -471,3 +472,13 @@ input[type='datetime-local'] { font-size: 0.9rem; padding-left: 0.4rem; padding-
 .guest-visible { grid-column: 1 / -1; padding-bottom: 0; }
 .guest-plays { min-width: 4.5rem; text-align: right; font-size: 0.9rem; }
 .party-guests .guest-add { margin-top: 0; }
+
+/* Role člena v seznamu členů party */
+.member-name { display: flex; flex-direction: column; min-width: 0; }
+.member-actions { align-items: center; }
+.role-select {
+  display: flex; align-items: center; gap: 0.1rem; padding: 0.15rem 0.1rem 0.15rem 0.5rem; background: none; border: 1px solid var(--gray);
+  border-radius: var(--radius); font: inherit; font-size: 0.9rem; color: var(--main); cursor: pointer; transition: background-color 0.15s;
+}
+.role-select:hover { background: var(--light-blue); }
+.role-select .icon { font-size: 1.3rem; }

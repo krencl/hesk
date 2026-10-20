@@ -16,17 +16,20 @@ interface Props<T extends string | number | null> {
   /** Volba, která se ukazuje vždy a nejde jí hledat (např. „Všechny“ = žádný filtr). */
   pinned?: SelectOption<T>;
   className?: string;
+  /** Hledání v popupu (výchozí zapnuto); u krátkých seznamů, jako jsou role, se vypíná. */
+  searchable?: boolean;
 }
 
 /**
  * Náhrada za `<select>` podle starého prototypu: tlačítko s aktuální volbou otevře stránku, která překryje obsah;
  * nahoře je hledání (ihned zaostřené), pod ním volby. Křížek, Esc nebo výběr popup zavře.
  */
-export function SelectPopup<T extends string | number | null>({ title, value, options, onChange, pinned, className = '' }: Props<T>) {
+export function SelectPopup<T extends string | number | null>({ title, value, options, onChange, pinned, className = '', searchable = true }: Props<T>) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState('');
   const buttonRef = useRef<HTMLButtonElement>(null);
   const searchRef = useRef<HTMLInputElement>(null);
+  const dialogRef = useRef<HTMLDivElement>(null);
   const titleId = useId();
 
   const all = pinned ? [pinned, ...options] : options;
@@ -34,8 +37,9 @@ export function SelectPopup<T extends string | number | null>({ title, value, op
 
   // Hledání má být po otevření rovnou zaostřené; po zavření se zaostření vrací na tlačítko.
   useEffect(() => {
-    if (open) searchRef.current?.focus();
-  }, [open]);
+    // bez hledání se zaostří samotný popup, ať funguje Esc
+    if (open) (searchRef.current ?? dialogRef.current)?.focus();
+  }, [open, searchable]);
 
   const close = () => {
     setOpen(false);
@@ -68,9 +72,9 @@ export function SelectPopup<T extends string | number | null>({ title, value, op
       {open &&
         createPortal(
           <>
-            <div className="select-popup" role="dialog" aria-modal="true" aria-labelledby={titleId} onKeyDown={onKeyDown}>
+            <div ref={dialogRef} tabIndex={-1} className="select-popup" role="dialog" aria-modal="true" aria-labelledby={titleId} onKeyDown={onKeyDown}>
               <h3 id={titleId} className="select-popup-title">{title}</h3>
-              <input
+              {searchable && <input
                 ref={searchRef}
                 type="search"
                 className="select-popup-search"
@@ -80,7 +84,7 @@ export function SelectPopup<T extends string | number | null>({ title, value, op
                 autoFocus
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
-              />
+              />}
               <ul className="select-popup-list" role="listbox" aria-label={title}>
                 {shown.map((o) => {
                   const selected = o.value === value;

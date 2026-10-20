@@ -4,11 +4,13 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useActiveParty } from '../AppContext';
 import { api } from '../api';
 import { ApiError } from '../api/client';
+import { Actions } from '../components/Actions';
 import { PlayForm } from '../components/PlayForm';
 import { ListSkeleton } from '../components/Skeleton';
 import { fromLocalInput } from '../lib/datetime';
 import { defaultPlayerIds, defaultTimes, emptyDraft } from '../lib/playForm';
 import { refreshAfterPlayChange } from '../lib/refresh';
+import { canWrite } from '../lib/roles';
 
 /** Nový zápis dané hry (hra se nevybírá, formulář se otevírá z jejího detailu). */
 export function NewPlayPage() {
@@ -29,6 +31,7 @@ export function NewPlayPage() {
     queryFn: () => api.playDefaults(party.id, startedIso, endedIso),
     staleTime: 60_000,
     gcTime: 0,
+    enabled: canWrite(party.role),
   });
 
   const save = useMutation({
@@ -41,6 +44,14 @@ export function NewPlayPage() {
 
   if (game.error instanceof ApiError && (game.error.status === 404 || game.error.status === 403)) {
     return <p className="page pad empty">Tahle hra neexistuje nebo k ní nemáš přístup.<Link className="btn" to="/games">Zpět na hry</Link></p>;
+  }
+  if (!canWrite(party.role)) {
+    return (
+      <section className="page pad">
+        <p className="empty">Zapisovat hry může jen zapisovač nebo admin.</p>
+        <Actions><Link className="btn outline-secondary" to={`/games/${gameId}`}>Zpět</Link></Actions>
+      </section>
+    );
   }
   if (!game.data || !players.data || (defaults.isPending && !defaults.isError)) return <ListSkeleton rows={3} withImage={false} />;
 

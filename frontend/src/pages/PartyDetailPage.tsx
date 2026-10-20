@@ -4,9 +4,12 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useApp } from '../AppContext';
 import { api } from '../api';
 import { ApiError } from '../api/client';
+import type { PartyRole } from '../api/types';
 import { Actions } from '../components/Actions';
 import { ErrorMessage } from '../components/ErrorMessage';
 import { PartyHeader } from '../components/PartyHeader';
+import { SelectPopup } from '../components/SelectPopup';
+import { ROLE_LABELS, ROLE_ORDER } from '../lib/roles';
 import { ListSkeleton } from '../components/Skeleton';
 
 /** Detail party: členové a jejich role, pozvánky a opuštění party. Seznam part a zakládání jsou ve správě part. */
@@ -23,7 +26,7 @@ export function PartyDetailPage() {
     mutationFn: () => api.invite(id),
     onSuccess: (r) => setInviteLink(`${window.location.origin}/join/${r.token}`),
   });
-  const changeRole = useMutation({ mutationFn: (v: { userId: number; role: 'admin' | 'member' }) => api.changeRole(id, v.userId, v.role), onSuccess: refresh });
+  const changeRole = useMutation({ mutationFn: (v: { userId: number; role: PartyRole }) => api.changeRole(id, v.userId, v.role), onSuccess: refresh });
   const remove = useMutation({
     mutationFn: (userId: number) => api.removeMember(id, userId),
     onSuccess: async (_, userId) => {
@@ -54,12 +57,20 @@ export function PartyDetailPage() {
       <ul className="list">
         {party.members.map((m) => (
           <li key={m.userId} className="member">
-            <span>{m.nickname} {m.role === 'admin' && <small className="muted">(admin)</small>}</span>
+            <span className="member-name">
+              {m.nickname}
+              {!isAdmin && <small className="muted">{ROLE_LABELS[m.role]}</small>}
+            </span>
             {isAdmin && (
               <span className="member-actions">
-                <button type="button" className="link" onClick={() => changeRole.mutate({ userId: m.userId, role: m.role === 'admin' ? 'member' : 'admin' })}>
-                  {m.role === 'admin' ? 'Odebrat admina' : 'Udělat adminem'}
-                </button>
+                <SelectPopup
+                  title={`Role – ${m.nickname}`}
+                  value={m.role}
+                  options={ROLE_ORDER.map((r) => ({ value: r, label: ROLE_LABELS[r] }))}
+                  onChange={(role) => role !== m.role && changeRole.mutate({ userId: m.userId, role })}
+                  searchable={false}
+                  className="role-select"
+                />
                 {m.userId !== me.id && (
                   <button type="button" className="link danger" onClick={() => window.confirm(`Odebrat ${m.nickname}?`) && remove.mutate(m.userId)}>Odebrat</button>
                 )}

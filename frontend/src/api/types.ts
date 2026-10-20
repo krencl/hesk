@@ -1,5 +1,6 @@
 export type ScoreType = 'most_points' | 'fewest_points' | 'rank_order' | 'winner_only';
-export type PartyRole = 'admin' | 'member';
+/** Admin spravuje partu, zapisovač přidává a upravuje zápisy, člen je jen čte. */
+export type PartyRole = 'admin' | 'writer' | 'member';
 
 export interface Me {
   id: number;
