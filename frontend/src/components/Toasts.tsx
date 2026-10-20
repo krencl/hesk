@@ -2,7 +2,7 @@ import { createContext, type CSSProperties, type ReactNode, useCallback, useCont
 import { Icon } from './Icon';
 
 /** Jak dlouho zpráva visí, než sama zmizí: základ + sekunda za každou podrobnost (delší hlášení se čte déle). */
-export const TOAST_BASE_MS = 4000;
+export const TOAST_BASE_MS = 6000;
 export const toastDuration = (detailCount: number): number => TOAST_BASE_MS + 1000 * detailCount;
 /** Délka animace odjezdu (musí odpovídat `.toast-slot` ve stylech); po ní se zpráva odstraní z DOM. */
 const LEAVE_MS = 250;
