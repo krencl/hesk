@@ -177,7 +177,7 @@ legend { color: var(--secondary); font-size: 0.85rem; padding: 0 0.3rem; }
 .list > li { border-bottom: 1px solid var(--light-gray); }
 .session h3 { margin: 1.2rem 1rem 0.4rem; }
 .list-item {
-  display: flex; color: inherit; text-decoration: none; transition: background-color var(--animation);
+  display: flex; color: inherit; text-decoration: none; transition: background-color 0.15s;
 }
 .list-item:hover { color: #fff; background: var(--main); }
 .list-item:hover .secondary { color: var(--light-blue); }
@@ -363,3 +363,9 @@ a.link:hover { text-decoration: underline; }
 .tag .icon { font-size: 1.1rem; }
 /* Začátek a konec vedle sebe na úzké obrazovce */
 input[type='datetime-local'] { font-size: 0.9rem; padding-left: 0.4rem; padding-right: 0.4rem; }
+
+/* Hover efekty mají všude stejnou lehkou animaci jako tlačítka (0,15 s) */
+.menu-logout button, a.plain, .round-winners, .list-item .secondary { transition: color 0.15s; }
+.search-icon, .search-filter-icon, .party-link, .combo-list li { transition: background-color 0.15s; }
+.icon-button { transition: background-color 0.15s, color 0.15s; }
+.round { transition: border-left-color 0.15s, background-color 0.15s; }
