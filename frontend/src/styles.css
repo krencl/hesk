@@ -80,9 +80,12 @@ hr { border: 0; border-top: 1px solid rgba(0, 0, 0, 0.15); margin: 1rem 0; }
   border: 0; border-radius: 50%;
   background: var(--main); color: #fff; font: inherit; font-size: 1.1rem; line-height: 1;
   box-shadow: 0 0 0 0.2rem rgba(255, 255, 255, 0);
-  cursor: pointer; transition: box-shadow 0.2s;
+  cursor: pointer; transition: box-shadow 0.2s, background-color 0.2s;
 }
 .header-button:hover { box-shadow: 0 0 0 0.3rem var(--gray); }
+/* otevřené menu: křížek leží na modré hlavičce, proto má světlé pozadí a bílý okraj, ať je vidět, že je to tlačítko */
+.header-button.open { background: rgba(255, 255, 255, 0.25); box-shadow: 0 0 0 0.2rem #fff; }
+.header-button.open:hover { background: rgba(255, 255, 255, 0.4); box-shadow: 0 0 0 0.3rem #fff; }
 .header-button.size-1 { font-size: 1.9rem; }
 .header-button.size-2 { font-size: 1.4rem; }
 .header-button.size-3 { font-size: 1.1rem; }
