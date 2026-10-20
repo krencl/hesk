@@ -41,6 +41,18 @@ describe('App gating', () => {
     expect(screen.getByRole('link', { name: /Carcassonne/ })).toHaveAttribute('href', '/games/1');
   });
 
+  it('closes the menu when the item of the current page is clicked (the address does not change)', async () => {
+    mockApi({ '/me': { body: ME }, '/parties': { body: [PARTY] }, '/parties/3/games?sort=activity&limit=21&offset=0': { body: [] } });
+    renderApp();
+    await screen.findByRole('searchbox', { name: 'Hledat hru' });
+    fireEvent.click(await screen.findByRole('button', { name: /Menu – Pátek/ }));
+    const current = screen.getByRole('link', { name: 'Seznam her' });
+    expect(current).toHaveClass('active');
+    fireEvent.click(current);
+    expect(screen.queryByRole('link', { name: 'Seznam her' })).not.toBeInTheDocument(); // menu je zavřené (skryté pro čtečky)
+    expect(screen.getByRole('button', { name: /Menu – Pátek/ })).toHaveAttribute('aria-expanded', 'false');
+  });
+
   it('switches the party in the menu and offers creating a new one like the old prototype', async () => {
     mockApi({
       '/me': { body: ME },

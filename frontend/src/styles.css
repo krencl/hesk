@@ -86,7 +86,6 @@ hr { border: 0; border-top: 1px solid rgba(0, 0, 0, 0.15); margin: 1rem 0; }
 .header-button.size-1 { font-size: 1.9rem; }
 .header-button.size-2 { font-size: 1.4rem; }
 .header-button.size-3 { font-size: 1.1rem; }
-.header-button.open { background: var(--gray); }
 .header-button .icon { font-size: 1.9rem; }
 
 /* Menu přes celou obrazovku */
@@ -110,7 +109,9 @@ hr { border: 0; border-top: 1px solid rgba(0, 0, 0, 0.15); margin: 1rem 0; }
 .menu-list a, .menu-list button {
   display: block; width: 100%; padding: 0.3rem 0.5rem; background: none; border: 0; text-align: left;
   font: inherit; color: var(--text); text-decoration: none; cursor: pointer;
+  transition: background-color 0.15s, color 0.15s;
 }
+.menu-list small { transition: color 0.15s; }
 .menu-list .muted { color: var(--secondary); }
 .menu-list a:hover, .menu-list button:hover, .menu-list a.active { background: var(--main); color: #fff; }
 .menu-list a:hover small, .menu-list button:hover small { color: var(--light-blue); }

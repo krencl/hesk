@@ -30,6 +30,11 @@ export function Layout() {
     setMenuOpen(!menuOpen);
     setChangingParty(false);
   };
+  // Odkaz na stránku, na které už jsem, nezmění adresu, a menu by tak zůstalo otevřené – zavřeme ho vždy.
+  const closeMenu = () => {
+    setMenuOpen(false);
+    setChangingParty(false);
+  };
 
   return (
     <div className="app">
@@ -70,7 +75,7 @@ export function Layout() {
                 ))}
               </ul>
               <div className="menu-actions">
-                <Link className="btn small" to="/parties">Vytvořit novou partu</Link>
+                <Link className="btn small" to="/parties" onClick={closeMenu}>Vytvořit novou partu</Link>
                 <button type="button" className="btn small secondary" onClick={() => setChangingParty(false)}>Zrušit</button>
               </div>
             </>
@@ -82,8 +87,8 @@ export function Layout() {
                 <button type="button" className="btn small outline" onClick={() => setChangingParty(true)}>Přepnout</button>
               </h4>
               <ul className="menu-list">
-                {activeParty && <li><NavLink to={`/parties/${activeParty.id}`}>Zobrazit detail</NavLink></li>}
-                <li><NavLink to="/stats">Statistiky</NavLink></li>
+                <li><NavLink to="/stats" onClick={closeMenu}>Statistiky</NavLink></li>
+                {activeParty && <li><NavLink to={`/parties/${activeParty.id}`} onClick={closeMenu}>Spravovat</NavLink></li>}
               </ul>
             </>
           )}
@@ -91,15 +96,15 @@ export function Layout() {
           <hr />
           <h4 className="primary">Menu</h4>
           <ul className="menu-list">
-            <li><NavLink to="/games" end>Seznam her</NavLink></li>
+            <li><NavLink to="/games" end onClick={closeMenu}>Seznam her</NavLink></li>
           </ul>
 
           <hr />
           <h4 className="primary">Správa</h4>
           <ul className="menu-list">
-            <li><NavLink to="/parties" end>Spravovat party</NavLink></li>
-            <li><NavLink to="/manage/games">Spravovat hry</NavLink></li>
-            <li><NavLink to="/settings">Nastavení</NavLink></li>
+            <li><NavLink to="/parties" end onClick={closeMenu}>Spravovat party</NavLink></li>
+            <li><NavLink to="/manage/games" onClick={closeMenu}>Spravovat hry</NavLink></li>
+            <li><NavLink to="/settings" onClick={closeMenu}>Nastavení</NavLink></li>
           </ul>
 
           <hr />

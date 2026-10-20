@@ -179,7 +179,11 @@ describe('party detail (/parties/:id)', () => {
     renderApp('/games');
     await screen.findByRole('searchbox', { name: 'Hledat hru' });
     fireEvent.click(await screen.findByRole('button', { name: /Menu – Pátek/ }));
-    expect(screen.getByRole('link', { name: 'Zobrazit detail' })).toHaveAttribute('href', '/parties/3');
+    expect(screen.getByRole('link', { name: 'Spravovat' })).toHaveAttribute('href', '/parties/3');
+    expect(screen.queryByRole('link', { name: 'Zobrazit detail' })).not.toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Spravovat party' })).toHaveAttribute('href', '/parties');
+    // v sekci Parta je „Spravovat“ až za „Statistiky“
+    const stats = screen.getByRole('link', { name: 'Statistiky' });
+    expect(stats.compareDocumentPosition(screen.getByRole('link', { name: 'Spravovat' })) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 });
