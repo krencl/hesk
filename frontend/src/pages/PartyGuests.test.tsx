@@ -47,10 +47,10 @@ describe('party guests (/parties/:id/guests)', () => {
   it('toggles whether a guest is offered in plays and saves just that change', async () => {
     const fetchMock = mockApi({ ...base, 'PATCH /players/2': { body: { id: 2, name: 'Bob', hasAccount: false, visible: false } }, 'PATCH /players/3': { body: { id: 3, name: 'Cyril', hasAccount: false, visible: true } } });
     renderApp('/parties/3/guests');
-    const bob = await screen.findByLabelText('Zobrazovat hosta Bob');
-    const cyril = screen.getByLabelText('Zobrazovat hosta Cyril');
-    expect(bob).toBeChecked();
-    expect(cyril).not.toBeChecked(); // skrytý host
+    const bob = await screen.findByRole('button', { name: 'Zobrazovat hosta Bob' });
+    const cyril = screen.getByRole('button', { name: 'Zobrazovat hosta Cyril' });
+    expect(bob).toHaveAttribute('aria-pressed', 'true');
+    expect(cyril).toHaveAttribute('aria-pressed', 'false'); // skrytý host
     const save = screen.getByRole('button', { name: 'Uložit' });
     expect(save).toBeDisabled();
 

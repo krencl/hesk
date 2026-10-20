@@ -93,7 +93,7 @@ export function PartyGuestsPage() {
                 ) : (
                   <button
                     type="button"
-                    className="icon-button"
+                    className="icon-button danger"
                     aria-label={`Smazat hosta ${g.name}`}
                     disabled={remove.isPending}
                     onClick={() => window.confirm(`Smazat hosta ${g.name}?`) && remove.mutate(g.id)}
@@ -101,15 +101,17 @@ export function PartyGuestsPage() {
                     <Icon name="delete" />
                   </button>
                 )}
-                <label className="check guest-visible">
-                  <input
-                    type="checkbox"
-                    checked={edited[g.id]?.visible ?? g.visible}
+                <div className="chips guest-visible">
+                  <button
+                    type="button"
+                    className="chip"
+                    aria-pressed={edited[g.id]?.visible ?? g.visible}
                     aria-label={`Zobrazovat hosta ${g.name}`}
-                    onChange={(e) => patchGuest(g.id, { visible: e.target.checked })}
-                  />
-                  Zobrazovat při zápisu
-                </label>
+                    onClick={() => patchGuest(g.id, { visible: !(edited[g.id]?.visible ?? g.visible) })}
+                  >
+                    <Icon name={(edited[g.id]?.visible ?? g.visible) ? 'visibility' : 'visibility_off'} /> Zobrazovat při zápisu
+                  </button>
+                </div>
               </li>
             ))}
           </ul>
