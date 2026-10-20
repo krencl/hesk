@@ -163,7 +163,7 @@ describe('game detail', () => {
 });
 
 describe('new play', () => {
-  const players = [{ id: 1, name: 'Anna', hasAccount: true }, { id: 2, name: 'Petr', hasAccount: true }, { id: 3, name: 'Host', hasAccount: false }];
+  const players = [{ id: 1, name: 'Anna', hasAccount: true, visible: true }, { id: 2, name: 'Petr', hasAccount: true, visible: true }, { id: 3, name: 'Host', hasAccount: false, visible: true }];
   const routes = {
     ...base,
     '/games/1': { body: { ...GAME, addons: [{ id: 5, name: 'Řeka' }] } },
@@ -301,7 +301,7 @@ describe('new play', () => {
   });
 
   it('offers the core players first and guests only after "Přidat hosty"', async () => {
-    const fetchMock = mockApi({ ...routes, 'POST /parties/3/players': { status: 201, body: { id: 4, name: 'Nový', hasAccount: false } } });
+    const fetchMock = mockApi({ ...routes, 'POST /parties/3/players': { status: 201, body: { id: 4, name: 'Nový', hasAccount: false, visible: true } } });
     renderApp('/games/1/new-play');
     await screen.findByRole('heading', { name: 'Nový zápis' });
     expect(screen.getByLabelText('Anna')).toBeInTheDocument();
@@ -318,6 +318,15 @@ describe('new play', () => {
     fireEvent.click(screen.getByLabelText('Host'));
     fireEvent.click(screen.getByRole('button', { name: 'Skrýt hosty' }));
     expect(screen.getByLabelText('Host')).toBeChecked();
+  });
+
+  it('does not offer a hidden guest when adding a play', async () => {
+    mockApi({ ...routes, '/parties/3/players': { body: [...players, { id: 7, name: 'Skrytý', hasAccount: false, visible: false }] } });
+    renderApp('/games/1/new-play');
+    await screen.findByRole('heading', { name: 'Nový zápis' });
+    fireEvent.click(screen.getByRole('button', { name: 'Přidat hosty' }));
+    expect(screen.getByLabelText('Host')).toBeInTheDocument();
+    expect(screen.queryByLabelText('Skrytý')).not.toBeInTheDocument();
   });
 
   it('lets the user pick the winner of a tie and the starting player', async () => {
@@ -357,7 +366,7 @@ describe('new play', () => {
 });
 
 describe('game with characters and an own player', () => {
-  const players = [{ id: 1, name: 'Anna', hasAccount: true }, { id: 2, name: 'Boss', hasAccount: false }, { id: 3, name: 'Host', hasAccount: false }];
+  const players = [{ id: 1, name: 'Anna', hasAccount: true, visible: true }, { id: 2, name: 'Boss', hasAccount: false, visible: true }, { id: 3, name: 'Host', hasAccount: false, visible: true }];
   const game = { ...GAME, id: 1, player: { id: 2, name: 'Boss' }, characters: [{ id: 21, name: 'Gigazaur' }, { id: 22, name: 'Kraken' }] };
   const routes = {
     ...base,

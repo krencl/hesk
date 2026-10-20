@@ -6,9 +6,9 @@ afterEach(() => { vi.unstubAllGlobals(); vi.restoreAllMocks(); sessionStorage.cl
 
 const detail = { ...PARTY, members: [{ userId: 1, nickname: 'Anna', role: 'admin' }] };
 const PLAYERS = [
-  { id: 1, name: 'Anna', hasAccount: true, playCount: 12 },
-  { id: 2, name: 'Bob', hasAccount: false, playCount: 3 },
-  { id: 3, name: 'Cyril', hasAccount: false, playCount: 0 },
+  { id: 1, name: 'Anna', hasAccount: true, visible: true, playCount: 12 },
+  { id: 2, name: 'Bob', hasAccount: false, visible: true, playCount: 3 },
+  { id: 3, name: 'Cyril', hasAccount: false, visible: false, playCount: 0 },
 ];
 const base = {
   '/me': { body: ME },
@@ -32,7 +32,7 @@ describe('party guests (/parties/:id/guests)', () => {
   });
 
   it('renames changed guests only and enables saving just when something changed', async () => {
-    const fetchMock = mockApi({ ...base, 'PATCH /players/2': { body: { id: 2, name: 'Bobík', hasAccount: false } } });
+    const fetchMock = mockApi({ ...base, 'PATCH /players/2': { body: { id: 2, name: 'Bobík', hasAccount: false, visible: true } } });
     renderApp('/parties/3/guests');
     fireEvent.change(await screen.findByLabelText('Jméno hosta Bob'), { target: { value: ' Bobík ' } });
     const save = screen.getByRole('button', { name: 'Uložit' });
@@ -44,6 +44,29 @@ describe('party guests (/parties/:id/guests)', () => {
     expect(fetchMock.mock.calls.filter(([, init]) => init?.method === 'PATCH')).toHaveLength(1);
   });
 
+  it('toggles whether a guest is offered in plays and saves just that change', async () => {
+    const fetchMock = mockApi({ ...base, 'PATCH /players/2': { body: { id: 2, name: 'Bob', hasAccount: false, visible: false } }, 'PATCH /players/3': { body: { id: 3, name: 'Cyril', hasAccount: false, visible: true } } });
+    renderApp('/parties/3/guests');
+    const bob = await screen.findByLabelText('Zobrazovat hosta Bob');
+    const cyril = screen.getByLabelText('Zobrazovat hosta Cyril');
+    expect(bob).toBeChecked();
+    expect(cyril).not.toBeChecked(); // skrytý host
+    const save = screen.getByRole('button', { name: 'Uložit' });
+    expect(save).toBeDisabled();
+
+    fireEvent.click(bob);
+    expect(save).toBeEnabled();
+    fireEvent.click(bob); // vrácení na původní hodnotu není změna
+    expect(save).toBeDisabled();
+
+    fireEvent.click(bob);
+    fireEvent.click(cyril);
+    fireEvent.click(save);
+    await waitFor(() => expect(fetchMock.mock.calls.filter(([, init]) => init?.method === 'PATCH')).toHaveLength(2));
+    const bodies = Object.fromEntries(fetchMock.mock.calls.filter(([, init]) => init?.method === 'PATCH').map(([u, init]) => [String(u), JSON.parse(String(init?.body))]));
+    expect(bodies).toEqual({ '/api/players/2': { visible: false }, '/api/players/3': { visible: true } });
+  });
+
   it('keeps Save disabled while nothing is changed', async () => {
     mockApi(base);
     renderApp('/parties/3/guests');
@@ -52,7 +75,7 @@ describe('party guests (/parties/:id/guests)', () => {
   });
 
   it('adds a new guest, also with Enter', async () => {
-    const fetchMock = mockApi({ ...base, 'POST /parties/3/players': { status: 201, body: { id: 9, name: 'Dora', hasAccount: false, playCount: 0 } } });
+    const fetchMock = mockApi({ ...base, 'POST /parties/3/players': { status: 201, body: { id: 9, name: 'Dora', hasAccount: false, visible: true, playCount: 0 } } });
     renderApp('/parties/3/guests');
     const input = await screen.findByLabelText('Jméno nového hosta');
     expect(screen.getByRole('button', { name: 'Přidat' })).toBeDisabled();

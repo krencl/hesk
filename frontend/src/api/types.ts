@@ -104,6 +104,8 @@ export interface Player {
   id: number;
   name: string;
   hasAccount: boolean;
+  /** Host s `false` se nenabízí ve výběru hráčů při zápisu (už zapsaní hráči zůstávají vidět). */
+  visible: boolean;
   /** Počet zápisů, ve kterých hráč hrál (jen v seznamu hráčů party). */
   playCount: number;
 }

@@ -26,7 +26,7 @@ export const api = {
   removeMember: (partyId: number, userId: number) => del(`/parties/${partyId}/members/${userId}`),
 
   players: (partyId: number) => get<Player[]>(`/parties/${partyId}/players`),
-  renamePlayer: (id: number, name: string) => patch<Player>(`/players/${id}`, { name }),
+  updatePlayer: (id: number, changes: { name?: string; visible?: boolean }) => patch<Player>(`/players/${id}`, changes),
   deletePlayer: (id: number) => del(`/players/${id}`),
   createGuest: (partyId: number, name: string) => post<Player>(`/parties/${partyId}/players`, { name }),
 

@@ -5,9 +5,9 @@ import { GAME, mockApi, ME, PARTY, renderApp } from '../test/helpers';
 afterEach(() => { vi.unstubAllGlobals(); sessionStorage.clear(); });
 
 const PLAYERS = [
-  { id: 1, name: 'Anna', hasAccount: true },
-  { id: 2, name: 'Boss', hasAccount: false },
-  { id: 3, name: 'Host', hasAccount: false },
+  { id: 1, name: 'Anna', hasAccount: true, visible: true },
+  { id: 2, name: 'Boss', hasAccount: false, visible: true },
+  { id: 3, name: 'Host', hasAccount: false, visible: true },
 ];
 const FULL_GAME = {
   ...GAME, id: 5, name: 'King of Tokyo', shortName: 'Tokyo', scoreType: 'winner_only', cheatSheet: '# Pravidla',
@@ -70,7 +70,7 @@ describe('game form (/games/:id/edit)', () => {
   });
 
   it('can remove the own player and create a new one by name', async () => {
-    const fetchMock = mockApi({ ...routes, 'PUT /games/5': { body: FULL_GAME }, 'POST /parties/3/players': { status: 201, body: { id: 9, name: 'T.I.M.E', hasAccount: false } } });
+    const fetchMock = mockApi({ ...routes, 'PUT /games/5': { body: FULL_GAME }, 'POST /parties/3/players': { status: 201, body: { id: 9, name: 'T.I.M.E', hasAccount: false, visible: true } } });
     renderApp('/games/5/edit');
     await waitFor(() => expect(screen.getByLabelText('Hráč hry')).toHaveValue('2'));
 
@@ -80,7 +80,7 @@ describe('game form (/games/:id/edit)', () => {
   });
 
   it('creates a new player for the game when "Nový hráč…" is chosen', async () => {
-    const fetchMock = mockApi({ ...routes, 'PUT /games/5': { body: FULL_GAME }, 'POST /parties/3/players': { status: 201, body: { id: 9, name: 'T.I.M.E', hasAccount: false } } });
+    const fetchMock = mockApi({ ...routes, 'PUT /games/5': { body: FULL_GAME }, 'POST /parties/3/players': { status: 201, body: { id: 9, name: 'T.I.M.E', hasAccount: false, visible: true } } });
     renderApp('/games/5/edit');
     await waitFor(() => expect(screen.getByLabelText('Hráč hry')).toHaveValue('2'));
     fireEvent.change(screen.getByLabelText('Hráč hry'), { target: { value: 'new' } });

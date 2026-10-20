@@ -16,7 +16,8 @@ export function PartyGuestsPage() {
   const queryClient = useQueryClient();
   const detail = useQuery({ queryKey: ['party', id], queryFn: () => api.party(id), retry: false });
   const players = useQuery({ queryKey: ['players', id], queryFn: () => api.players(id), enabled: !!detail.data });
-  const [edited, setEdited] = useState<Record<number, string>>({});
+  // rozpracované změny hostů (jméno, zobrazování), ukládají se najednou tlačítkem Uložit
+  const [edited, setEdited] = useState<Record<number, { name?: string; visible?: boolean }>>({});
   const [newName, setNewName] = useState('');
 
   const refresh = () => queryClient.invalidateQueries({ queryKey: ['players', id] });
@@ -28,11 +29,20 @@ export function PartyGuestsPage() {
     },
   });
   const guests = (players.data ?? []).filter((p) => !p.hasAccount);
-  const changed = guests.filter((g) => edited[g.id] !== undefined && edited[g.id].trim() !== g.name);
+  const patchGuest = (id: number, changes: { name?: string; visible?: boolean }) => setEdited((all) => ({ ...all, [id]: { ...all[id], ...changes } }));
+  // jen skutečně změněná pole (vrácení na původní hodnotu není změna)
+  const changesOf = (g: { id: number; name: string; visible: boolean }) => {
+    const e = edited[g.id] ?? {};
+    return {
+      ...(e.name !== undefined && e.name.trim() !== g.name ? { name: e.name.trim() } : {}),
+      ...(e.visible !== undefined && e.visible !== g.visible ? { visible: e.visible } : {}),
+    };
+  };
+  const changed = guests.filter((g) => Object.keys(changesOf(g)).length > 0);
   const save = useMutation({
     // po jednom, ať se při chybě (např. obsazené jméno) ukáže hned a zbytek se nezmění
     mutationFn: async () => {
-      for (const g of changed) await api.renamePlayer(g.id, edited[g.id].trim());
+      for (const g of changed) await api.updatePlayer(g.id, changesOf(g));
     },
     onSuccess: () => setEdited({}),
     onSettled: refresh,
@@ -64,7 +74,7 @@ export function PartyGuestsPage() {
     <section className="page party-guests">
       <PartyHeader party={detail.data} />
       <form className="pad form" onSubmit={submit}>
-        <p className="muted">Hosté jsou hráči bez účtu, které zapisuješ do her. Člen, který z party odejde, se stane hostem.</p>
+        <p className="muted">Hosté jsou hráči bez účtu, které zapisuješ do her. Skrytý host se při zápisu hry nenabízí (ve starých zápisech zůstává). Člen, který z party odejde, se stane hostem.</p>
         {players.isPending && <ListSkeleton rows={2} withImage={false} />}
         {players.data && guests.length === 0 && <p className="empty">Zatím tu nejsou žádní hosté.</p>}
         {guests.length > 0 && (
@@ -72,11 +82,11 @@ export function PartyGuestsPage() {
             {guests.map((g) => (
               <li key={g.id} className="guest-row">
                 <input
-                  value={edited[g.id] ?? g.name}
+                  value={edited[g.id]?.name ?? g.name}
                   maxLength={100}
                   required
                   aria-label={`Jméno hosta ${g.name}`}
-                  onChange={(e) => setEdited({ ...edited, [g.id]: e.target.value })}
+                  onChange={(e) => patchGuest(g.id, { name: e.target.value })}
                 />
                 {g.playCount > 0 ? (
                   <span className="guest-plays muted">{playsLabel(g.playCount)}</span>
@@ -91,6 +101,15 @@ export function PartyGuestsPage() {
                     <Icon name="delete" />
                   </button>
                 )}
+                <label className="check guest-visible">
+                  <input
+                    type="checkbox"
+                    checked={edited[g.id]?.visible ?? g.visible}
+                    aria-label={`Zobrazovat hosta ${g.name}`}
+                    onChange={(e) => patchGuest(g.id, { visible: e.target.checked })}
+                  />
+                  Zobrazovat při zápisu
+                </label>
               </li>
             ))}
           </ul>

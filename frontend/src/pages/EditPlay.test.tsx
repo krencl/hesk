@@ -5,7 +5,7 @@ import { GAME, mockApi, ME, PARTY, PLAY, renderApp } from '../test/helpers';
 
 afterEach(() => { vi.unstubAllGlobals(); sessionStorage.clear(); });
 
-const PLAYERS = [{ id: 1, name: 'Anna', hasAccount: true }, { id: 2, name: 'Petr', hasAccount: false }, { id: 3, name: 'Eva', hasAccount: false }];
+const PLAYERS = [{ id: 1, name: 'Anna', hasAccount: true, visible: true }, { id: 2, name: 'Petr', hasAccount: false, visible: true }, { id: 3, name: 'Eva', hasAccount: false, visible: true }];
 // Anna je hlavní hráč, Petr (vybraný) a Eva (nevybraná) jsou hosté
 const PLAY_FULL = { ...PLAY, addons: [{ id: 5, name: 'Řeka' }], tags: ['rodinná', 'liga'], notes: 'Skvělá hra', endedAt: '2022-02-06T21:36:00+00:00' };
 const routes = {
@@ -41,6 +41,16 @@ describe('edit play (/plays/:id/edit)', () => {
     expect(screen.getByLabelText('Začátek')).toHaveValue(toLocalInput(new Date(PLAY_FULL.startedAt)));
     expect(screen.getByLabelText('Konec')).toHaveValue(toLocalInput(new Date(PLAY_FULL.endedAt)));
     expect(screen.getByRole('link', { name: 'Zrušit' })).toHaveAttribute('href', '/games/1');
+  });
+
+  it('keeps a hidden guest who already has a result in the edited play, and offers no other hidden guest', async () => {
+    const players = [PLAYERS[0], { ...PLAYERS[1], visible: false }, { ...PLAYERS[2], visible: false }];
+    mockApi({ ...routes, '/parties/3/players': { body: players } });
+    renderApp('/plays/9/edit');
+    expect(await screen.findByLabelText('Petr')).toBeChecked(); // skrytý, ale v zápisu hraje → zůstává
+    expect(screen.getByLabelText('Skóre Petr')).toHaveValue('75');
+    fireEvent.click(screen.getByRole('button', { name: 'Přidat hosty' }));
+    expect(screen.queryByLabelText('Eva')).not.toBeInTheDocument(); // skrytý a v zápisu nehraje → nenabízí se
   });
 
   it('saves the changes with PUT and returns to the game', async () => {
