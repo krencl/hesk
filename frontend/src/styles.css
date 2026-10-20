@@ -79,7 +79,7 @@ hr { border: 0; border-top: 1px solid rgba(0, 0, 0, 0.15); margin: 1rem 0; }
   display: grid; place-items: center;
   border: 0; border-radius: 50%;
   background: var(--main); color: #fff; font: inherit; font-size: 1.1rem; line-height: 1;
-  box-shadow: 0 0 0 0.2rem rgba(255, 255, 255, 0);
+  box-shadow: 0 0 0 0.2rem rgba(255, 255, 255, 0.8);
   cursor: pointer; transition: box-shadow 0.2s, background-color 0.2s;
 }
 .header-button:hover { box-shadow: 0 0 0 0.3rem var(--gray); }
