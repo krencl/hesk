@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Legacy;
 
+use App\Domain\PartyShortName;
 use Doctrine\DBAL\Connection;
 
 /**
@@ -174,7 +175,7 @@ final class LegacyImporter
                 fn () => $this->findId('SELECT id FROM party WHERE id = ? AND name = ?', [(int) $p['id'], $name]),
                 ['name' => $name],
                 (int) $p['id'],
-                $this->createdAt($p['created_at']),
+                $this->createdAt($p['created_at']) + ['short_name' => PartyShortName::generate($name)],
             );
         }
 

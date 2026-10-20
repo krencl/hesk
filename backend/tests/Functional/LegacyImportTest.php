@@ -131,6 +131,7 @@ final class LegacyImportTest extends KernelTestCase
         $report = $this->import();
 
         self::assertSame(2, $report->entities['user']['created']);
+        self::assertSame(['Pá', 'Ví'], array_column($this->rows('SELECT short_name FROM party ORDER BY id'), 'short_name'), 'party short names are generated from the names');
         self::assertSame(['Anna', 'Bob'], array_column($this->rows('SELECT nickname FROM app_user ORDER BY id'), 'nickname'), 'nicknames come from the linked legacy player');
         self::assertSame([['role' => 'admin'], ['role' => 'member'], ['role' => 'admin']], $this->rows('SELECT role FROM party_member ORDER BY party_id, user_id'), 'owner -> admin');
 
@@ -199,7 +200,7 @@ final class LegacyImportTest extends KernelTestCase
         $this->import();
         // věci vzniklé jen v nové aplikaci
         $this->target->insert('app_user', ['email' => 'nova@example.com', 'nickname' => 'Nova', 'created_at' => '2026-01-01 00:00:00']);
-        $this->target->insert('party', ['name' => 'Jen v nové', 'created_at' => '2026-01-01 00:00:00']);
+        $this->target->insert('party', ['name' => 'Jen v nové', 'short_name' => 'Je', 'created_at' => '2026-01-01 00:00:00']);
         $newParty = (int) $this->target->lastInsertId();
 
         // úpravy ve staré aplikaci: změněné skóre, přejmenování, nová postava, nový zápis, smazaný zápis
@@ -212,8 +213,11 @@ final class LegacyImportTest extends KernelTestCase
         $this->legacy->delete('tag_round', ['round_id' => 1001]);
         $this->legacy->delete('round_player', ['round_id' => 1002]);
         $this->legacy->delete('round', ['id' => 1002]);
+        $this->target->update('party', ['short_name' => 'PTK'], ['name' => 'Pátek']);
 
         $report = $this->import();
+
+        self::assertSame('PTK', $this->target->fetchOne("SELECT short_name FROM party WHERE name = 'Pátek'"), 'a short name edited in the new app is not overwritten');
 
         self::assertSame(1, $report->entities['play']['created']);
         self::assertSame(1, $report->entities['play']['deleted']);
@@ -264,7 +268,7 @@ final class LegacyImportTest extends KernelTestCase
         $this->target->insert('app_user', ['email' => 'Anna@Example.com', 'nickname' => 'Annie', 'google_id' => 'g-123', 'created_at' => '2025-05-05 05:05:05']);
         $existingUser = (int) $this->target->lastInsertId();
         // zápis nové aplikace obsadil id, které má ve staré aplikaci jiný zápis
-        $this->target->insert('party', ['id' => 50, 'name' => 'Cizí', 'created_at' => '2025-01-01 00:00:00']);
+        $this->target->insert('party', ['id' => 50, 'name' => 'Cizí', 'short_name' => 'Ci', 'created_at' => '2025-01-01 00:00:00']);
         $this->target->insert('game', ['party_id' => 50, 'name' => 'Cizí hra', 'score_type' => 'most_points']);
         $gameId = (int) $this->target->lastInsertId();
         $this->target->insert('game_session', ['party_id' => 50, 'number' => 1, 'started_at' => '2025-01-01 00:00:00', 'ended_at' => '2025-01-01 00:00:00']);

@@ -44,15 +44,18 @@ final class ApiFlowTest extends WebTestCase
     {
         $this->login('anna@example.com', 'Anna');
         $party = $this->api('POST', '/api/parties', ['name' => 'Pátek'], 201);
-        self::assertNull($party['shortName']);
+        self::assertSame('Pá', $party['shortName'], 'zkratka se při založení vygeneruje z názvu');
+        self::assertSame('VM', $this->api('POST', '/api/parties', ['name' => 'Viki + Marek'], 201)['shortName']);
         $invite = $this->api('POST', "/api/parties/{$party['id']}/invitations", null, 201);
 
         $edited = $this->api('PATCH', "/api/parties/{$party['id']}", ['name' => ' Pátek večer ', 'shortName' => 'PV']);
         self::assertSame(['Pátek večer', 'PV'], [$edited['name'], $edited['shortName']]);
         self::assertSame('PV', $this->api('GET', '/api/parties')[0]['shortName']);
+        self::assertSame('PV', $this->api('PATCH', "/api/parties/{$party['id']}", ['name' => 'Pátek večer', 'shortName' => ' PV '])['shortName'], 'zkratka se ořezává');
 
-        // prázdná zkratka = žádná, příliš dlouhá nebo prázdný název se odmítne
-        self::assertNull($this->api('PATCH', "/api/parties/{$party['id']}", ['name' => 'Pátek večer', 'shortName' => '  '])['shortName']);
+        // zkratka je povinná (1–3 znaky), stejně jako název
+        $this->api('PATCH', "/api/parties/{$party['id']}", ['name' => 'Pátek večer', 'shortName' => '  '], 422);
+        $this->api('PATCH', "/api/parties/{$party['id']}", ['name' => 'Pátek večer'], 422);
         $this->api('PATCH', "/api/parties/{$party['id']}", ['name' => 'Pátek', 'shortName' => 'ABCD'], 422);
         $this->api('PATCH', "/api/parties/{$party['id']}", ['name' => ' '], 422);
         $this->api('POST', '/api/parties', ['name' => '   '], 422);

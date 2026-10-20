@@ -7,7 +7,6 @@ import { ApiError } from '../api/client';
 import { Actions } from '../components/Actions';
 import { ErrorMessage } from '../components/ErrorMessage';
 import { PageTitle } from '../components/PageTitle';
-import { deriveShortcut } from '../lib/partyShortcut';
 import { ListSkeleton } from '../components/Skeleton';
 
 /** Detail party: členové a jejich role, pozvánky a opuštění party. Seznam part a zakládání jsou ve správě part. */
@@ -26,7 +25,7 @@ export function PartyDetailPage() {
     onSuccess: (r) => setInviteLink(`${window.location.origin}/join/${r.token}`),
   });
   const update = useMutation({
-    mutationFn: (v: { name: string; shortName: string }) => api.updateParty(id, { name: v.name.trim(), shortName: v.shortName.trim() || null }),
+    mutationFn: (v: { name: string; shortName: string }) => api.updateParty(id, { name: v.name.trim(), shortName: v.shortName.trim() }),
     onSuccess: async () => {
       await refresh();
       setEdit(null);
@@ -66,12 +65,12 @@ export function PartyDetailPage() {
             <label>Název<input value={edit.name} maxLength={100} required onChange={(e) => setEdit({ ...edit, name: e.target.value })} /></label>
             <label>
               Zkratka
-              <input value={edit.shortName} maxLength={3} placeholder={deriveShortcut(edit.name)} onChange={(e) => setEdit({ ...edit, shortName: e.target.value })} />
-              <small className="muted">Je v kulatém tlačítku v hlavičce; bez ní se odvodí z názvu.</small>
+              <input value={edit.shortName} maxLength={3} required onChange={(e) => setEdit({ ...edit, shortName: e.target.value })} />
+              <small className="muted">1–3 znaky v kulatém tlačítku v hlavičce.</small>
             </label>
             <ErrorMessage error={update.error} />
             <Actions>
-              <button className="btn" type="submit" disabled={update.isPending || !edit.name.trim()}>Uložit</button>
+              <button className="btn" type="submit" disabled={update.isPending || !edit.name.trim() || !edit.shortName.trim()}>Uložit</button>
               <button className="btn outline-secondary" type="button" onClick={() => { setEdit(null); update.reset(); }}>Zrušit</button>
             </Actions>
           </form>
@@ -110,7 +109,7 @@ export function PartyDetailPage() {
         )}
         <Actions>
           {isAdmin && <button type="button" className="btn" onClick={() => invite.mutate()}>Pozvat hráče</button>}
-          {isAdmin && !edit && <button type="button" className="btn outline" onClick={() => setEdit({ name: party.name, shortName: party.shortName ?? '' })}>Upravit partu</button>}
+          {isAdmin && !edit && <button type="button" className="btn outline" onClick={() => setEdit({ name: party.name, shortName: party.shortName })}>Upravit partu</button>}
           <Link className="btn outline-secondary" to="/parties">Správa part</Link>
         </Actions>
       </div>

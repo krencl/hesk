@@ -21,6 +21,15 @@ final class PartyTest extends TestCase
         self::assertCount(1, $party->getMembers());
     }
 
+    public function testShortNameIsGeneratedFromTheNameAndCanBeChanged(): void
+    {
+        $party = Party::create('Viki a Marek', new User('g1', 'a@example.com'));
+        self::assertSame('VM', $party->getShortName());
+
+        $party->update(' Pátek ', ' PTK ');
+        self::assertSame(['Pátek', 'PTK'], [$party->getName(), $party->getShortName()]);
+    }
+
     public function testAddMemberIsIdempotent(): void
     {
         $creator = new User('g1', 'a@example.com');

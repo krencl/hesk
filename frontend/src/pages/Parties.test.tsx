@@ -4,8 +4,8 @@ import { GAME, mockApi, ME, PARTY, renderApp } from '../test/helpers';
 
 afterEach(() => { vi.unstubAllGlobals(); vi.restoreAllMocks(); sessionStorage.clear(); localStorage.clear(); });
 
-const MEMBER_PARTY = { id: 4, name: 'Víkend', role: 'member' };
-const detail = (party: { id: number; name: string; role: string }, members = [
+const MEMBER_PARTY = { id: 4, name: 'Víkend', shortName: 'Ví', role: 'member' };
+const detail = (party: { id: number; name: string; shortName: string; role: string }, members = [
   { userId: 1, nickname: 'Anna', role: party.role },
   { userId: 2, nickname: 'Petr', role: 'member' },
 ]) => ({ ...party, members });
@@ -43,7 +43,7 @@ describe('party management (/parties)', () => {
   });
 
   it('creates a party and opens its detail', async () => {
-    const created = { id: 9, name: 'Nová', role: 'admin' };
+    const created = { id: 9, name: 'Nová', shortName: 'No', role: 'admin' };
     const fetchMock = mockApi({
       ...base,
       'POST /parties': { status: 201, body: detail(created, [{ userId: 1, nickname: 'Anna', role: 'admin' }]) },
@@ -83,11 +83,9 @@ describe('party detail (/parties/:id)', () => {
     renderApp('/parties/3');
     fireEvent.click(await screen.findByRole('button', { name: 'Upravit partu' }));
     expect(screen.getByLabelText('Název')).toHaveValue('Pátek');
-    expect(screen.getByLabelText(/Zkratka/)).toHaveValue('');
-    expect(screen.getByLabelText(/Zkratka/)).toHaveAttribute('placeholder', 'Pá'); // odvozená zkratka
+    expect(screen.getByLabelText(/Zkratka/)).toHaveValue('Pá'); // zkratka vygenerovaná při založení
     fireEvent.change(screen.getByLabelText('Název'), { target: { value: ' Pátek večer ' } });
-    expect(screen.getByLabelText(/Zkratka/)).toHaveAttribute('placeholder', 'PV');
-    fireEvent.change(screen.getByLabelText(/Zkratka/), { target: { value: 'PTK' } });
+    fireEvent.change(screen.getByLabelText(/Zkratka/), { target: { value: ' PTK ' } });
     fireEvent.click(screen.getByRole('button', { name: 'Uložit' }));
 
     await waitFor(() => expect(fetchMock.mock.calls.some(([u, init]) => String(u) === '/api/parties/3' && init?.method === 'PATCH')).toBe(true));
@@ -102,19 +100,20 @@ describe('party detail (/parties/:id)', () => {
     expect(await screen.findByRole('button', { name: /Menu – Pátek/ })).toHaveTextContent('PTK');
   });
 
-  it('sends no short name when the field is empty and lets the admin cancel', async () => {
-    const fetchMock = mockApi({ ...base, '/parties/3': { body: detail({ ...PARTY, shortName: 'PTK' } as typeof PARTY) }, 'PATCH /parties/3': { body: detail(PARTY) } });
+  it('requires a short name (at least one character) and lets the admin cancel', async () => {
+    const fetchMock = mockApi({ ...base, '/parties/3': { body: detail(PARTY) }, 'PATCH /parties/3': { body: detail(PARTY) } });
     renderApp('/parties/3');
     fireEvent.click(await screen.findByRole('button', { name: 'Upravit partu' }));
-    expect(screen.getByLabelText(/Zkratka/)).toHaveValue('PTK');
     fireEvent.click(screen.getByRole('button', { name: 'Zrušit' }));
     expect(screen.queryByLabelText('Název')).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('button', { name: 'Upravit partu' }));
-    fireEvent.change(screen.getByLabelText(/Zkratka/), { target: { value: '' } });
-    fireEvent.click(screen.getByRole('button', { name: 'Uložit' }));
-    await waitFor(() => expect(fetchMock.mock.calls.some(([, init]) => init?.method === 'PATCH')).toBe(true));
-    expect(JSON.parse(String(fetchMock.mock.calls.find(([, init]) => init?.method === 'PATCH')![1]?.body))).toEqual({ name: 'Pátek', shortName: null });
+    fireEvent.change(screen.getByLabelText(/Zkratka/), { target: { value: '  ' } });
+    expect(screen.getByLabelText(/Zkratka/)).toBeRequired();
+    expect(screen.getByRole('button', { name: 'Uložit' })).toBeDisabled();
+    fireEvent.change(screen.getByLabelText(/Zkratka/), { target: { value: 'X' } });
+    expect(screen.getByRole('button', { name: 'Uložit' })).toBeEnabled();
+    expect(fetchMock.mock.calls.some(([, init]) => init?.method === 'PATCH')).toBe(false);
   });
 
   it('gives a plain member no admin actions but offers leaving, and can switch to a non-active party', async () => {

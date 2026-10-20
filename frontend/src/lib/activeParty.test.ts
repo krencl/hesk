@@ -2,8 +2,8 @@ import { describe, expect, it } from 'vitest';
 import { loadActivePartyId, resolveActiveParty, saveActivePartyId } from './activeParty';
 
 const parties = [
-  { id: 1, name: 'A', role: 'admin' as const },
-  { id: 2, name: 'B', role: 'member' as const },
+  { id: 1, name: 'A', shortName: 'A', role: 'admin' as const },
+  { id: 2, name: 'B', shortName: 'B', role: 'member' as const },
 ];
 
 describe('active party storage', () => {

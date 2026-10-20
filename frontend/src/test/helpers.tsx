@@ -37,7 +37,7 @@ export function renderApp(path = '/') {
 }
 
 export const ME = { id: 1, nickname: 'Anna', email: 'a@b.cz', hasNickname: true };
-export const PARTY = { id: 3, name: 'Pátek', role: 'admin' };
+export const PARTY = { id: 3, name: 'Pátek', shortName: 'Pá', role: 'admin' };
 
 export const GAME = {
   id: 1, name: 'Carcassonne', shortName: null, scoreType: 'most_points', imageUrl: null, description: null, cheatSheet: null, addons: [], characters: [], player: null,

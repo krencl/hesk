@@ -3,7 +3,6 @@ import { useState } from 'react';
 import { Link, NavLink, Outlet, useLocation } from 'react-router-dom';
 import { useApp } from '../AppContext';
 import { api } from '../api';
-import { partyShortcut } from '../lib/partyShortcut';
 import { Icon } from './Icon';
 
 export function Layout() {
@@ -26,7 +25,7 @@ export function Layout() {
     window.location.assign('/');
   };
 
-  const shortcut = activeParty ? partyShortcut(activeParty) : '?';
+  const shortcut = activeParty ? activeParty.shortName : '?';
   const toggleMenu = () => {
     setMenuOpen(!menuOpen);
     setChangingParty(false);

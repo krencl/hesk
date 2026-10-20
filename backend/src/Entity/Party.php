@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Entity;
 
 use App\Domain\Exception\DomainException;
+use App\Domain\PartyShortName;
 use App\Enum\PartyRole;
 use App\Repository\PartyRepository;
 use Doctrine\Common\Collections\ArrayCollection;
@@ -14,17 +15,11 @@ use Doctrine\ORM\Mapping as ORM;
 #[ORM\Entity(repositoryClass: PartyRepository::class)]
 class Party
 {
-    public const SHORT_NAME_MAX = 3;
-
     #[ORM\Id, ORM\GeneratedValue, ORM\Column]
     private ?int $id = null;
 
     #[ORM\Column]
     private \DateTimeImmutable $createdAt;
-
-    /** Zkratka do kulatého tlačítka v hlavičce; bez ní se odvodí z názvu. */
-    #[ORM\Column(length: self::SHORT_NAME_MAX, nullable: true)]
-    private ?string $shortName = null;
 
     /** @var Collection<int, PartyMember> */
     #[ORM\OneToMany(targetEntity: PartyMember::class, mappedBy: 'party', cascade: ['persist', 'remove'], orphanRemoval: true)]
@@ -37,6 +32,9 @@ class Party
     private function __construct(
         #[ORM\Column(length: 100)]
         private string $name,
+        /** Zkratka do kulatého tlačítka v hlavičce (1–3 znaky). */
+        #[ORM\Column(length: PartyShortName::MAX_LENGTH)]
+        private string $shortName,
     ) {
         $this->createdAt = new \DateTimeImmutable();
         $this->members = new ArrayCollection();
@@ -46,7 +44,7 @@ class Party
     /** Zakladatel se automaticky stává adminem. */
     public static function create(string $name, User $creator): self
     {
-        $party = new self($name);
+        $party = new self($name, PartyShortName::generate($name));
         $party->members->add(new PartyMember($party, $creator, PartyRole::Admin));
         $party->ensurePlayerFor($creator);
 
@@ -63,16 +61,15 @@ class Party
         return $this->name;
     }
 
-    public function getShortName(): ?string
+    public function getShortName(): string
     {
         return $this->shortName;
     }
 
-    /** Přejmenuje partu; prázdná zkratka = žádná (odvodí se z názvu). */
-    public function update(string $name, ?string $shortName): void
+    public function update(string $name, string $shortName): void
     {
         $this->name = trim($name);
-        $this->shortName = null !== $shortName && '' !== trim($shortName) ? trim($shortName) : null;
+        $this->shortName = trim($shortName);
     }
 
     public function getCreatedAt(): \DateTimeImmutable
