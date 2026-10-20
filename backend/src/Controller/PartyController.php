@@ -6,6 +6,7 @@ namespace App\Controller;
 
 use App\Dto\ChangeRoleRequest;
 use App\Dto\CreatePartyRequest;
+use App\Dto\UpdatePartyRequest;
 use App\Entity\Party;
 use App\Entity\PartyInvitation;
 use App\Entity\User;
@@ -53,9 +54,9 @@ final class PartyController extends ApiController
 
     #[Route('/api/parties/{id}', requirements: ['id' => '\d+'], methods: ['PATCH'])]
     #[IsGranted(PartyVoter::ADMIN, 'party')]
-    public function rename(Party $party, #[MapRequestPayload] CreatePartyRequest $req): JsonResponse
+    public function update(Party $party, #[MapRequestPayload] UpdatePartyRequest $req): JsonResponse
     {
-        $party->rename(trim($req->name));
+        $party->update($req->name, $req->shortName);
         $this->em->flush();
 
         return new JsonResponse($this->presenter->partyDetail($party, $this->currentUser()));

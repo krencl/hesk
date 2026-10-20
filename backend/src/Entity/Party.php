@@ -14,11 +14,17 @@ use Doctrine\ORM\Mapping as ORM;
 #[ORM\Entity(repositoryClass: PartyRepository::class)]
 class Party
 {
+    public const SHORT_NAME_MAX = 3;
+
     #[ORM\Id, ORM\GeneratedValue, ORM\Column]
     private ?int $id = null;
 
     #[ORM\Column]
     private \DateTimeImmutable $createdAt;
+
+    /** Zkratka do kulatého tlačítka v hlavičce; bez ní se odvodí z názvu. */
+    #[ORM\Column(length: self::SHORT_NAME_MAX, nullable: true)]
+    private ?string $shortName = null;
 
     /** @var Collection<int, PartyMember> */
     #[ORM\OneToMany(targetEntity: PartyMember::class, mappedBy: 'party', cascade: ['persist', 'remove'], orphanRemoval: true)]
@@ -57,9 +63,16 @@ class Party
         return $this->name;
     }
 
-    public function rename(string $name): void
+    public function getShortName(): ?string
     {
-        $this->name = $name;
+        return $this->shortName;
+    }
+
+    /** Přejmenuje partu; prázdná zkratka = žádná (odvodí se z názvu). */
+    public function update(string $name, ?string $shortName): void
+    {
+        $this->name = trim($name);
+        $this->shortName = null !== $shortName && '' !== trim($shortName) ? trim($shortName) : null;
     }
 
     public function getCreatedAt(): \DateTimeImmutable

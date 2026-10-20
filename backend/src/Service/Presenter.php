@@ -25,7 +25,7 @@ final class Presenter
 
     public function party(Party $party, ?User $viewer = null): array
     {
-        $data = ['id' => $party->getId(), 'name' => $party->getName()];
+        $data = ['id' => $party->getId(), 'name' => $party->getName(), 'shortName' => $party->getShortName()];
         if ($viewer) {
             $data['role'] = $party->findMember($viewer)?->getRole()->value;
         }

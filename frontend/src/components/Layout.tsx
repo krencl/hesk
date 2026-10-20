@@ -26,7 +26,7 @@ export function Layout() {
     window.location.assign('/');
   };
 
-  const shortcut = activeParty ? partyShortcut(activeParty.name) : '?';
+  const shortcut = activeParty ? partyShortcut(activeParty) : '?';
   const toggleMenu = () => {
     setMenuOpen(!menuOpen);
     setChangingParty(false);
@@ -40,7 +40,7 @@ export function Layout() {
         </Link>
         <button
           type="button"
-          className={`header-button size-${Math.min(shortcut.length, 2)}${menuOpen ? ' open' : ''}${loading ? ' loading' : ''}`}
+          className={`header-button size-${Math.min(shortcut.length, 3)}${menuOpen ? ' open' : ''}${loading ? ' loading' : ''}`}
           aria-label={menuOpen ? 'Zavřít menu' : `Menu – ${activeParty?.name ?? 'žádná parta'}`}
           aria-expanded={menuOpen}
           onClick={toggleMenu}

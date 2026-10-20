@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useState } from 'react';
+import { type FormEvent, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useApp } from '../AppContext';
 import { api } from '../api';
@@ -7,6 +7,7 @@ import { ApiError } from '../api/client';
 import { Actions } from '../components/Actions';
 import { ErrorMessage } from '../components/ErrorMessage';
 import { PageTitle } from '../components/PageTitle';
+import { deriveShortcut } from '../lib/partyShortcut';
 import { ListSkeleton } from '../components/Skeleton';
 
 /** Detail party: členové a jejich role, pozvánky a opuštění party. Seznam part a zakládání jsou ve správě part. */
@@ -16,12 +17,20 @@ export function PartyDetailPage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [inviteLink, setInviteLink] = useState<string | null>(null);
+  const [edit, setEdit] = useState<{ name: string; shortName: string } | null>(null);
   const detail = useQuery({ queryKey: ['party', id], queryFn: () => api.party(id), retry: false });
   const refresh = () => Promise.all([queryClient.invalidateQueries({ queryKey: ['parties'] }), queryClient.invalidateQueries({ queryKey: ['party'] })]);
 
   const invite = useMutation({
     mutationFn: () => api.invite(id),
     onSuccess: (r) => setInviteLink(`${window.location.origin}/join/${r.token}`),
+  });
+  const update = useMutation({
+    mutationFn: (v: { name: string; shortName: string }) => api.updateParty(id, { name: v.name.trim(), shortName: v.shortName.trim() || null }),
+    onSuccess: async () => {
+      await refresh();
+      setEdit(null);
+    },
   });
   const changeRole = useMutation({ mutationFn: (v: { userId: number; role: 'admin' | 'member' }) => api.changeRole(id, v.userId, v.role), onSuccess: refresh });
   const remove = useMutation({
@@ -49,12 +58,24 @@ export function PartyDetailPage() {
     <section className="page party-detail">
       <PageTitle>{party.name}</PageTitle>
       <div className="pad">
-        <p className="muted">
-          {isAdmin ? 'Jsi admin této party.' : 'Jsi člen této party.'}
-          {party.id !== activeParty?.id && (
-            <> <button type="button" className="link" onClick={() => setActiveParty(party.id)}>Přepnout na tuto partu</button></>
-          )}
-        </p>
+        {party.id !== activeParty?.id && (
+          <p className="muted"><button type="button" className="link" onClick={() => setActiveParty(party.id)}>Přepnout na tuto partu</button></p>
+        )}
+        {isAdmin && edit && (
+          <form className="form party-edit" onSubmit={(e: FormEvent) => { e.preventDefault(); update.mutate(edit); }}>
+            <label>Název<input value={edit.name} maxLength={100} required onChange={(e) => setEdit({ ...edit, name: e.target.value })} /></label>
+            <label>
+              Zkratka
+              <input value={edit.shortName} maxLength={3} placeholder={deriveShortcut(edit.name)} onChange={(e) => setEdit({ ...edit, shortName: e.target.value })} />
+              <small className="muted">Je v kulatém tlačítku v hlavičce; bez ní se odvodí z názvu.</small>
+            </label>
+            <ErrorMessage error={update.error} />
+            <Actions>
+              <button className="btn" type="submit" disabled={update.isPending || !edit.name.trim()}>Uložit</button>
+              <button className="btn outline-secondary" type="button" onClick={() => { setEdit(null); update.reset(); }}>Zrušit</button>
+            </Actions>
+          </form>
+        )}
         <h3>Členové</h3>
         <ErrorMessage error={changeRole.error ?? remove.error} />
       </div>
@@ -89,6 +110,7 @@ export function PartyDetailPage() {
         )}
         <Actions>
           {isAdmin && <button type="button" className="btn" onClick={() => invite.mutate()}>Pozvat hráče</button>}
+          {isAdmin && !edit && <button type="button" className="btn outline" onClick={() => setEdit({ name: party.name, shortName: party.shortName ?? '' })}>Upravit partu</button>}
           <Link className="btn outline-secondary" to="/parties">Správa part</Link>
         </Actions>
       </div>

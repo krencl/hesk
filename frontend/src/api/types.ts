@@ -11,6 +11,8 @@ export interface Me {
 export interface Party {
   id: number;
   name: string;
+  /** Zkratka do tlačítka v hlavičce; bez ní se odvodí z názvu. */
+  shortName?: string | null;
   role: PartyRole;
 }
 

@@ -40,6 +40,29 @@ final class ApiFlowTest extends WebTestCase
         return $this->api('POST', '/api/auth/dev-login', ['email' => $email, 'nickname' => $nick]);
     }
 
+    public function testAdminCanEditPartyNameAndShortName(): void
+    {
+        $this->login('anna@example.com', 'Anna');
+        $party = $this->api('POST', '/api/parties', ['name' => 'Pátek'], 201);
+        self::assertNull($party['shortName']);
+        $invite = $this->api('POST', "/api/parties/{$party['id']}/invitations", null, 201);
+
+        $edited = $this->api('PATCH', "/api/parties/{$party['id']}", ['name' => ' Pátek večer ', 'shortName' => 'PV']);
+        self::assertSame(['Pátek večer', 'PV'], [$edited['name'], $edited['shortName']]);
+        self::assertSame('PV', $this->api('GET', '/api/parties')[0]['shortName']);
+
+        // prázdná zkratka = žádná, příliš dlouhá nebo prázdný název se odmítne
+        self::assertNull($this->api('PATCH', "/api/parties/{$party['id']}", ['name' => 'Pátek večer', 'shortName' => '  '])['shortName']);
+        $this->api('PATCH', "/api/parties/{$party['id']}", ['name' => 'Pátek', 'shortName' => 'ABCD'], 422);
+        $this->api('PATCH', "/api/parties/{$party['id']}", ['name' => ' '], 422);
+        $this->api('POST', '/api/parties', ['name' => '   '], 422);
+
+        // běžný člen partu upravit nemůže
+        $this->login('bob@example.com', 'Bob');
+        $this->api('POST', "/api/invitations/{$invite['token']}/accept");
+        $this->api('PATCH', "/api/parties/{$party['id']}", ['name' => 'Cizí'], 403);
+    }
+
     public function testRequiresAuthentication(): void
     {
         $this->api('GET', '/api/parties', expected: 401);
