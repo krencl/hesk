@@ -81,12 +81,12 @@ export function PartyDetailPage() {
             <input readOnly value={inviteLink} onFocus={(e) => e.currentTarget.select()} aria-label="Odkaz pozvánky" />
           </p>
         )}
-        <Actions>
-          {isAdmin && <button type="button" className="btn" onClick={() => invite.mutate()}>Pozvat hráče</button>}
-          {isAdmin && <Link className="btn outline" to={`/parties/${party.id}/edit`}>Upravit partu</Link>}
-          <Link className="btn outline-secondary" to="/parties">Správa part</Link>
-        </Actions>
       </div>
+      <Actions>
+        {isAdmin && <button type="button" className="btn" onClick={() => invite.mutate()}>Pozvat hráče</button>}
+        {isAdmin && <Link className="btn outline" to={`/parties/${party.id}/edit`}>Upravit partu</Link>}
+        <Link className="btn outline-secondary" to="/parties">Správa part</Link>
+      </Actions>
     </section>
   );
 }

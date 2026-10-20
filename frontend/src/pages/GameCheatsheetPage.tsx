@@ -20,9 +20,7 @@ export function GameCheatsheetPage() {
       <div className="cheatsheet">
         {game.data.cheatSheet ? <SafeHtml html={renderCheatSheet(game.data.cheatSheet)} /> : <p className="muted">Tahle hra nemá cheatsheet.</p>}
       </div>
-      <div className="pad">
-        <Actions><Link className="btn outline-secondary" to={`/games/${id}`}>Zpět</Link></Actions>
-      </div>
+      <Actions><Link className="btn outline-secondary" to={`/games/${id}`}>Zpět</Link></Actions>
     </section>
   );
 }

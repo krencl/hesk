@@ -74,13 +74,11 @@ export function GameDetailPage() {
         label={`Načíst další záznamy${remaining > 0 ? ` (zbývá ${remaining})` : ''}`}
       />
 
-      <div className="pad">
-        <Actions>
-          <Link className="btn" to={`/games/${id}/new-play`}>Nový zápis</Link>
-          {game.data.cheatSheet && <Link className="btn outline" to={`/games/${id}/cheatsheet`}>Cheatsheet</Link>}
-          <Link className="btn outline-secondary" to="/games">Zpět</Link>
-        </Actions>
-      </div>
+      <Actions>
+        <Link className="btn" to={`/games/${id}/new-play`}>Nový zápis</Link>
+        {game.data.cheatSheet && <Link className="btn outline" to={`/games/${id}/cheatsheet`}>Cheatsheet</Link>}
+        <Link className="btn outline-secondary" to="/games">Zpět</Link>
+      </Actions>
     </section>
   );
 }
@@ -130,7 +128,7 @@ function Round({ play, open, onToggle }: { play: Play; open: boolean; onToggle: 
               </li>
             ))}
           </ul>
-          <Actions>
+          <Actions inline>
             <Link className="btn outline-secondary" to={`/plays/${play.id}/edit`}>Upravit</Link>
           </Actions>
         </div>
