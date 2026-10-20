@@ -6,6 +6,7 @@ namespace App\Controller;
 
 use App\Domain\Exception\DomainException;
 use App\Dto\PlayerNameRequest;
+use App\Dto\UpdatePlayerRequest;
 use App\Entity\Game;
 use App\Entity\Party;
 use App\Entity\Player;
@@ -50,18 +51,30 @@ final class PlayerController extends ApiController
     }
 
     #[Route('/api/players/{id}', requirements: ['id' => '\d+'], methods: ['PATCH'])]
-    public function rename(Player $player, #[MapRequestPayload] PlayerNameRequest $req): JsonResponse
+    public function update(Player $player, #[MapRequestPayload] UpdatePlayerRequest $req): JsonResponse
     {
         $this->denyAccessUnlessGranted(PartyVoter::VIEW, $player->getParty());
         if (null !== $player->getUser()) {
-            throw new DomainException('Jméno člena s účtem se mění jeho přezdívkou.');
+            throw new DomainException('Člena s účtem tu upravit nejde, jeho jméno se mění přezdívkou.');
         }
-        foreach ($player->getParty()->getPlayers() as $other) {
-            if ($other !== $player && 0 === strcasecmp($other->getName(), trim($req->name))) {
-                throw new DomainException('Hráč s tímto jménem už v partě existuje.');
+        if (null === $req->name && null === $req->visible) {
+            throw new DomainException('Není co měnit.');
+        }
+        if (null !== $req->name) {
+            $name = trim($req->name);
+            if ('' === $name) {
+                throw new DomainException('Jméno nesmí být prázdné.');
             }
+            foreach ($player->getParty()->getPlayers() as $other) {
+                if ($other !== $player && 0 === strcasecmp($other->getName(), $name)) {
+                    throw new DomainException('Hráč s tímto jménem už v partě existuje.');
+                }
+            }
+            $player->rename($name);
         }
-        $player->rename(trim($req->name));
+        if (null !== $req->visible) {
+            $player->setVisible($req->visible);
+        }
         $this->em->flush();
 
         return new JsonResponse($this->presenter->player($player));

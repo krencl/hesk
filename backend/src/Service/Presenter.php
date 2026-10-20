@@ -43,7 +43,7 @@ final class Presenter
 
     public function player(\App\Entity\Player $player): array
     {
-        return ['id' => $player->getId(), 'name' => $player->getName(), 'hasAccount' => null !== $player->getUser()];
+        return ['id' => $player->getId(), 'name' => $player->getName(), 'hasAccount' => null !== $player->getUser(), 'visible' => $player->isVisible()];
     }
 
     public function game(Game $game): array

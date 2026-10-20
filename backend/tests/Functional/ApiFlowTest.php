@@ -296,6 +296,15 @@ final class ApiFlowTest extends WebTestCase
         $this->api('PATCH', "/api/players/{$bob['id']}", ['name' => 'cyril'], 422);
         $this->api('PATCH', "/api/players/{$bob['id']}", ['name' => '  '], 422);
         $this->api('PATCH', "/api/players/{$anna['id']}", ['name' => 'Annie'], 422);
+        $this->api('PATCH', "/api/players/{$anna['id']}", ['visible' => false], 422);
+        $this->api('PATCH', "/api/players/{$bob['id']}", [], 422);
+
+        // příznak „zobrazovat“: výchozí true, mění se samostatně (jméno zůstane), vrací ho i seznam hráčů
+        self::assertSame([true, true, true, true], array_column($this->api('GET', "$base/players"), 'visible'));
+        $hidden = $this->api('PATCH', "/api/players/{$cyril['id']}", ['visible' => false]);
+        self::assertSame(['Cyril', false], [$hidden['name'], $hidden['visible']]);
+        self::assertSame(['Anna' => true, 'Bobík' => true, 'Cyril' => false, 'Dora' => true], array_column($this->api('GET', "$base/players"), 'visible', 'name'));
+        self::assertTrue($this->api('PATCH', "/api/players/{$cyril['id']}", ['name' => 'Cyril', 'visible' => true])['visible']);
 
         // host, který hrál, ani člen s účtem se nesmaže; nepoužitý host ano
         $game = $this->api('POST', "$base/games", ['name' => 'Azul', 'scoreType' => 'winner_only'], 201);

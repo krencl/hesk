@@ -18,6 +18,10 @@ class Player
     #[ORM\Id, ORM\GeneratedValue, ORM\Column]
     private ?int $id = null;
 
+    /** Host s `false` se nenabízí ve výběru hráčů při zápisu hry (ve starých zápisech zůstává). */
+    #[ORM\Column(options: ['default' => true])]
+    private bool $visible = true;
+
     public function __construct(
         #[ORM\ManyToOne(inversedBy: 'players')]
         #[ORM\JoinColumn(nullable: false, onDelete: 'CASCADE')]
@@ -48,6 +52,16 @@ class Player
     public function rename(string $name): void
     {
         $this->name = $name;
+    }
+
+    public function isVisible(): bool
+    {
+        return $this->visible;
+    }
+
+    public function setVisible(bool $visible): void
+    {
+        $this->visible = $visible;
     }
 
     public function getUser(): ?User
