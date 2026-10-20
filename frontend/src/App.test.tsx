@@ -44,7 +44,7 @@ describe('App gating', () => {
   it('switches the party in the menu and offers creating a new one like the old prototype', async () => {
     mockApi({
       '/me': { body: ME },
-      '/parties': { body: [PARTY, { id: 4, name: 'Víkend', role: 'member' }] },
+      '/parties': { body: [PARTY, { id: 4, name: 'Víkend', role: 'admin' }] },
       '/parties/3/games?sort=activity&limit=21&offset=0': { body: [] },
     });
     renderApp();
@@ -55,6 +55,7 @@ describe('App gating', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Přepnout' }));
     expect(screen.getByRole('heading', { name: 'Vyber partu' })).toBeInTheDocument();
+    expect(screen.queryByText('admin')).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: /Víkend/ })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Vytvořit novou partu' })).toHaveAttribute('href', '/parties');
 

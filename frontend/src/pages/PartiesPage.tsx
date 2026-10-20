@@ -36,7 +36,7 @@ export function PartiesPage() {
           <li key={p.id} className={`party-row${p.id === activeParty?.id ? ' selected' : ''}`} aria-current={p.id === activeParty?.id ? 'true' : undefined}>
             <Link to={`/parties/${p.id}`} className="party-link">
               <strong className="h5">{p.name}</strong>
-              <small className="muted">{p.role === 'admin' ? 'admin' : 'člen'}{p.id === activeParty?.id && ' · aktivní'}</small>
+              {p.id === activeParty?.id && <small className="muted">aktivní</small>}
             </Link>
             {p.id !== activeParty?.id && (
               <button type="button" className="btn small outline" onClick={() => setActiveParty(p.id)}>Přepnout</button>

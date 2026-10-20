@@ -28,6 +28,8 @@ describe('party management (/parties)', () => {
     expect(active).toHaveClass('selected');
     expect(screen.getByRole('link', { name: /Víkend/ }).closest('li')).not.toHaveClass('selected');
     expect(screen.getAllByRole('button', { name: 'Přepnout' })).toHaveLength(1);
+    // role (admin/člen) se u part nepíše, je vidět v detailu party u členů
+    expect(screen.queryByText(/^(admin|člen)$/)).not.toBeInTheDocument();
     // správa part už neobsahuje členy ani pozvánky
     expect(screen.queryByText('Členové')).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Pozvat hráče' })).not.toBeInTheDocument();

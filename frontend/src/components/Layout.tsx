@@ -64,7 +64,7 @@ export function Layout() {
                 {parties.filter((p) => p.id !== activeParty?.id).map((p) => (
                   <li key={p.id}>
                     <button type="button" onClick={() => { setActiveParty(p.id); toggleMenu(); }}>
-                      {p.name} {p.role === 'admin' && <small className="muted">admin</small>}
+                      {p.name}
                     </button>
                   </li>
                 ))}
