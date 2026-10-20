@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ApiError } from '../api/client';
 import { ErrorMessage } from './ErrorMessage';
-import { TOAST_DURATION_MS, ToastProvider, useToasts } from './Toasts';
+import { TOAST_BASE_MS, toastDuration, ToastProvider, useToasts } from './Toasts';
 
 beforeEach(() => { vi.useFakeTimers(); });
 afterEach(() => { vi.useRealTimers(); });
@@ -13,6 +13,11 @@ function Trigger({ messages }: { messages: string[] }) {
   return <button onClick={() => messages.forEach((m) => showError(m))}>show</button>;
 }
 const renderToasts = (messages: string[]) => render(<ToastProvider><Trigger messages={messages} /></ToastProvider>);
+
+function Detailed() {
+  const { showError } = useToasts();
+  return <button onClick={() => { showError('Bez detailů'); showError('S detaily', ['a', 'b']); }}>go</button>;
+}
 
 describe('toasts', () => {
   it('shows several messages at once, each with a cross, and dismisses one by its cross', () => {
@@ -30,10 +35,42 @@ describe('toasts', () => {
   it('disappears by itself after a while', () => {
     renderToasts(['Zmizím']);
     fireEvent.click(screen.getByText('show'));
-    act(() => { vi.advanceTimersByTime(TOAST_DURATION_MS - 100); });
+    act(() => { vi.advanceTimersByTime(TOAST_BASE_MS - 100); });
     expect(screen.getByText('Zmizím')).toBeInTheDocument();
     act(() => { vi.advanceTimersByTime(500); });
     expect(screen.queryByText('Zmizím')).not.toBeInTheDocument();
+  });
+
+  it('shows a countdown bar that matches the display time, longer for messages with details', () => {
+    const { container } = render(<ToastProvider><Detailed /></ToastProvider>);
+    fireEvent.click(screen.getByText('go'));
+    const toasts = [...container.ownerDocument.querySelectorAll<HTMLElement>('.toast')];
+    expect(toasts.map((t) => t.style.getPropertyValue('--toast-duration'))).toEqual([`${toastDuration(0)}ms`, `${toastDuration(2)}ms`]);
+    expect(toasts.every((t) => t.querySelector('.toast-bar'))).toBe(true);
+    expect(toastDuration(2)).toBeGreaterThan(toastDuration(0));
+  });
+
+  it('collapses the dismissed toast in its slot first, so the others slide up instead of jumping', () => {
+    renderToasts(['A', 'B']);
+    fireEvent.click(screen.getByText('show'));
+    fireEvent.click(screen.getAllByRole('button', { name: 'Zavřít oznámení' })[0]);
+    const slots = document.querySelectorAll('.toast-slot');
+    expect(slots[0]).toHaveClass('leaving');
+    expect(slots[1]).not.toHaveClass('leaving');
+    expect(screen.getByText('A')).toBeInTheDocument(); // ještě v DOM, dokud nedoběhne animace
+    act(() => { vi.advanceTimersByTime(300); });
+    expect(screen.queryByText('A')).not.toBeInTheDocument();
+  });
+
+  it('pauses the countdown bar together with the timer', () => {
+    renderToasts(['Pauza']);
+    fireEvent.click(screen.getByText('show'));
+    const toast = screen.getByRole('alert');
+    expect(toast).not.toHaveClass('paused');
+    fireEvent.mouseEnter(toast);
+    expect(toast).toHaveClass('paused');
+    fireEvent.mouseLeave(toast);
+    expect(toast).not.toHaveClass('paused');
   });
 
   it('does not stack the same message twice and stays while the mouse is over it', () => {
@@ -42,10 +79,10 @@ describe('toasts', () => {
     expect(screen.getAllByRole('alert')).toHaveLength(1);
 
     fireEvent.mouseEnter(screen.getByRole('alert'));
-    act(() => { vi.advanceTimersByTime(TOAST_DURATION_MS * 2); });
+    act(() => { vi.advanceTimersByTime(TOAST_BASE_MS * 2); });
     expect(screen.getByText('Stejná')).toBeInTheDocument();
     fireEvent.mouseLeave(screen.getByRole('alert'));
-    act(() => { vi.advanceTimersByTime(TOAST_DURATION_MS + 500); });
+    act(() => { vi.advanceTimersByTime(TOAST_BASE_MS + 500); });
     expect(screen.queryByText('Stejná')).not.toBeInTheDocument();
   });
 });
