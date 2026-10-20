@@ -33,6 +33,14 @@ describe('party management (/parties)', () => {
     expect(screen.queryByRole('button', { name: 'Pozvat hráče' })).not.toBeInTheDocument();
   });
 
+  it('shows the "Vyber partu" heading of the menu in blue like the other menu headings', async () => {
+    mockApi(base);
+    renderApp('/parties');
+    fireEvent.click(await screen.findByRole('button', { name: /^Menu – / }));
+    fireEvent.click(screen.getByRole('button', { name: 'Přepnout' }));
+    expect(screen.getByRole('heading', { name: 'Vyber partu' })).toHaveClass('primary');
+  });
+
   it('switches the active party', async () => {
     mockApi(base);
     renderApp('/parties');

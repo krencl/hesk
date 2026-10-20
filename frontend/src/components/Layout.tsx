@@ -59,7 +59,7 @@ export function Layout() {
         <div className="menu-content">
           {changingParty ? (
             <>
-              <h4 className="muted">Vyber partu</h4>
+              <h4 className="primary">Vyber partu</h4>
               <ul className="menu-list">
                 {parties.filter((p) => p.id !== activeParty?.id).map((p) => (
                   <li key={p.id}>
