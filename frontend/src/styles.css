@@ -52,6 +52,7 @@ h2, h3 { color: var(--text); }
 .page-head { display: flex; align-items: center; gap: 1rem; min-height: var(--image-size-small); margin: 0.5rem 0; padding-right: 1rem; }
 .page-head:not(.with-image) { padding-left: 1rem; min-height: 0; margin-bottom: 0; }
 .page-title { margin: 0; font-size: 1.5rem; font-weight: 500; line-height: 1.2; }
+.page-title-label { margin-right: 0.15rem; font-size: 0.6em; font-weight: 400; color: var(--secondary); }
 .page-head:not(.with-image) .page-title { padding-bottom: 0.3rem; border-bottom: 0.2rem solid var(--main); }
 .muted, .secondary { color: var(--secondary); }
 .primary { color: var(--main); }

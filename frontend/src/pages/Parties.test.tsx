@@ -64,7 +64,7 @@ describe('party management (/parties)', () => {
     fireEvent.change(await screen.findByLabelText('Název nové party'), { target: { value: ' Nová ' } });
     fireEvent.click(screen.getByRole('button', { name: 'Vytvořit' }));
 
-    expect(await screen.findByRole('heading', { name: 'Nová' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'Parta Nová' })).toBeInTheDocument();
     const post = fetchMock.mock.calls.find(([u, init]) => String(u) === '/api/parties' && init?.method === 'POST')!;
     expect(JSON.parse(String(post[1]?.body))).toEqual({ name: 'Nová' });
     expect(screen.getByRole('button', { name: 'Pozvat hráče' })).toBeInTheDocument();
@@ -75,7 +75,7 @@ describe('party detail (/parties/:id)', () => {
   it('lets an admin manage members and invite players', async () => {
     mockApi({ ...base, '/parties/3': { body: detail(PARTY) }, '/parties/3/invitations': { status: 201, body: { token: 'abc', expiresAt: '2030-01-01T00:00:00+00:00' } } });
     renderApp('/parties/3');
-    expect(await screen.findByRole('heading', { name: 'Pátek' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'Parta Pátek' })).toBeInTheDocument();
     expect(screen.queryByText(/Jsi (admin|člen)/)).not.toBeInTheDocument(); // role je vidět ze seznamu členů
     expect(screen.getByText('Petr')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Udělat adminem' })).toBeInTheDocument();
@@ -87,12 +87,18 @@ describe('party detail (/parties/:id)', () => {
     expect(screen.getByRole('link', { name: 'Správa part' })).toHaveAttribute('href', '/parties');
   });
 
-  it('lets an admin edit the name and the short name of the party', async () => {
+  it('lets an admin edit the name and the short name on a separate page and returns to the detail', async () => {
     const updated = { ...PARTY, name: 'Pátek večer', shortName: 'PTK' };
-    const fetchMock = mockApi({ ...base, '/parties/3': { body: detail(PARTY) }, 'PATCH /parties/3': { body: detail(updated) } });
+    const fetchMock = mockApi({
+      ...base,
+      '/parties/3': { body: detail(PARTY) },
+      'PATCH /parties/3': { body: detail(updated) },
+      '/parties/3/games?sort=activity&limit=21&offset=0': { body: [GAME] },
+    });
     renderApp('/parties/3');
-    fireEvent.click(await screen.findByRole('button', { name: 'Upravit partu' }));
-    expect(screen.getByLabelText('Název')).toHaveValue('Pátek');
+    expect(screen.queryByRole('button', { name: 'Upravit partu' })).not.toBeInTheDocument();
+    fireEvent.click(await screen.findByRole('link', { name: 'Upravit partu' }));
+    expect(await screen.findByLabelText('Název')).toHaveValue('Pátek');
     expect(screen.getByLabelText(/Zkratka/)).toHaveValue('Pá'); // zkratka vygenerovaná při založení
     fireEvent.change(screen.getByLabelText('Název'), { target: { value: ' Pátek večer ' } });
     fireEvent.change(screen.getByLabelText(/Zkratka/), { target: { value: ' PTK ' } });
@@ -101,7 +107,22 @@ describe('party detail (/parties/:id)', () => {
     await waitFor(() => expect(fetchMock.mock.calls.some(([u, init]) => String(u) === '/api/parties/3' && init?.method === 'PATCH')).toBe(true));
     const patch = fetchMock.mock.calls.find(([, init]) => init?.method === 'PATCH')!;
     expect(JSON.parse(String(patch[1]?.body))).toEqual({ name: 'Pátek večer', shortName: 'PTK' });
-    await waitFor(() => expect(screen.queryByLabelText('Název')).not.toBeInTheDocument()); // formulář se po uložení zavře
+    expect(await screen.findByRole('link', { name: 'Pozvat hráče' }).catch(() => screen.findByRole('button', { name: 'Pozvat hráče' }))).toBeInTheDocument(); // zpět na detail
+    expect(screen.queryByLabelText('Název')).not.toBeInTheDocument();
+  });
+
+  it('opens the edit page directly by its URL', async () => {
+    mockApi({ ...base, '/parties/3': { body: detail(PARTY) } });
+    renderApp('/parties/3/edit');
+    expect(await screen.findByRole('heading', { name: 'Upravit partu Pátek' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Zrušit' })).toHaveAttribute('href', '/parties/3');
+  });
+
+  it('sends a plain member from the edit page back to the detail', async () => {
+    mockApi({ ...base, '/parties/4': { body: detail(MEMBER_PARTY) } });
+    renderApp('/parties/4/edit');
+    expect(await screen.findByRole('heading', { name: 'Parta Víkend' })).toBeInTheDocument();
+    expect(screen.queryByLabelText('Název')).not.toBeInTheDocument();
   });
 
   it('shows the short name of the active party in the header button', async () => {
@@ -110,15 +131,10 @@ describe('party detail (/parties/:id)', () => {
     expect(await screen.findByRole('button', { name: /Menu – Pátek/ })).toHaveTextContent('PTK');
   });
 
-  it('requires a short name (at least one character) and lets the admin cancel', async () => {
+  it('requires a short name (at least one character)', async () => {
     const fetchMock = mockApi({ ...base, '/parties/3': { body: detail(PARTY) }, 'PATCH /parties/3': { body: detail(PARTY) } });
-    renderApp('/parties/3');
-    fireEvent.click(await screen.findByRole('button', { name: 'Upravit partu' }));
-    fireEvent.click(screen.getByRole('button', { name: 'Zrušit' }));
-    expect(screen.queryByLabelText('Název')).not.toBeInTheDocument();
-
-    fireEvent.click(screen.getByRole('button', { name: 'Upravit partu' }));
-    fireEvent.change(screen.getByLabelText(/Zkratka/), { target: { value: '  ' } });
+    renderApp('/parties/3/edit');
+    fireEvent.change(await screen.findByLabelText(/Zkratka/), { target: { value: '  ' } });
     expect(screen.getByLabelText(/Zkratka/)).toBeRequired();
     expect(screen.getByRole('button', { name: 'Uložit' })).toBeDisabled();
     fireEvent.change(screen.getByLabelText(/Zkratka/), { target: { value: 'X' } });
@@ -126,16 +142,16 @@ describe('party detail (/parties/:id)', () => {
     expect(fetchMock.mock.calls.some(([, init]) => init?.method === 'PATCH')).toBe(false);
   });
 
-  it('gives a plain member no admin actions but offers leaving, and can switch to a non-active party', async () => {
+  it('gives a plain member no admin actions but offers leaving', async () => {
     mockApi({ ...base, '/parties/4': { body: detail(MEMBER_PARTY, [{ userId: 1, nickname: 'Anna', role: 'member' }, { userId: 2, nickname: 'Petr', role: 'admin' }]) } });
     renderApp('/parties/4');
-    expect(await screen.findByRole('heading', { name: 'Víkend' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'Parta Víkend' })).toBeInTheDocument();
     expect(screen.queryByText(/Jsi (admin|člen)/)).not.toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Upravit partu' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'Upravit partu' })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Pozvat hráče' })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Udělat adminem' })).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Opustit' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Přepnout na tuto partu' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Přepnout na tuto partu/ })).not.toBeInTheDocument();
   });
 
   it('asks for confirmation before leaving and returns to the management page afterwards', async () => {
