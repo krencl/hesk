@@ -279,6 +279,47 @@ final class ApiFlowTest extends WebTestCase
         self::assertSame([96, 95], array_column($this->api('GET', "$base/sessions"), 'number'));
     }
 
+    public function testGuestsCanBeRenamedAndDeletedOnlyWhenUnused(): void
+    {
+        $this->login('anna@example.com', 'Anna');
+        $party = $this->api('POST', '/api/parties', ['name' => 'Pátek'], 201);
+        $base = "/api/parties/{$party['id']}";
+        $anna = $this->api('GET', "$base/players")[0];
+        $bob = $this->api('POST', "$base/players", ['name' => 'Bob'], 201);
+        $cyril = $this->api('POST', "$base/players", ['name' => 'Cyril'], 201);
+        $dora = $this->api('POST', "$base/players", ['name' => 'Dora'], 201);
+        $this->api('POST', "$base/players", ['name' => '   '], 422);
+        self::assertSame([0, 0, 0, 0], array_column($this->api('GET', "$base/players"), 'playCount'));
+
+        // přejmenování hosta; duplicitní nebo prázdné jméno a člen s účtem se odmítnou
+        self::assertSame('Bobík', $this->api('PATCH', "/api/players/{$bob['id']}", ['name' => ' Bobík '])['name']);
+        $this->api('PATCH', "/api/players/{$bob['id']}", ['name' => 'cyril'], 422);
+        $this->api('PATCH', "/api/players/{$bob['id']}", ['name' => '  '], 422);
+        $this->api('PATCH', "/api/players/{$anna['id']}", ['name' => 'Annie'], 422);
+
+        // host, který hrál, ani člen s účtem se nesmaže; nepoužitý host ano
+        $game = $this->api('POST', "$base/games", ['name' => 'Azul', 'scoreType' => 'winner_only'], 201);
+        $this->api('POST', "$base/plays", [
+            'gameId' => $game['id'], 'startedAt' => '2026-03-01T18:00:00+00:00', 'endedAt' => '2026-03-01T19:00:00+00:00',
+            'players' => [['playerId' => $anna['id'], 'winner' => true], ['playerId' => $bob['id']]],
+        ], 201);
+        $counts = array_column($this->api('GET', "$base/players"), 'playCount', 'name');
+        self::assertSame(['Anna' => 1, 'Bobík' => 1, 'Cyril' => 0, 'Dora' => 0], $counts);
+        $this->api('DELETE', "/api/players/{$bob['id']}", expected: 422);
+        $this->api('DELETE', "/api/players/{$anna['id']}", expected: 422);
+        $this->api('POST', "$base/games", ['name' => 'Coop', 'scoreType' => 'winner_only', 'playerId' => $dora['id']], 201);
+        $this->api('DELETE', "/api/players/{$dora['id']}", expected: 422); // hráč hry
+
+        $this->login('eve@example.com', 'Eve');
+        $this->api('DELETE', "/api/players/{$cyril['id']}", expected: 403);
+        $this->api('PATCH', "/api/players/{$cyril['id']}", ['name' => 'X'], 403);
+
+        $this->login('anna@example.com', 'Anna');
+        $this->api('DELETE', "/api/players/{$cyril['id']}", expected: 204);
+        self::assertSame(['Anna', 'Bobík', 'Dora'], array_column($this->api('GET', "$base/players"), 'name'));
+        $this->api('DELETE', "/api/players/{$cyril['id']}", expected: 404);
+    }
+
     public function testTagsAreListedForSuggestions(): void
     {
         $this->login('anna@example.com', 'Anna');

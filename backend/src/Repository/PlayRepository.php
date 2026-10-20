@@ -52,6 +52,20 @@ class PlayRepository extends ServiceEntityRepository
         return $this->findOneBy(['session' => $session], ['endedAt' => 'DESC', 'id' => 'DESC']);
     }
 
+    /**
+     * Počet zápisů, ve kterých každý hráč party hrál.
+     *
+     * @return array<int, int> id hráče => počet zápisů (hráči bez zápisu chybí)
+     */
+    public function playCountsByPlayer(Party $party): array
+    {
+        $rows = $this->getEntityManager()->createQuery(
+            'SELECT IDENTITY(r.player) AS playerId, COUNT(r.id) AS plays FROM App\Entity\PlayResult r JOIN r.play p WHERE p.party = :party GROUP BY r.player',
+        )->setParameter('party', $party)->getArrayResult();
+
+        return array_combine(array_map(static fn (array $r): int => (int) $r['playerId'], $rows), array_map(static fn (array $r): int => (int) $r['plays'], $rows));
+    }
+
     /** @return list<array{playerId: int, name: string, wins: int, plays: int}> */
     public function winsPerPlayer(Party $party): array
     {
