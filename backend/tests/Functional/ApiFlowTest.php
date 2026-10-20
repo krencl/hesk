@@ -329,6 +329,47 @@ final class ApiFlowTest extends WebTestCase
         $this->api('DELETE', "/api/players/{$cyril['id']}", expected: 404);
     }
 
+    public function testMembersCannotWritePlaysButWritersCan(): void
+    {
+        $this->login('anna@example.com', 'Anna');
+        $party = $this->api('POST', '/api/parties', ['name' => 'Pátek'], 201);
+        $base = "/api/parties/{$party['id']}";
+        $anna = $this->api('GET', "$base/players")[0]['id'];
+        $game = $this->api('POST', "$base/games", ['name' => 'Azul', 'scoreType' => 'winner_only'], 201);
+        $payload = ['gameId' => $game['id'], 'startedAt' => '2026-03-01T18:00:00+00:00', 'endedAt' => '2026-03-01T19:00:00+00:00', 'players' => [['playerId' => $anna, 'winner' => true]]];
+        $play = $this->api('POST', "$base/plays", $payload, 201);
+
+        // nově připojený člen je jen „člen“: zápisy čte, ale nezapisuje
+        $invite = $this->api('POST', "$base/invitations", null, 201);
+        $this->login('bob@example.com', 'Bob');
+        $this->api('POST', "/api/invitations/{$invite['token']}/accept");
+        self::assertSame('member', $this->api('GET', $base)['role']);
+        self::assertCount(1, $this->api('GET', "$base/plays"));
+        $this->api('GET', "/api/plays/{$play['id']}");
+        $this->api('POST', "$base/plays", $payload, 403);
+        $this->api('GET', "$base/plays/defaults?startedAt=".rawurlencode('2026-03-02T18:00:00+00:00'), expected: 403);
+        $this->api('PUT', "/api/plays/{$play['id']}", $payload, 403);
+        $this->api('DELETE', "/api/plays/{$play['id']}", expected: 403);
+
+        // admin ho povýší na zapisovače → zapisuje, ale partu nespravuje
+        $this->login('anna@example.com', 'Anna');
+        $bobUser = array_values(array_filter($this->api('GET', $base)['members'], static fn (array $m): bool => 'Bob' === $m['nickname']))[0];
+        self::assertSame('writer', $this->api('PATCH', "$base/members/{$bobUser['userId']}", ['role' => 'writer'])['members'][1]['role']);
+        $this->login('bob@example.com', 'Bob');
+        $second = $this->api('POST', "$base/plays", ['startedAt' => '2026-03-05T18:00:00+00:00', 'endedAt' => '2026-03-05T19:00:00+00:00'] + $payload, 201);
+        $this->api('PUT', "/api/plays/{$second['id']}", $payload, 200);
+        $this->api('DELETE', "/api/plays/{$second['id']}", expected: 204);
+        $this->api('POST', "$base/invitations", null, 403);
+        $this->api('PATCH', "$base/members/{$bobUser['userId']}", ['role' => 'admin'], 403);
+
+        // poslední admin se nedá změnit na zapisovače ani na člena
+        $this->login('anna@example.com', 'Anna');
+        $annaUser = array_values(array_filter($this->api('GET', $base)['members'], static fn (array $m): bool => 'Anna' === $m['nickname']))[0];
+        $this->api('PATCH', "$base/members/{$annaUser['userId']}", ['role' => 'writer'], 422);
+        $this->api('PATCH', "$base/members/{$annaUser['userId']}", ['role' => 'member'], 422);
+        $this->api('PATCH', "$base/members/{$annaUser['userId']}", ['role' => 'neznámá'], 422);
+    }
+
     public function testTagsAreListedForSuggestions(): void
     {
         $this->login('anna@example.com', 'Anna');

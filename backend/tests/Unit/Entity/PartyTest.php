@@ -59,6 +59,30 @@ final class PartyTest extends TestCase
         $party->changeRole($creator, PartyRole::Member);
     }
 
+    public function testOnlyAdminsAndWritersCanWrite(): void
+    {
+        $admin = new User('g1', 'a@example.com');
+        $writer = new User('g2', 'b@example.com');
+        $member = new User('g3', 'c@example.com');
+        $party = Party::create('Hrajeme', $admin);
+        $party->addMember($writer, PartyRole::Writer);
+        $party->addMember($member);
+
+        self::assertSame([true, true, false], [$party->canWrite($admin), $party->canWrite($writer), $party->canWrite($member)]);
+        self::assertFalse($party->canWrite(new User('g4', 'd@example.com')), 'a stranger cannot write');
+        self::assertTrue($party->isMember($member));
+        self::assertFalse($party->isAdmin($writer));
+    }
+
+    public function testLastAdminCannotBeDemotedToWriter(): void
+    {
+        $creator = new User('g1', 'a@example.com');
+        $party = Party::create('Hrajeme', $creator);
+
+        $this->expectException(DomainException::class);
+        $party->changeRole($creator, PartyRole::Writer);
+    }
+
     public function testAdminCanLeaveWhenAnotherAdminExists(): void
     {
         $creator = new User('g1', 'a@example.com');

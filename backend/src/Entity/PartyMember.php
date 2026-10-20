@@ -56,4 +56,10 @@ class PartyMember
     {
         return PartyRole::Admin === $this->role;
     }
+
+    /** Zapisovat zápisy smí admin a zapisovač. */
+    public function canWrite(): bool
+    {
+        return PartyRole::Admin === $this->role || PartyRole::Writer === $this->role;
+    }
 }

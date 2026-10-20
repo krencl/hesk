@@ -173,6 +173,11 @@ class Party
         return $this->findMember($user)?->isAdmin() ?? false;
     }
 
+    public function canWrite(User $user): bool
+    {
+        return $this->findMember($user)?->canWrite() ?? false;
+    }
+
     public function addMember(User $user, PartyRole $role = PartyRole::Member): PartyMember
     {
         if ($member = $this->findMember($user)) {
@@ -196,7 +201,7 @@ class Party
     public function changeRole(User $user, PartyRole $role): void
     {
         $member = $this->findMember($user) ?? throw new DomainException('Uživatel není členem party.');
-        if (PartyRole::Member === $role) {
+        if (PartyRole::Admin !== $role) {
             $this->assertStillHasAdminWithout($member);
         }
         $member->setRole($role);

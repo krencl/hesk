@@ -46,7 +46,7 @@ final class PlayController extends ApiController
      * hráči a tagy posledního zápisu této seance (`playerIds` je `null`, když seance ještě neexistuje = první hra dne).
      */
     #[Route('/api/parties/{id}/plays/defaults', requirements: ['id' => '\d+'], methods: ['GET'])]
-    #[IsGranted(PartyVoter::VIEW, 'party')]
+    #[IsGranted(PartyVoter::WRITE, 'party')]
     public function defaults(Party $party, Request $request): JsonResponse
     {
         $start = $this->parseTime($request->query->get('startedAt'));
@@ -78,7 +78,7 @@ final class PlayController extends ApiController
     }
 
     #[Route('/api/parties/{id}/plays', requirements: ['id' => '\d+'], methods: ['POST'])]
-    #[IsGranted(PartyVoter::VIEW, 'party')]
+    #[IsGranted(PartyVoter::WRITE, 'party')]
     public function create(Party $party, #[MapRequestPayload] PlayRequest $req): JsonResponse
     {
         return new JsonResponse($this->presenter->play($this->service->create($party, $req)), Response::HTTP_CREATED);
@@ -95,7 +95,7 @@ final class PlayController extends ApiController
     #[Route('/api/plays/{id}', requirements: ['id' => '\d+'], methods: ['PUT'])]
     public function update(Play $play, #[MapRequestPayload] PlayRequest $req): JsonResponse
     {
-        $this->denyAccessUnlessGranted(PartyVoter::VIEW, $play->getParty());
+        $this->denyAccessUnlessGranted(PartyVoter::WRITE, $play->getParty());
 
         return new JsonResponse($this->presenter->play($this->service->update($play, $req)));
     }
@@ -103,7 +103,7 @@ final class PlayController extends ApiController
     #[Route('/api/plays/{id}', requirements: ['id' => '\d+'], methods: ['DELETE'])]
     public function delete(Play $play): Response
     {
-        $this->denyAccessUnlessGranted(PartyVoter::VIEW, $play->getParty());
+        $this->denyAccessUnlessGranted(PartyVoter::WRITE, $play->getParty());
         $this->service->delete($play);
 
         return new Response(status: Response::HTTP_NO_CONTENT);

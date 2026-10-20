@@ -186,13 +186,15 @@ final class LegacyImporter
             if (null === $partyId || null === $userId) {
                 continue;
             }
-            $role = 'owner' === $m['role'] ? 'admin' : 'member';
+            // ve staré aplikaci mohl zapisovat každý člen → zapisovatel; vlastník → admin
+            $role = 'owner' === $m['role'] ? 'admin' : 'writer';
             $seen["$partyId:$userId"] = true;
             $row = $this->target->fetchAssociative('SELECT id, role FROM party_member WHERE party_id = ? AND user_id = ?', [$partyId, $userId]);
             if (!$row) {
                 $this->target->insert('party_member', ['party_id' => $partyId, 'user_id' => $userId, 'role' => $role]);
                 $this->report->count('member', 'created');
-            } elseif ($row['role'] !== $role) {
+            } elseif ('admin' === $role && 'admin' !== $row['role']) {
+                // import jen povyšuje na admina, role změněné v nové aplikaci (např. na člena) nepřepisuje
                 $this->target->update('party_member', ['role' => $role], ['id' => $row['id']]);
                 $this->report->count('member', 'updated');
             } else {
