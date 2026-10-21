@@ -39,7 +39,7 @@ Není tu PHP ani MySQL ani sudo. PHP 8.4 je statický binár v `~/bin/php` + `~/
 - Cheatsheet her je Markdown (import ze staré app) nebo HTML od uživatelů → vždy přes `renderCheatSheet` + `SafeHtml` (marked + DOMPurify).
 - Čísla seancí (`game_session.number`) jsou uložená, ne odvozená (stará čísla mají mezery); novou seanci číslo přiřadí `SessionAssigner` (max+1).
 - Obálky her jsou lokálně v `frontend/public/covers/` (git-ignorováno) a `game.image_url` = `/static/covers/…`; statika se servíruje pod `/static/` (Vite `base`).
-- Git: větev `master`, commity s trailerem `Co-Authored-By` dle zadání prostředí.
+- Git: větev `master`, commity s trailerem `Co-Authored-By` dle zadání prostředí. Remote `origin` = `git@github.com:krencl/hesk.git` (privátní repo); push jde SSH klíčem `/workspace/github-ssh-key` (v `.gitignore`, **nikdy necommitovat ani nevypisovat**), který je zapojený v lokálním `core.sshCommand` (+ ověřený otisk hostitele v `.git/github_known_hosts`; po novém kontejneru nastavit znovu). Pushuje se jen na výslovné vyžádání.
 
 ## Stav (2026-10-14)
 Hotovo: dev DB zmigrována na nové schéma s importem dat, hráči-hosté, auth (Google + dev login, spárování starých účtů podle e-mailu), party/členové/pozvánky, hry (+rozšíření), zápisy se seancemi, statistiky (výhry, top hry), mobilní UI; UX podle prototypu (seznam her s hledáním/filtrem, detail hry se zápisy a cheatsheetem, čísla seancí, ADR 0009).
