@@ -51,6 +51,10 @@ describe('party guests (/parties/:id/guests)', () => {
     const cyril = screen.getByRole('button', { name: 'Zobrazovat hosta Cyril' });
     expect(bob).toHaveAttribute('aria-pressed', 'true');
     expect(cyril).toHaveAttribute('aria-pressed', 'false'); // skrytý host
+    // stejné tlačítko jako koš, jen s okem (přeškrtnuté = skrytý)
+    expect(bob).toHaveClass('icon-button');
+    expect(bob).toHaveTextContent('visibility');
+    expect(cyril).toHaveTextContent('visibility_off');
     const save = screen.getByRole('button', { name: 'Uložit' });
     expect(save).toBeDisabled();
 

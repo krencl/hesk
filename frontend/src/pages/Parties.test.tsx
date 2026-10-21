@@ -80,7 +80,8 @@ describe('party detail (/parties/:id)', () => {
     expect(screen.getByText('Petr')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Role – Anna' })).toHaveTextContent('Admin');
     expect(screen.getByRole('button', { name: 'Role – Petr' })).toHaveTextContent('Člen');
-    expect(screen.getAllByRole('button', { name: 'Odebrat' })).toHaveLength(1); // sebe odebrat nelze
+    expect(screen.getAllByRole('button', { name: /^Odebrat / })).toHaveLength(1); // sebe odebrat nelze
+    expect(screen.getByRole('button', { name: 'Odebrat Petr' })).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('button', { name: 'Pozvat hráče' }));
     const link = (await screen.findByLabelText('Odkaz pozvánky')) as HTMLInputElement;
@@ -198,6 +199,18 @@ describe('party detail (/parties/:id)', () => {
     expect(screen.getByText('Zapisovač')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Opustit' })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /Přepnout na tuto partu/ })).not.toBeInTheDocument();
+  });
+
+  it('removes a member with the trash icon button after confirmation', async () => {
+    const confirm = vi.spyOn(window, 'confirm').mockReturnValue(true);
+    const fetchMock = mockApi({ ...base, '/parties/3': { body: detail(PARTY) }, 'DELETE /parties/3/members/2': { status: 204, body: null } });
+    renderApp('/parties/3');
+    const trash = await screen.findByRole('button', { name: 'Odebrat Petr' });
+    expect(trash).toHaveClass('icon-button', 'danger');
+    expect(trash).toHaveTextContent('delete'); // ikona koše
+    fireEvent.click(trash);
+    expect(confirm).toHaveBeenCalledWith('Odebrat Petr?');
+    await waitFor(() => expect(fetchMock.mock.calls.some(([u, init]) => String(u) === '/api/parties/3/members/2' && init?.method === 'DELETE')).toBe(true));
   });
 
   it('asks for confirmation before leaving and returns to the management page afterwards', async () => {

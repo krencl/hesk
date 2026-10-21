@@ -7,6 +7,7 @@ import { ApiError } from '../api/client';
 import type { PartyRole } from '../api/types';
 import { Actions } from '../components/Actions';
 import { ErrorMessage } from '../components/ErrorMessage';
+import { Icon } from '../components/Icon';
 import { PartyHeader } from '../components/PartyHeader';
 import { SelectPopup } from '../components/SelectPopup';
 import { LEAVE_PARTY_MANAGEMENT_PATH } from '../lib/partyPath';
@@ -73,7 +74,14 @@ export function PartyDetailPage() {
                   className="role-select"
                 />
                 {m.userId !== me.id && (
-                  <button type="button" className="link danger" onClick={() => window.confirm(`Odebrat ${m.nickname}?`) && remove.mutate(m.userId)}>Odebrat</button>
+                  <button
+                    type="button"
+                    className="icon-button danger"
+                    aria-label={`Odebrat ${m.nickname}`}
+                    onClick={() => window.confirm(`Odebrat ${m.nickname}?`) && remove.mutate(m.userId)}
+                  >
+                    <Icon name="delete" />
+                  </button>
                 )}
               </span>
             )}

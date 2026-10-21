@@ -39,6 +39,7 @@ export function PartyGuestsPage() {
       ...(e.visible !== undefined && e.visible !== g.visible ? { visible: e.visible } : {}),
     };
   };
+  const visibleOf = (g: { id: number; visible: boolean }) => edited[g.id]?.visible ?? g.visible;
   const changed = guests.filter((g) => Object.keys(changesOf(g)).length > 0);
   const save = useMutation({
     // po jednom, ať se při chybě (např. obsazené jméno) ukáže hned a zbytek se nezmění
@@ -75,7 +76,7 @@ export function PartyGuestsPage() {
     <section className="page party-guests">
       <PartyHeader party={detail.data} />
       <form className="pad form" onSubmit={submit}>
-        <p className="muted">Hosté jsou hráči bez účtu, které zapisuješ do her. Skrytý host se při zápisu hry nenabízí (ve starých zápisech zůstává). Člen, který z party odejde, se stane hostem.</p>
+        <p className="muted">Hosté jsou hráči bez účtu, které zapisuješ do her. Host s přeškrtnutým okem se při zápisu hry nenabízí (ve starých zápisech zůstává). Člen, který z party odejde, se stane hostem.</p>
         {players.isPending && <ListSkeleton rows={2} withImage={false} />}
         {players.data && guests.length === 0 && <p className="empty">Zatím tu nejsou žádní hosté.</p>}
         {guests.length > 0 && (
@@ -89,6 +90,16 @@ export function PartyGuestsPage() {
                   aria-label={`Jméno hosta ${g.name}`}
                   onChange={(e) => patchGuest(g.id, { name: e.target.value })}
                 />
+                <button
+                  type="button"
+                  className="icon-button toggle"
+                  aria-pressed={visibleOf(g)}
+                  aria-label={`Zobrazovat hosta ${g.name}`}
+                  title={visibleOf(g) ? 'Nabízí se při zápisu hry' : 'Při zápisu hry se nenabízí'}
+                  onClick={() => patchGuest(g.id, { visible: !visibleOf(g) })}
+                >
+                  <Icon name={visibleOf(g) ? 'visibility' : 'visibility_off'} />
+                </button>
                 {g.playCount > 0 ? (
                   <span className="guest-plays muted">{playsLabel(g.playCount)}</span>
                 ) : (
@@ -102,17 +113,6 @@ export function PartyGuestsPage() {
                     <Icon name="delete" />
                   </button>
                 )}
-                <div className="chips guest-visible">
-                  <button
-                    type="button"
-                    className="chip"
-                    aria-pressed={edited[g.id]?.visible ?? g.visible}
-                    aria-label={`Zobrazovat hosta ${g.name}`}
-                    onClick={() => patchGuest(g.id, { visible: !(edited[g.id]?.visible ?? g.visible) })}
-                  >
-                    <Icon name={(edited[g.id]?.visible ?? g.visible) ? 'visibility' : 'visibility_off'} /> Zobrazovat při zápisu
-                  </button>
-                </div>
               </li>
             ))}
           </ul>
