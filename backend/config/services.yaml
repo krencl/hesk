@@ -27,3 +27,7 @@ services:
 when@test:
     parameters:
         app.uploads_dir: '%kernel.project_dir%/var/test-uploads'
+    services:
+        # dev kontejner nemá GD s WebP; testy převod nahrazují
+        App\Tests\Support\FakeWebpConverter: ~
+        App\Service\Image\WebpConverter: '@App\Tests\Support\FakeWebpConverter'

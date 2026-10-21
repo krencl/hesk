@@ -17,7 +17,7 @@ const loadImage = (src: string): Promise<HTMLImageElement> =>
     img.src = src;
   });
 
-/** Vyřízne zvolený výřez ze zdroje (object URL) a zmenší ho na čtverec `size` × `size` a zakóduje jako WebP (jediný formát, který aplikace ukládá). */
+/** Vyřízne zvolený výřez ze zdroje (object URL) a zmenší ho na čtverec `size` × `size` a zakóduje: jako WebP (formát, který aplikace ukládá), a když ho prohlížeč nekóduje (Safari/iPhone, canvas pak tiše vrací PNG), jako JPEG, který na WebP převede server. */
 export async function cropToBlob(src: string, area: CropArea, size = COVER_SIZE): Promise<Blob> {
   const img = await loadImage(src);
   const canvas = document.createElement('canvas');
@@ -30,8 +30,10 @@ export async function cropToBlob(src: string, area: CropArea, size = COVER_SIZE)
   ctx.fillRect(0, 0, size, size);
   ctx.imageSmoothingQuality = 'high';
   ctx.drawImage(img, area.x, area.y, area.width, area.height, 0, 0, size, size);
-  const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, 'image/webp', 0.85));
-  // prohlížeč, který WebP neumí kódovat, vrací tiše PNG
-  if (!blob || blob.type !== 'image/webp') throw new Error('Tento prohlížeč neumí obrázek převést do formátu WebP. Zkus jiný prohlížeč.');
-  return blob;
+  const encode = (type: string, quality: number) => new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, type, quality));
+  const webp = await encode('image/webp', 0.85);
+  if (webp?.type === 'image/webp') return webp;
+  const jpeg = await encode('image/jpeg', 0.9);
+  if (!jpeg) throw new Error('Obrázek se nepodařilo zpracovat.');
+  return jpeg;
 }

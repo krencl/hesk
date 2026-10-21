@@ -640,7 +640,12 @@ final class ApiFlowTest extends WebTestCase
 
         self::assertSame(422, $upload(self::webp(200, 100)), 'není čtverec');
         self::assertSame(422, $upload(self::webp(50, 50)), 'příliš malý');
-        self::assertSame(422, $upload(self::png(200, 200), 'cover.webp'), 'PNG s příponou webp: uvnitř je jen WebP');
+        // JPEG/PNG (prohlížeč bez kódování WebP) server převede; uloží se vždy jako .webp
+        self::assertSame(201, $upload(self::png(200, 200), 'cover.png'));
+        $converted = json_decode($this->client->getResponse()->getContent(), true)['url'];
+        self::assertMatchesRegularExpression('~^/uploads/covers/[0-9a-f]{40}\.webp$~', $converted);
+        self::assertNotSame($url, $converted);
+        self::assertSame(422, $upload(self::png(200, 100), 'cover.png'), 'ani převáděný obrázek nesmí být obdélník');
         self::assertSame(422, $upload('<?php echo 1;', 'cover.webp'), 'není obrázek');
         self::assertSame(422, $upload('GIF89a'.str_repeat("\0", 20), 'cover.gif'), 'nepodporovaný formát');
 

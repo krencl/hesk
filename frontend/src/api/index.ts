@@ -40,7 +40,7 @@ export const api = {
   /** Nahraje už oříznutý čtvercový obrázek hry; vrací adresu pro `imageUrl`. */
   uploadGameImage: (partyId: number, image: Blob) => {
     const form = new FormData();
-    form.append('file', image, 'cover.webp');
+    form.append('file', image, image.type === 'image/webp' ? 'cover.webp' : 'cover.jpg');
     return post<{ url: string }>(`/parties/${partyId}/game-images`, form);
   },
   updateGame: (id: number, input: GameInput) => put<Game>(`/games/${id}`, input),
