@@ -132,7 +132,7 @@ function Round({ play, canEdit, open, onToggle }: { play: Play; canEdit: boolean
           </ul>
           {canEdit && (
             <Actions inline>
-              <Link className="btn outline-secondary" to={`/plays/${play.id}/edit`}>Upravit</Link>
+              <Link className="btn small outline-secondary" to={`/plays/${play.id}/edit`}>Upravit</Link>
             </Actions>
           )}
         </div>
