@@ -17,7 +17,6 @@ final class LegacyImportTest extends KernelTestCase
 {
     private Connection $target;
     private Connection $legacy;
-    private string $covers;
 
     protected function setUp(): void
     {
@@ -36,7 +35,7 @@ final class LegacyImportTest extends KernelTestCase
             'CREATE TABLE party_user (party_id INT, user_id INT, role TEXT)',
             'CREATE TABLE player (id INTEGER PRIMARY KEY, name TEXT, type TEXT, game_id INT)',
             'CREATE TABLE party_player (party_id INT, player_id INT)',
-            'CREATE TABLE game (id INTEGER PRIMARY KEY, name TEXT, short_name TEXT, scoring_type TEXT, cover_image TEXT, cheat_sheet TEXT)',
+            'CREATE TABLE game (id INTEGER PRIMARY KEY, name TEXT, short_name TEXT, scoring_type TEXT, cheat_sheet TEXT)',
             'CREATE TABLE game_version (id INTEGER PRIMARY KEY, game_id INT, name TEXT)',
             'CREATE TABLE game_character (id INTEGER PRIMARY KEY, game_id INT, name TEXT)',
             'CREATE TABLE tag (id INTEGER PRIMARY KEY, name TEXT)',
@@ -47,16 +46,6 @@ final class LegacyImportTest extends KernelTestCase
             $this->legacy->executeStatement($sql);
         }
         $this->seedLegacy();
-        $this->covers = sys_get_temp_dir().'/hesk-covers-'.bin2hex(random_bytes(4));
-    }
-
-    protected function tearDown(): void
-    {
-        if (is_dir($this->covers)) {
-            array_map('unlink', glob($this->covers.'/*') ?: []);
-            rmdir($this->covers);
-        }
-        parent::tearDown();
     }
 
     private function seedLegacy(): void
@@ -75,8 +64,8 @@ final class LegacyImportTest extends KernelTestCase
         foreach ([1, 2, 4, 5] as $player) {
             $in('party_player', ['party_id' => 1, 'player_id' => $player]);
         }
-        $in('game', ['id' => 10, 'name' => 'King of Tokyo', 'short_name' => 'Tokyo', 'scoring_type' => 'only_winner', 'cover_image' => null, 'cheat_sheet' => '# Pravidla']);
-        $in('game', ['id' => 11, 'name' => 'Azul', 'short_name' => 'Azul', 'scoring_type' => 'highest_score', 'cover_image' => 'azul.jpg', 'cheat_sheet' => '']);
+        $in('game', ['id' => 10, 'name' => 'King of Tokyo', 'short_name' => 'Tokyo', 'scoring_type' => 'only_winner', 'cheat_sheet' => '# Pravidla']);
+        $in('game', ['id' => 11, 'name' => 'Azul', 'short_name' => 'Azul', 'scoring_type' => 'highest_score', 'cheat_sheet' => '']);
         foreach ([[100, 10, 'Základní'], [101, 10, 'Power Up'], [110, 11, 'Základní'], [111, 11, 'Nepoužité rozšíření']] as [$id, $game, $name]) {
             $in('game_version', ['id' => $id, 'game_id' => $game, 'name' => $name]);
         }
@@ -97,9 +86,9 @@ final class LegacyImportTest extends KernelTestCase
         $in('tag_round', ['tag_id' => 300, 'round_id' => 1001]);
     }
 
-    private function import(bool $dryRun = false, bool $covers = false): ImportReport
+    private function import(bool $dryRun = false): ImportReport
     {
-        $importer = new LegacyImporter($this->legacy, $this->target, $covers ? $this->covers.'-src' : null, $covers ? $this->covers : null);
+        $importer = new LegacyImporter($this->legacy, $this->target);
 
         return $importer->import($dryRun);
     }
@@ -285,26 +274,5 @@ final class LegacyImportTest extends KernelTestCase
         self::assertSame('Pátek', $this->target->fetchOne('SELECT p.name FROM play x JOIN party p ON p.id = x.party_id WHERE x.id = ?', [$imported]));
         // další běh nic nemění a nové zápisy se nezdvojují
         self::assertTrue($this->import()->isNoop());
-    }
-
-    public function testCoversAreCopiedOnceAndOnlyWhenTheFileExists(): void
-    {
-        mkdir($this->covers.'-src', 0775, true);
-        file_put_contents($this->covers.'-src/azul.jpg', 'obrázek');
-
-        try {
-            $report = $this->import(covers: true);
-            self::assertSame(1, $report->coversCopied);
-            self::assertFileExists($this->covers.'/azul.jpg');
-            self::assertSame(['/static/covers/azul.jpg', '/static/covers/azul.jpg'], $this->target->fetchFirstColumn("SELECT image_url FROM game WHERE name = 'Azul' ORDER BY id"));
-            self::assertNull($this->target->fetchOne("SELECT image_url FROM game WHERE name = 'King of Tokyo'"));
-
-            $again = $this->import(covers: true);
-            self::assertSame(0, $again->coversCopied);
-            self::assertTrue($again->isNoop());
-        } finally {
-            @unlink($this->covers.'-src/azul.jpg');
-            @rmdir($this->covers.'-src');
-        }
     }
 }

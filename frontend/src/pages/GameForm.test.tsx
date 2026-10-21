@@ -130,7 +130,7 @@ describe('game form (/games/:id/edit)', () => {
 
     it('crops the chosen file in the editor, uploads the square and saves its address with the game', async () => {
       stubUrls();
-      const fetchMock = mockApi({ ...routes, 'POST /parties/3/game-images': { status: 201, body: { url: '/uploads/covers/abc.jpg' } }, 'PUT /games/5': { body: FULL_GAME } });
+      const fetchMock = mockApi({ ...routes, 'POST /parties/3/game-images': { status: 201, body: { url: '/uploads/covers/abc.webp' } }, 'PUT /games/5': { body: FULL_GAME } });
       renderApp('/games/5/edit');
       await waitFor(() => expect(screen.getByLabelText('Název')).toHaveValue('King of Tokyo'));
 
@@ -144,22 +144,23 @@ describe('game form (/games/:id/edit)', () => {
       const upload = fetchMock.mock.calls.find(([u, init]) => String(u) === '/api/parties/3/game-images' && init?.method === 'POST');
       expect(upload?.[1]?.body).toBeInstanceOf(FormData);
       expect((upload?.[1]?.body as FormData).get('file')).toBeInstanceOf(Blob);
-      expect(screen.getByLabelText('URL obrázku')).toHaveValue('/uploads/covers/abc.jpg');
+      expect(screen.getByRole('button', { name: 'Změnit obrázek' })).toBeInTheDocument();
 
       fireEvent.click(screen.getByRole('button', { name: 'Uložit' }));
-      await waitFor(() => expect(sent(fetchMock, 'PUT', '/games/5')?.imageUrl).toBe('/uploads/covers/abc.jpg'));
+      await waitFor(() => expect(sent(fetchMock, 'PUT', '/games/5')?.imageUrl).toBe('/uploads/covers/abc.webp'));
     });
 
     it('cancelling the editor changes nothing, and the picture can be removed', async () => {
       stubUrls();
-      const fetchMock = mockApi({ ...routes, '/games/5': { body: { ...FULL_GAME, imageUrl: '/static/covers/tokyo.jpg' } }, 'PUT /games/5': { body: FULL_GAME } });
+      const fetchMock = mockApi({ ...routes, '/games/5': { body: { ...FULL_GAME, imageUrl: '/uploads/covers/0123456789abcdef0123456789abcdef01234567.webp' } }, 'PUT /games/5': { body: FULL_GAME } });
       renderApp('/games/5/edit');
-      await waitFor(() => expect(screen.getByLabelText('URL obrázku')).toHaveValue('/static/covers/tokyo.jpg'));
+      await waitFor(() => expect(screen.getByRole('button', { name: 'Změnit obrázek' })).toBeInTheDocument());
+      expect(screen.queryByLabelText('URL obrázku')).not.toBeInTheDocument(); // adresa se ručně nezadává
 
       pick();
       fireEvent.click(await screen.findByRole('button', { name: 'Zrušit' }));
       expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
-      expect(screen.getByLabelText('URL obrázku')).toHaveValue('/static/covers/tokyo.jpg');
+      expect(screen.getByRole('button', { name: 'Změnit obrázek' })).toBeInTheDocument();
 
       fireEvent.click(screen.getByRole('button', { name: 'Odebrat obrázek' }));
       fireEvent.click(screen.getByRole('button', { name: 'Uložit' }));

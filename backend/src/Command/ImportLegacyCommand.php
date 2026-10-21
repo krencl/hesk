@@ -26,8 +26,6 @@ final class ImportLegacyCommand extends Command
 
     public function __construct(
         private readonly Connection $connection,
-        #[Autowire('%kernel.project_dir%')]
-        private readonly string $projectDir,
         #[Autowire('%kernel.debug%')]
         private readonly bool $debug,
         #[Autowire(env: 'LEGACY_DB_HOSTNAME')]
@@ -40,8 +38,6 @@ final class ImportLegacyCommand extends Command
         private readonly string $legacyUser,
         #[Autowire(env: 'LEGACY_DB_PASSWORD')]
         private readonly string $legacyPassword,
-        #[Autowire(env: 'LEGACY_COVERS_DIR')]
-        private readonly string $legacyCoversDir,
     ) {
         parent::__construct();
     }
@@ -54,10 +50,7 @@ final class ImportLegacyCommand extends Command
                 Lze ho spouštět opakovaně: nové a změněné se přidá/aktualizuje, smazané zápisy se smažou, co vzniklo jen
                 v nové aplikaci, se nemění. Doporučení: nejdřív `--dry-run`, spouštět s `--no-debug` (rychlejší a bez profileru).
                 HELP)
-            ->addOption('dry-run', null, InputOption::VALUE_NONE, 'Jen ukáže, co by se změnilo; nic nezapíše')
-            ->addOption('covers-source', null, InputOption::VALUE_REQUIRED, 'Adresář s obálkami staré aplikace (výchozí: LEGACY_COVERS_DIR)')
-            ->addOption('covers-target', null, InputOption::VALUE_REQUIRED, 'Adresář obálek nové aplikace', $this->projectDir.'/../frontend/public/covers')
-            ->addOption('no-covers', null, InputOption::VALUE_NONE, 'Neřešit obálky her');
+            ->addOption('dry-run', null, InputOption::VALUE_NONE, 'Jen ukáže, co by se změnilo; nic nezapíše');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int
@@ -85,14 +78,7 @@ final class ImportLegacyCommand extends Command
             return Command::FAILURE;
         }
 
-        $noCovers = (bool) $input->getOption('no-covers');
-        $coversSource = $input->getOption('covers-source') ?: ('' !== $this->legacyCoversDir ? $this->legacyCoversDir : null);
-        $importer = new LegacyImporter(
-            $legacy,
-            $this->connection,
-            $noCovers ? null : $coversSource,
-            $noCovers ? null : (string) $input->getOption('covers-target'),
-        );
+        $importer = new LegacyImporter($legacy, $this->connection);
         $dryRun = (bool) $input->getOption('dry-run');
         $io->title($dryRun ? 'Import ze staré aplikace (zkouška, nic se nezapíše)' : 'Import ze staré aplikace');
 
@@ -118,9 +104,6 @@ final class ImportLegacyCommand extends Command
             if (\count($report->changes) > 200) {
                 $io->writeln(\sprintf('… a dalších %d', \count($report->changes) - 200));
             }
-        }
-        if ($report->coversCopied > 0) {
-            $io->writeln(\sprintf('Zkopírováno obálek: %d', $report->coversCopied));
         }
         if ($report->isNoop()) {
             $io->success('Nic nového – nová databáze odpovídá staré.');

@@ -619,28 +619,29 @@ final class ApiFlowTest extends WebTestCase
     {
         $this->login('anna@example.com', 'Anna');
         $party = $this->api('POST', '/api/parties', ['name' => 'Pátek'], 201);
-        $upload = function (string $png, string $name = 'cover.png') use ($party): int {
+        $upload = function (string $image, string $name = 'cover.webp') use ($party): int {
             $path = tempnam(sys_get_temp_dir(), 'cover');
-            file_put_contents($path, $png);
+            file_put_contents($path, $image);
             $this->client->request('POST', "/api/parties/{$party['id']}/game-images", files: ['file' => new UploadedFile($path, $name, null, null, true)]);
 
             return $this->client->getResponse()->getStatusCode();
         };
 
-        self::assertSame(201, $upload(self::png(200, 200)));
+        self::assertSame(201, $upload(self::webp(200, 200)));
         $url = json_decode($this->client->getResponse()->getContent(), true)['url'];
-        self::assertMatchesRegularExpression('~^/uploads/covers/[0-9a-f]{40}\.png$~', $url);
+        self::assertMatchesRegularExpression('~^/uploads/covers/[0-9a-f]{40}\.webp$~', $url);
         self::assertFileExists(static::getContainer()->getParameter('app.uploads_dir').'/covers/'.basename($url));
-        self::assertSame(201, $upload(self::png(200, 200)), 'stejný obrázek = stejná adresa');
+        self::assertSame(201, $upload(self::webp(200, 200)), 'stejný obrázek = stejná adresa');
         self::assertSame($url, json_decode($this->client->getResponse()->getContent(), true)['url']);
 
         // adresu jde uložit k hře
         $game = $this->api('POST', "/api/parties/{$party['id']}/games", ['name' => 'Hra', 'scoreType' => 'most_points', 'imageUrl' => $url], 201);
         self::assertSame($url, $game['imageUrl']);
 
-        self::assertSame(422, $upload(self::png(200, 100)), 'není čtverec');
-        self::assertSame(422, $upload(self::png(50, 50)), 'příliš malý');
-        self::assertSame(422, $upload('<?php echo 1;', 'cover.png'), 'není obrázek');
+        self::assertSame(422, $upload(self::webp(200, 100)), 'není čtverec');
+        self::assertSame(422, $upload(self::webp(50, 50)), 'příliš malý');
+        self::assertSame(422, $upload(self::png(200, 200), 'cover.webp'), 'PNG s příponou webp: uvnitř je jen WebP');
+        self::assertSame(422, $upload('<?php echo 1;', 'cover.webp'), 'není obrázek');
         self::assertSame(422, $upload('GIF89a'.str_repeat("\0", 20), 'cover.gif'), 'nepodporovaný formát');
 
         $this->client->request('POST', "/api/parties/{$party['id']}/game-images");
@@ -648,7 +649,15 @@ final class ApiFlowTest extends WebTestCase
 
         // jen člen party
         $this->login('eve@example.com', 'Eve');
-        self::assertSame(403, $upload(self::png(200, 200)));
+        self::assertSame(403, $upload(self::webp(200, 200)));
+    }
+
+    /** Hlavička WebP (RIFF + VP8X) zadaného rozměru; server obrázek jen ověřuje podle hlavičky, nedekóduje ho. */
+    private static function webp(int $width, int $height): string
+    {
+        $vp8x = pack('C4', 0, 0, 0, 0).substr(pack('V', $width - 1), 0, 3).substr(pack('V', $height - 1), 0, 3);
+
+        return 'RIFF'.pack('V', 4 + 8 + \strlen($vp8x)).'WEBPVP8X'.pack('V', \strlen($vp8x)).$vp8x;
     }
 
     /** Jednobarevné PNG zadaného rozměru bez závislosti na GD. */
@@ -660,16 +669,16 @@ final class ApiFlowTest extends WebTestCase
         return "\x89PNG\r\n\x1a\n".$chunk('IHDR', pack('NNCCCCC', $width, $height, 8, 2, 0, 0, 0)).$chunk('IDAT', (string) gzcompress($rows)).$chunk('IEND', '');
     }
 
-    public function testGameImageUrlAcceptsHttpLinksAndLocalPathsOnly(): void
+    public function testGameImageUrlMustBeAnUploadedWebpAddress(): void
     {
         $this->login('anna@example.com', 'Anna');
         $party = $this->api('POST', '/api/parties', ['name' => 'Pátek'], 201);
         $base = "/api/parties/{$party['id']}";
 
-        foreach (['https://example.com/a.jpg', '/static/covers/a.jpg', '', null] as $i => $url) {
+        foreach ([sprintf('/uploads/covers/%s.webp', sha1('a')), '', null] as $i => $url) {
             $this->api('POST', "$base/games", ['name' => "Hra $i", 'scoreType' => 'most_points', 'imageUrl' => $url], 201);
         }
-        foreach (['javascript:alert(1)', '//evil.example/a.jpg', 'data:text/html;base64,AAAA', 'obrazek.jpg'] as $i => $url) {
+        foreach (['https://example.com/a.jpg', '/static/covers/a.jpg', '/uploads/covers/a.webp', sprintf('/uploads/covers/%s.jpg', sha1('a')), 'javascript:alert(1)', '//evil.example/a.jpg', 'data:text/html;base64,AAAA', 'obrazek.jpg'] as $i => $url) {
             $this->api('POST', "$base/games", ['name' => "Zlá $i", 'scoreType' => 'most_points', 'imageUrl' => $url], 422);
         }
     }

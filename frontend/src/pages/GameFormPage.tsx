@@ -131,10 +131,6 @@ export function GameFormPage() {
             <button type="button" className="btn small outline" onClick={() => fileInput.current?.click()}>{form.imageUrl.trim() ? 'Změnit obrázek' : 'Nahrát obrázek'}</button>
             {form.imageUrl.trim() && <button type="button" className="btn small outline-secondary" onClick={() => set({ imageUrl: '' })}>Odebrat obrázek</button>}
           </div>
-          <details>
-            <summary>Zadat adresu obrázku</summary>
-            <input inputMode="url" aria-label="URL obrázku" value={form.imageUrl} placeholder="https://… nebo /uploads/covers/…" onChange={(e) => set({ imageUrl: e.target.value })} />
-          </details>
         </div>
         <label>Popis<textarea rows={3} value={form.description} onChange={(e) => set({ description: e.target.value })} /></label>
 

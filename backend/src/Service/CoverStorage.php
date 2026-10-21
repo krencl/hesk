@@ -9,8 +9,9 @@ use Symfony\Component\DependencyInjection\Attribute\Autowire;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 
 /**
- * Ukládá obrázky her nahrané z prohlížeče (ADR 0020). Klient je ořízne na čtverec, server jen ověří, že jde opravdu
- * o čtvercový JPEG/PNG/WebP rozumné velikosti, a uloží ho pod názvem podle obsahu (stejný soubor = stejná adresa).
+ * Ukládá obrázky her nahrané z prohlížeče (ADR 0020). Klient je ořízne na čtverec a zakóduje jako WebP, server jen
+ * ověří, že jde opravdu o čtvercový WebP rozumné velikosti, a uloží ho pod názvem podle obsahu (stejný soubor = stejná
+ * adresa). Interně existuje jen WebP, takže adresa obrázku vždy odpovídá `URL_PATTERN`.
  */
 final class CoverStorage
 {
@@ -19,7 +20,8 @@ final class CoverStorage
     public const MIN_SIDE = 100;
     public const MAX_SIDE = 2048;
 
-    private const EXTENSIONS = [\IMAGETYPE_JPEG => 'jpg', \IMAGETYPE_PNG => 'png', \IMAGETYPE_WEBP => 'webp'];
+    /** Adresa uloženého obrázku; jediná hodnota, kterou smí mít `Game::imageUrl`. */
+    public const URL_PATTERN = '~^/uploads/covers/[0-9a-f]{40}\.webp$~';
 
     public function __construct(#[Autowire('%app.uploads_dir%')] private readonly string $uploadsDir)
     {
@@ -35,8 +37,8 @@ final class CoverStorage
             throw new DomainException('Obrázek se nepodařilo nahrát (maximum jsou 2 MB).');
         }
         $info = @getimagesize($file->getPathname());
-        if (false === $info || !isset(self::EXTENSIONS[$info[2]])) {
-            throw new DomainException('Obrázek musí být JPEG, PNG nebo WebP.');
+        if (false === $info || \IMAGETYPE_WEBP !== $info[2]) {
+            throw new DomainException('Obrázek musí být ve formátu WebP.');
         }
         [$width, $height] = $info;
         if ($width !== $height) {
@@ -46,7 +48,7 @@ final class CoverStorage
             throw new DomainException(sprintf('Obrázek musí mít %d až %d px.', self::MIN_SIDE, self::MAX_SIDE));
         }
 
-        $name = sha1_file($file->getPathname()).'.'.self::EXTENSIONS[$info[2]];
+        $name = sha1_file($file->getPathname()).'.webp';
         $dir = rtrim($this->uploadsDir, '/').'/covers';
         if (!is_dir($dir) && !@mkdir($dir, 0775, true) && !is_dir($dir)) {
             throw new \RuntimeException('Adresář pro obrázky nejde vytvořit.');

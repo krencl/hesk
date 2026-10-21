@@ -12,7 +12,6 @@ final class ImportReport
     /** @var array<string, array<string, int>> */
     public array $entities = [];
     public bool $dryRun = false;
-    public int $coversCopied = 0;
     /** @var list<string> podrobnosti změn („tabulka #id: sloupec: před → po“), pro výpis s -v */
     public array $changes = [];
 

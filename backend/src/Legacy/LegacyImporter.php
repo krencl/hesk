@@ -32,11 +32,6 @@ final class LegacyImporter
     public function __construct(
         private readonly Connection $legacy,
         private readonly Connection $target,
-        /** Adresář s obálkami ze staré aplikace (zdroj kopírování). */
-        private readonly ?string $coversSource = null,
-        /** Adresář s obálkami nové aplikace; hra dostane `image_url`, jen pokud tam soubor je (nebo se tam zkopíruje). */
-        private readonly ?string $coversTarget = null,
-        private readonly string $coverUrlPrefix = '/static/covers/',
     ) {
         $this->prague = new \DateTimeZone('Europe/Prague');
         $this->utc = new \DateTimeZone('UTC');
@@ -92,7 +87,7 @@ final class LegacyImporter
             'players' => $byId($all('SELECT id, name, type, game_id FROM player')),
             'userPlayer' => array_column($all('SELECT id, player_id FROM user WHERE player_id IS NOT NULL'), 'id', 'player_id'),
             'partyPlayers' => $all('SELECT party_id, player_id FROM party_player'),
-            'games' => $byId($all('SELECT id, name, short_name, scoring_type, cover_image, cheat_sheet FROM game')),
+            'games' => $byId($all('SELECT id, name, short_name, scoring_type, cheat_sheet FROM game')),
             'versions' => $all('SELECT id, game_id, name FROM game_version ORDER BY id'),
             'characters' => $all('SELECT id, game_id, name FROM game_character ORDER BY id'),
             'tags' => array_column($all('SELECT id, name FROM tag'), 'name', 'id'),
@@ -345,9 +340,6 @@ final class LegacyImporter
                 'score_type' => self::SCORE_TYPES[$g['scoring_type']] ?? 'most_points',
                 'cheat_sheet' => '' !== trim((string) $g['cheat_sheet']) ? $g['cheat_sheet'] : null,
             ];
-            if (null !== ($cover = $this->coverUrl($g['cover_image']))) {
-                $values['image_url'] = $cover;
-            }
             $newGameId = $this->upsert('game', "$gameId:$legacyPartyId", 'game', fn () => $this->findId('SELECT id FROM game WHERE party_id = ? AND LOWER(name) = LOWER(?)', [$partyId, $name]), $values);
 
             // vlastní hráči hry (typ „game“ ve staré aplikaci); import je jen přidává, ruční změny v nové aplikaci neodebírá
@@ -395,24 +387,6 @@ final class LegacyImporter
             }
             $this->upsert('tag', "$tagId:$legacyPartyId", 'tag', fn () => $this->findId('SELECT id FROM tag WHERE party_id = ? AND LOWER(name) = LOWER(?)', [$partyId, $tName]), ['party_id' => $partyId, 'name' => $tName]);
         }
-    }
-
-    private function coverUrl(?string $file): ?string
-    {
-        $file = trim((string) $file);
-        if ('' === $file || basename($file) !== $file || null === $this->coversTarget) {
-            return null;
-        }
-        $to = rtrim($this->coversTarget, '/').'/'.$file;
-        if (!is_file($to) && null !== $this->coversSource && is_file($from = rtrim($this->coversSource, '/').'/'.$file) && !$this->dryRun) {
-            if (!is_dir($this->coversTarget)) {
-                mkdir($this->coversTarget, 0775, true);
-            }
-            copy($from, $to);
-            ++$this->report->coversCopied;
-        }
-
-        return is_file($to) || (null !== $this->coversSource && $this->dryRun && is_file(rtrim($this->coversSource, '/').'/'.$file)) ? $this->coverUrlPrefix.$file : null;
     }
 
     // ------------------------------------------------------------------ seance, zápisy, výsledky
