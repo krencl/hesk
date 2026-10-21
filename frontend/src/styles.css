@@ -83,8 +83,8 @@ hr { border: 0; border-top: 1px solid rgba(0, 0, 0, 0.15); margin: 1rem 0; }
   cursor: pointer; transition: box-shadow 0.2s, background-color 0.2s;
 }
 .header-button:hover { box-shadow: 0 0 0 0.3rem var(--gray); }
-/* otevřené menu: křížek leží na modré hlavičce, proto je o odstín tmavší a má nenápadný světlý okraj; při najetí šedý kruh jako v prototypu */
-.header-button.open { background: var(--main-dark); box-shadow: 0 0 0 0.12rem rgba(255, 255, 255, 0.3); }
+/* otevřené menu: křížek leží na modré hlavičce, proto má nenápadný světlý okraj (pozadí zůstává modré jako v prototypu); při najetí šedý kruh */
+.header-button.open { box-shadow: 0 0 0 0.12rem rgba(255, 255, 255, 0.3); }
 .header-button.open:hover { box-shadow: 0 0 0 0.3rem var(--gray); }
 .header-button.size-1 { font-size: 1.9rem; }
 .header-button.size-2 { font-size: 1.4rem; }
