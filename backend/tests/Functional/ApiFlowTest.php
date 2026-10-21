@@ -85,6 +85,12 @@ final class ApiFlowTest extends WebTestCase
         $this->api('POST', "/api/invitations/{$invite['token']}/accept");
         $this->api('POST', "/api/parties/{$party['id']}/invitations", null, 403);
 
+        // nový člen zápisy jen čte; admin ho povýší na zapisovače (podrobně testMembersCannotWritePlaysButWritersCan)
+        $this->login('anna@example.com', 'Anna');
+        $bobUser = array_values(array_filter($this->api('GET', "/api/parties/{$party['id']}")['members'], static fn (array $m): bool => 'Bob' === $m['nickname']))[0];
+        $this->api('PATCH', "/api/parties/{$party['id']}/members/{$bobUser['userId']}", ['role' => 'writer']);
+        $this->login('bob@example.com', 'Bob');
+
         $game = $this->api('POST', "/api/parties/{$party['id']}/games", [
             'name' => 'Carcassonne', 'scoreType' => 'most_points', 'addons' => [['name' => 'Rivers']],
         ], 201);
@@ -368,6 +374,104 @@ final class ApiFlowTest extends WebTestCase
         $this->api('PATCH', "$base/members/{$annaUser['userId']}", ['role' => 'writer'], 422);
         $this->api('PATCH', "$base/members/{$annaUser['userId']}", ['role' => 'member'], 422);
         $this->api('PATCH', "$base/members/{$annaUser['userId']}", ['role' => 'neznámá'], 422);
+    }
+
+    /** @return array{party: array, base: string, anna: array, game: array, play: callable} */
+    private function partyWithGame(): array
+    {
+        $this->login('anna@example.com', 'Anna');
+        $party = $this->api('POST', '/api/parties', ['name' => 'Pátek'], 201);
+        $base = "/api/parties/{$party['id']}";
+        $anna = $this->api('GET', "$base/players")[0];
+        $game = $this->api('POST', "$base/games", ['name' => 'Azul', 'scoreType' => 'winner_only'], 201);
+        $play = fn (string $day, array $playerIds): array => $this->api('POST', "$base/plays", [
+            'gameId' => $game['id'], 'startedAt' => "{$day}T18:00:00+00:00", 'endedAt' => "{$day}T19:00:00+00:00",
+            'players' => array_map(static fn (int $id): array => ['playerId' => $id, 'winner' => $id === $playerIds[0]], $playerIds),
+        ], 201);
+
+        return ['party' => $party, 'base' => $base, 'anna' => $anna, 'game' => $game, 'play' => $play];
+    }
+
+    public function testAdminLinksAGuestToAnExistingMember(): void
+    {
+        ['party' => $party, 'base' => $base, 'anna' => $anna, 'game' => $game, 'play' => $play] = $this->partyWithGame();
+        $invite = $this->api('POST', "$base/invitations", null, 201);
+        $this->login('bob@example.com', 'Bob');
+        $this->api('POST', "/api/invitations/{$invite['token']}/accept");
+        $this->login('anna@example.com', 'Anna');
+        $players = array_column($this->api('GET', "$base/players"), null, 'name');
+        $bob = $players['Bob'];
+        $bobUser = array_values(array_filter($this->api('GET', $base)['members'], static fn (array $m): bool => 'Bob' === $m['nickname']))[0];
+        $host = $this->api('POST', "$base/players", ['name' => 'Bobík'], 201);
+        $coop = $this->api('POST', "$base/games", ['name' => 'Coop', 'scoreType' => 'winner_only', 'playerId' => $host['id']], 201);
+        $play('2026-03-01', [$host['id'], $anna['id']]);
+        $play('2026-03-02', [$host['id']]);
+        $play('2026-03-03', [$bob['id']]);
+
+        // jen admin; cílem musí být člen party
+        $this->login('bob@example.com', 'Bob');
+        $this->api('POST', "/api/players/{$host['id']}/link-member", ['userId' => $bobUser['userId']], 403);
+        $this->login('anna@example.com', 'Anna');
+        $this->api('POST', "/api/players/{$host['id']}/link-member", ['userId' => 999999], 422);
+        $this->api('POST', "/api/players/{$anna['id']}/link-member", ['userId' => $bobUser['userId']], 422); // člen s účtem není host
+
+        $linked = $this->api('POST', "/api/players/{$host['id']}/link-member", ['userId' => $bobUser['userId']]);
+        self::assertSame(['Bob', 3], [$linked['name'], $linked['playCount']], 'zápisy hosta přešly na člena (2 + 1 vlastní)');
+        $after = array_column($this->api('GET', "$base/players"), 'playCount', 'name');
+        self::assertSame(['Anna' => 1, 'Bob' => 3], $after, 'host zmizel');
+        self::assertSame($bob['id'], $this->api('GET', "/api/games/{$coop['id']}")['player']['id'] ?? null, 'hráč hry se přepsal na člena');
+        self::assertSame(1, \count(array_filter($this->api('GET', "$base/plays?limit=10"), static fn (array $p): bool => \in_array('Bob', array_column($p['results'], 'name'), true) && \in_array('Anna', array_column($p['results'], 'name'), true))));
+    }
+
+    public function testGuestAndMemberWhoPlayedTheSamePlayCannotBeLinked(): void
+    {
+        ['base' => $base, 'anna' => $anna, 'play' => $play] = $this->partyWithGame();
+        $host = $this->api('POST', "$base/players", ['name' => 'Anička'], 201);
+        $play('2026-03-01', [$anna['id'], $host['id']]);
+        $annaUser = $this->api('GET', $base)['members'][0];
+
+        $error = $this->api('POST', "/api/players/{$host['id']}/link-member", ['userId' => $annaUser['userId']], 422);
+        self::assertStringContainsString('stejných zápisech', $error['error']);
+        self::assertCount(2, $this->api('GET', "$base/players"), 'nic se nezměnilo');
+    }
+
+    public function testInvitationForAGuestLinksHimWhenAccepted(): void
+    {
+        ['party' => $party, 'base' => $base, 'anna' => $anna, 'game' => $game, 'play' => $play] = $this->partyWithGame();
+        $host = $this->api('POST', "$base/players", ['name' => 'Bob'], 201);
+        $play('2026-03-01', [$host['id'], $anna['id']]);
+        $play('2026-03-02', [$host['id']]);
+
+        // pozvat jde jen hosta z této party
+        $this->api('POST', "$base/invitations", ['guestId' => $anna['id']], 422);
+        $this->api('POST', "$base/invitations", ['guestId' => 999999], 422);
+        $invite = $this->api('POST', "$base/invitations", ['guestId' => $host['id']], 201);
+
+        $this->login('bob@example.com', 'Bob');
+        $joined = $this->api('POST', "/api/invitations/{$invite['token']}/accept");
+        self::assertSame('Bob', $joined['linkedGuest']);
+        $this->login('anna@example.com', 'Anna');
+        $players = $this->api('GET', "$base/players");
+        self::assertSame(['Anna' => 1, 'Bob' => 2], array_column($players, 'playCount', 'name'), 'host zmizel, jeho zápisy má člen Bob (jméno bez „Bob 2“)');
+        self::assertTrue(array_column($players, 'hasAccount', 'name')['Bob']);
+
+        // další člověk, který stejný odkaz použije, se jen připojí (host už není)
+        $this->login('eve@example.com', 'Eve');
+        self::assertNull($this->api('POST', "/api/invitations/{$invite['token']}/accept")['linkedGuest']);
+    }
+
+    public function testInvitationForAGuestStillJoinsWhenThereIsNothingToMerge(): void
+    {
+        ['base' => $base, 'anna' => $anna, 'play' => $play] = $this->partyWithGame();
+        $host = $this->api('POST', "$base/players", ['name' => 'Cyril'], 201);
+        $invite = $this->api('POST', "$base/invitations", ['guestId' => $host['id']], 201);
+        // host Cyril je smazán dřív, než pozvánku někdo přijme
+        $this->api('DELETE', "/api/players/{$host['id']}", expected: 204);
+
+        $this->login('cyril@example.com', 'Cyril');
+        $joined = $this->api('POST', "/api/invitations/{$invite['token']}/accept");
+        self::assertNull($joined['linkedGuest']);
+        self::assertContains('Cyril', array_column($joined['members'], 'nickname'));
     }
 
     public function testTagsAreListedForSuggestions(): void

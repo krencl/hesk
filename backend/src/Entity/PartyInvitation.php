@@ -28,6 +28,10 @@ class PartyInvitation
         #[ORM\JoinColumn(nullable: false, onDelete: 'CASCADE')]
         private User $invitedBy,
         ?\DateTimeImmutable $now = null,
+        /** Pozvánka pro konkrétního hosta: po přijetí se jeho zápisy převedou na účet pozvaného. */
+        #[ORM\ManyToOne]
+        #[ORM\JoinColumn(onDelete: 'SET NULL')]
+        private ?Player $guest = null,
     ) {
         $this->token = bin2hex(random_bytes(24));
         $this->expiresAt = ($now ?? new \DateTimeImmutable())->modify(self::TTL);
@@ -41,6 +45,17 @@ class PartyInvitation
     public function getParty(): Party
     {
         return $this->party;
+    }
+
+    public function getGuest(): ?Player
+    {
+        return $this->guest;
+    }
+
+    /** Host zanikl (smazán nebo propojen s členem): pozvánka se pak chová jako obyčejná. */
+    public function clearGuest(): void
+    {
+        $this->guest = null;
     }
 
     public function getInvitedBy(): User

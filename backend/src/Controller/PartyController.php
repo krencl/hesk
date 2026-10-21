@@ -4,15 +4,19 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Domain\Exception\DomainException;
 use App\Dto\ChangeRoleRequest;
 use App\Dto\CreatePartyRequest;
 use App\Dto\UpdatePartyRequest;
 use App\Entity\Party;
 use App\Entity\PartyInvitation;
+use App\Entity\Player;
 use App\Entity\User;
 use App\Security\PartyVoter;
+use App\Service\GuestMerger;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\HttpFoundation\JsonResponse;
+use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Attribute\MapRequestPayload;
 use Symfony\Component\Routing\Attribute\Route;
@@ -20,7 +24,7 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 
 final class PartyController extends ApiController
 {
-    public function __construct(\App\Service\Presenter $presenter, private readonly EntityManagerInterface $em)
+    public function __construct(\App\Service\Presenter $presenter, private readonly EntityManagerInterface $em, private readonly GuestMerger $merger)
     {
         parent::__construct($presenter);
     }
@@ -65,9 +69,18 @@ final class PartyController extends ApiController
     /** Admin vygeneruje odkaz (token), kterým se může kdokoli přihlášený do party připojit. */
     #[Route('/api/parties/{id}/invitations', requirements: ['id' => '\d+'], methods: ['POST'])]
     #[IsGranted(PartyVoter::ADMIN, 'party')]
-    public function invite(Party $party): JsonResponse
+    public function invite(Party $party, Request $request): JsonResponse
     {
-        $invitation = new PartyInvitation($party, $this->currentUser());
+        // volitelné {"guestId": …}: pozvánka pro hosta, jehož zápisy se po přijetí převedou na účet pozvaného
+        $guest = null;
+        $data = json_decode($request->getContent() ?: 'null', true);
+        if (\is_array($data) && isset($data['guestId'])) {
+            $guest = \is_int($data['guestId']) ? $this->em->find(Player::class, $data['guestId']) : null;
+            if (!$guest || $guest->getParty() !== $party || null !== $guest->getUser()) {
+                throw new DomainException('Pozvat jako člena jde jen hosta z této party.');
+            }
+        }
+        $invitation = new PartyInvitation($party, $this->currentUser(), guest: $guest);
         $this->em->persist($invitation);
         $this->em->flush();
 
@@ -89,7 +102,19 @@ final class PartyController extends ApiController
         $party->addMember($user);
         $this->em->flush();
 
-        return new JsonResponse($this->presenter->partyDetail($party, $user));
+        // pozvánka pro hosta: jeho zápisy přejdou na hráče nového člena (když to nejde, třeba kvůli společným zápisům, host zůstane)
+        $linkedGuest = null;
+        $guest = $invitation->getGuest();
+        if ($guest && null === $guest->getUser() && ($player = $party->findPlayerFor($user))) {
+            $name = $guest->getName();
+            try {
+                $this->merger->mergeGuestIntoMember($guest, $player);
+                $linkedGuest = $name;
+            } catch (DomainException) {
+            }
+        }
+
+        return new JsonResponse($this->presenter->partyDetail($party, $user) + ['linkedGuest' => $linkedGuest]);
     }
 
     #[Route('/api/parties/{id}/members/{userId}', requirements: ['id' => '\d+', 'userId' => '\d+'], methods: ['PATCH'])]

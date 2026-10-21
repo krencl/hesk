@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Controller;
 
 use App\Domain\Exception\DomainException;
+use App\Dto\LinkMemberRequest;
 use App\Dto\PlayerNameRequest;
 use App\Dto\UpdatePlayerRequest;
 use App\Entity\Game;
@@ -12,6 +13,7 @@ use App\Entity\Party;
 use App\Entity\Player;
 use App\Repository\PlayRepository;
 use App\Security\PartyVoter;
+use App\Service\GuestMerger;
 use App\Service\Presenter;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -23,7 +25,7 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 /** Hráči party: členové s účtem i hosté, které do her zapisujeme. */
 final class PlayerController extends ApiController
 {
-    public function __construct(Presenter $presenter, private readonly EntityManagerInterface $em, private readonly PlayRepository $plays)
+    public function __construct(Presenter $presenter, private readonly EntityManagerInterface $em, private readonly PlayRepository $plays, private readonly GuestMerger $merger)
     {
         parent::__construct($presenter);
     }
@@ -95,9 +97,32 @@ final class PlayerController extends ApiController
         if ($game = $this->em->getRepository(Game::class)->findOneBy(['player' => $player])) {
             throw new DomainException(sprintf('Host je hráčem hry %s, smazat ho nejde.', $game->getName()));
         }
+        $this->merger->forgetInvitations($player);
         $this->em->remove($player);
         $this->em->flush();
 
         return new Response(status: Response::HTTP_NO_CONTENT);
+    }
+
+    /** Admin propojí hosta s existujícím členem: zápisy hosta přejdou na hráče člena a host zmizí. */
+    #[Route('/api/players/{id}/link-member', requirements: ['id' => '\d+'], methods: ['POST'])]
+    public function linkMember(Player $player, #[MapRequestPayload] LinkMemberRequest $req): JsonResponse
+    {
+        $party = $player->getParty();
+        $this->denyAccessUnlessGranted(PartyVoter::ADMIN, $party);
+        $user = null;
+        foreach ($party->getMembers() as $member) {
+            if ($member->getUser()->getId() === $req->userId) {
+                $user = $member->getUser();
+            }
+        }
+        $target = $user ? $party->findPlayerFor($user) : null;
+        if (!$user || !$target) {
+            throw new DomainException('Uživatel není členem této party.');
+        }
+        $this->merger->mergeGuestIntoMember($player, $target);
+        $counts = $this->plays->playCountsByPlayer($party);
+
+        return new JsonResponse($this->presenter->player($target) + ['playCount' => $counts[$target->getId()] ?? 0]);
     }
 }
