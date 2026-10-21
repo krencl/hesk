@@ -20,7 +20,10 @@ export const api = {
   party: (id: number) => get<PartyDetail>(`/parties/${id}`),
   createParty: (name: string) => post<PartyDetail>('/parties', { name }),
   updateParty: (id: number, input: { name: string; shortName: string }) => patch<PartyDetail>(`/parties/${id}`, input),
-  invite: (id: number) => post<{ token: string; expiresAt: string }>(`/parties/${id}/invitations`),
+  /** S `guestId` je pozvánka pro hosta: po přijetí se jeho zápisy převedou na účet pozvaného. */
+  invite: (id: number, guestId?: number) => post<{ token: string; expiresAt: string }>(`/parties/${id}/invitations`, guestId === undefined ? undefined : { guestId }),
+  /** Admin propojí hosta s členem: zápisy hosta přejdou na člena a host zmizí. */
+  linkGuest: (playerId: number, userId: number) => post<Player>(`/players/${playerId}/link-member`, { userId }),
   acceptInvitation: (token: string) => post<PartyDetail>(`/invitations/${token}/accept`),
   changeRole: (partyId: number, userId: number, role: PartyRole) => patch<PartyDetail>(`/parties/${partyId}/members/${userId}`, { role }),
   removeMember: (partyId: number, userId: number) => del(`/parties/${partyId}/members/${userId}`),

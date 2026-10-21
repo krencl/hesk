@@ -6,6 +6,7 @@ import { ApiError } from '../api/client';
 import { Actions } from '../components/Actions';
 import { ConfirmPopup } from '../components/ConfirmPopup';
 import { ErrorMessage } from '../components/ErrorMessage';
+import { GuestLinkPopup } from '../components/GuestLinkPopup';
 import { Icon } from '../components/Icon';
 import { PartyHeader } from '../components/PartyHeader';
 import { ListSkeleton } from '../components/Skeleton';
@@ -22,6 +23,7 @@ export function PartyGuestsPage() {
   const [edited, setEdited] = useState<Record<number, { name?: string; visible?: boolean }>>({});
   const [newName, setNewName] = useState('');
   const [confirming, setConfirming] = useState<{ id: number; name: string } | null>(null);
+  const [linking, setLinking] = useState<{ id: number; name: string; playCount: number } | null>(null);
 
   const refresh = () => queryClient.invalidateQueries({ queryKey: ['players', id] });
   const add = useMutation({
@@ -102,6 +104,14 @@ export function PartyGuestsPage() {
                 >
                   <Icon name={visibleOf(g) ? 'visibility' : 'visibility_off'} />
                 </button>
+                <button
+                  type="button"
+                  className="icon-button"
+                  aria-label={`Propojit hosta ${g.name} s členem`}
+                  onClick={() => setLinking({ id: g.id, name: g.name, playCount: g.playCount })}
+                >
+                  <Icon name="link" />
+                </button>
                 {g.playCount > 0 ? (
                   <span className="guest-plays muted">{playsLabel(g.playCount)}</span>
                 ) : (
@@ -139,6 +149,7 @@ export function PartyGuestsPage() {
             <p>Jen nechceš, aby se nabízel při zápisu? Stačí ho skrýt tlačítkem s okem.</p>
           </ConfirmPopup>
         )}
+        {linking && <GuestLinkPopup partyId={id} guest={linking} members={detail.data.members} onClose={() => setLinking(null)} />}
         <Actions>
           <button className="btn" type="submit" disabled={changed.length === 0 || save.isPending}>Uložit</button>
           <Link className="btn outline-secondary" to={LEAVE_PARTY_MANAGEMENT_PATH}>Zrušit</Link>

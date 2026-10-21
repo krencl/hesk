@@ -4,7 +4,7 @@ import { GAME, mockApi, ME, PARTY, renderApp } from '../test/helpers';
 
 afterEach(() => { vi.unstubAllGlobals(); vi.restoreAllMocks(); sessionStorage.clear(); localStorage.clear(); });
 
-const detail = { ...PARTY, members: [{ userId: 1, nickname: 'Anna', role: 'admin' }] };
+const detail = { ...PARTY, members: [{ userId: 1, nickname: 'Anna', role: 'admin' }, { userId: 2, nickname: 'Viki', role: 'writer' }] };
 const PLAYERS = [
   { id: 1, name: 'Anna', hasAccount: true, visible: true, playCount: 12 },
   { id: 2, name: 'Bob', hasAccount: false, visible: true, playCount: 3 },
@@ -122,5 +122,63 @@ describe('party guests (/parties/:id/guests)', () => {
     mockApi({ ...base, '/parties/3/players': { body: [PLAYERS[0]] } });
     renderApp('/parties/3/guests');
     expect(await screen.findByText('Zatím tu nejsou žádní hosté.')).toBeInTheDocument();
+  });
+
+  describe('turning a guest into a member', () => {
+    it('links a guest with an existing member after confirming what happens', async () => {
+      const fetchMock = mockApi({ ...base, 'POST /players/2/link-member': { body: { id: 5, name: 'Viki', hasAccount: true, visible: true, playCount: 4 } } });
+      renderApp('/parties/3/guests');
+      fireEvent.click(await screen.findByRole('button', { name: 'Propojit hosta Bob s členem' }));
+      const dialog = screen.getByRole('dialog', { name: 'Host Bob' });
+      fireEvent.click(within(dialog).getByRole('button', { name: /Propojit s členem/ }));
+      fireEvent.click(screen.getByRole('option', { name: /Viki/ }));
+
+      expect(screen.getByRole('dialog', { name: 'Propojit Bob s členem Viki?' })).toBeInTheDocument();
+      expect(screen.getByText(/Všechny zápisy hosta Bob \(3 zápisy\) přejdou na člena Viki/)).toBeInTheDocument();
+      expect(fetchMock.mock.calls.some(([, init]) => init?.method === 'POST' && String(init?.body).includes('userId'))).toBe(false);
+      fireEvent.click(screen.getByRole('button', { name: 'Propojit' }));
+
+      await waitFor(() => expect(fetchMock.mock.calls.some(([u, init]) => String(u) === '/api/players/2/link-member' && init?.method === 'POST')).toBe(true));
+      expect(JSON.parse(String(fetchMock.mock.calls.find(([u]) => String(u).includes('link-member'))![1]?.body))).toEqual({ userId: 2 });
+      await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+    });
+
+    it('shows the server error (e.g. a shared play) as a toast and keeps the popup', async () => {
+      mockApi({ ...base, 'POST /players/2/link-member': { status: 422, body: { error: 'Host a člen hráli v 1 stejných zápisech, takže je nejde sloučit.' } } });
+      renderApp('/parties/3/guests');
+      fireEvent.click(await screen.findByRole('button', { name: 'Propojit hosta Bob s členem' }));
+      fireEvent.click(screen.getByRole('button', { name: /Propojit s členem/ }));
+      fireEvent.click(screen.getByRole('option', { name: /Viki/ }));
+      fireEvent.click(screen.getByRole('button', { name: 'Propojit' }));
+      expect(await screen.findByRole('alert')).toHaveTextContent('stejných zápisech');
+      expect(screen.getByRole('dialog')).toBeInTheDocument();
+    });
+
+    it('creates an invitation for that guest and shows the link', async () => {
+      const fetchMock = mockApi({ ...base, 'POST /parties/3/invitations': { status: 201, body: { token: 'tok42', expiresAt: '2030-01-01T00:00:00+00:00' } } });
+      renderApp('/parties/3/guests');
+      fireEvent.click(await screen.findByRole('button', { name: 'Propojit hosta Bob s členem' }));
+      fireEvent.click(screen.getByRole('button', { name: /Pozvat jako člena/ }));
+
+      const link = (await screen.findByLabelText('Odkaz pozvánky')) as HTMLInputElement;
+      expect(link.value).toMatch(/\/join\/tok42$/);
+      expect(screen.getByText(/host Bob se propojí s jeho účtem/)).toBeInTheDocument();
+      expect(JSON.parse(String(fetchMock.mock.calls.find(([u]) => String(u) === '/api/parties/3/invitations')![1]?.body))).toEqual({ guestId: 2 });
+    });
+
+    it('closes without doing anything by the cross and Escape', async () => {
+      const fetchMock = mockApi(base);
+      renderApp('/parties/3/guests');
+      const open = await screen.findByRole('button', { name: 'Propojit hosta Bob s členem' });
+      open.focus();
+      fireEvent.click(open);
+      fireEvent.click(screen.getByRole('button', { name: 'Zavřít' }));
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+      expect(open).toHaveFocus();
+      fireEvent.click(open);
+      fireEvent.keyDown(screen.getByRole('dialog'), { key: 'Escape' });
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+      expect(fetchMock.mock.calls.some(([, init]) => init?.method === 'POST')).toBe(false);
+    });
   });
 });

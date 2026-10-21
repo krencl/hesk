@@ -20,7 +20,7 @@ Není tu PHP ani MySQL ani sudo. PHP 8.4 je statický binár v `~/bin/php` + `~/
 ## Backend – orientace
 - `src/Entity` – `User, Party, PartyMember, PartyInvitation, Player (hráč party, i host bez účtu), Game, GameAddon (rozšíření), GameCharacter (postavy), Tag, GameSession, Play, PlayResult`.
 - `src/Domain` – čistá logika: `ResultCalculator` (pořadí/vítězové dle `ScoreType`), `PlayerInput/Outcome`, `Exception/DomainException` (→ HTTP 422).
-- `src/Service` – `PlayService` (create/update/delete zápisu), `SessionAssigner` (24h seance, návrh čísla, ruční číslo; ADR 0013), `Presenter` (entity → JSON).
+- `src/Service` – `PlayService` (create/update/delete zápisu), `GuestMerger` (host → člen, ADR 0018), `SessionAssigner` (24h seance, návrh čísla, ruční číslo; ADR 0013), `Presenter` (entity → JSON).
 - `src/Controller` – tenké kontrolery (`Party, Game, Play, Tag, Stats, Auth, Health`; `Tag` = seznam tagů pro našeptávání); vstup přes `#[MapRequestPayload]` DTO v `src/Dto`.
 - `src/Security` – `PartyVoter` (`PARTY_VIEW`/`PARTY_WRITE`/`PARTY_ADMIN`; role člen/zapisovač/admin, ADR 0017), `JsonEntryPoint` (401 JSON), `SessionLoginAuthenticator`.
 - `src/EventListener/ApiExceptionListener` – chyby pod `/api` jako JSON `{error, violations?}`.

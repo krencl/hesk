@@ -25,6 +25,8 @@ export interface Member {
 
 export interface PartyDetail extends Party {
   members: Member[];
+  /** Jen v odpovědi na přijetí pozvánky pro hosta: jméno hosta, který se propojil s novým členem. */
+  linkedGuest?: string | null;
 }
 
 export interface Addon {
