@@ -4,6 +4,7 @@ import { AppProvider, useCurrentUserQuery } from './AppContext';
 import { Layout } from './components/Layout';
 import { RequireParty } from './components/RequireParty';
 import { ToastProvider } from './components/Toasts';
+import { TooltipLayer } from './components/TooltipLayer';
 import { GameCheatsheetPage } from './pages/GameCheatsheetPage';
 import { GameDetailPage } from './pages/GameDetailPage';
 import { GameFormPage } from './pages/GameFormPage';
@@ -25,6 +26,7 @@ export function App() {
   return (
     <ToastProvider>
       <AppContent />
+      <TooltipLayer />
     </ToastProvider>
   );
 }

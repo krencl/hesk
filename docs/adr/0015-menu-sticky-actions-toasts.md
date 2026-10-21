@@ -21,3 +21,7 @@ Stav: přijato (2026-10-20)
 - Řazení a Sezení v panelu filtru jsou tlačítka s aktuální volbou (`SelectPopup`, podle `common-select` ze starého prototypu). Klik otevře popup přes celou šířku aplikace, který překryje obsah (bílá s rozmazáním), nahoře s názvem volby a hledáním, které má ihned focus, a pod ním seznam voleb s přepínačem. Hledání nezohledňuje velikost písmen ani diakritiku; vybraná volba zůstane vidět (zeslabená) i mimo výsledky a „Všechny“ (bez filtru) je vždy první.
 - Zavření: výběr volby, Esc, nebo křížek, který stojí na místě kulatého tlačítka party (to popup překrývá, jako se v prototypu mění na zavírací). Zaostření se vrací na tlačítko.
 - Ostatní `<select>`y (typ bodování hry, hráč hry, postava hráče) zůstávají nativní.
+
+**Tooltipy tlačítek s ikonou**
+- Jedna globální vrstva `TooltipLayer` (v `App`) sleduje najetí myší a zaostření klávesnicí a ukáže vlastní tooltip u každého tlačítka či odkazu, který obsahuje jen ikonu (text bere z `aria-label`, takže se tlačítka s ikonou nemusí nijak označovat a nové tooltip dostanou samy). `data-tooltip` text přebije (prázdný ho vypne) a funguje i u tlačítka s textem; nativní `title` se nepoužívá.
+- Tmavý popisek se šipkou nad prvkem (pod ním, když nahoře není místo), v portálu nad vším ostatním, vodorovně držený v okně; objeví se po 350 ms (při zaostření klávesnicí hned) s lehkou animací a zmizí při odjetí, kliknutí, scrollu, Esc. Po kliknutí myší tooltip nezůstane viset, na dotykových zařízeních (`hover: none`) se nezobrazuje.

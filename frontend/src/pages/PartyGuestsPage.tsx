@@ -97,7 +97,7 @@ export function PartyGuestsPage() {
                   className="icon-button toggle"
                   aria-pressed={visibleOf(g)}
                   aria-label={`Zobrazovat hosta ${g.name}`}
-                  title={visibleOf(g) ? 'Nabízí se při zápisu hry' : 'Při zápisu hry se nenabízí'}
+                  data-tooltip={visibleOf(g) ? 'Nabízí se při zápisu hry' : 'Při zápisu hry se nenabízí'}
                   onClick={() => patchGuest(g.id, { visible: !visibleOf(g) })}
                 >
                   <Icon name={visibleOf(g) ? 'visibility' : 'visibility_off'} />

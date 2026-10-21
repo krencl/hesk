@@ -492,3 +492,20 @@ input[type='datetime-local'] { font-size: 0.9rem; padding-left: 0.4rem; padding-
 .confirm-actions .btn { width: 100%; margin: 0; }
 .btn.destructive { background: var(--error); border-color: var(--error); }
 .btn.destructive:hover { background: #b81f2c; border-color: #b81f2c; }
+
+/* Tooltipy (TooltipLayer): tmavý popisek se šipkou, plynule se objeví; na dotykových zařízeních se nezobrazují */
+.tooltip {
+  position: fixed; left: 0; top: 0; z-index: 80; max-width: min(18rem, calc(100vw - 1rem)); padding: 0.3rem 0.65rem;
+  background: rgba(33, 37, 41, 0.95); color: #fff; border-radius: 0.3rem; font-size: 0.85rem; line-height: 1.3; pointer-events: none;
+  box-shadow: 0 0.25rem 0.75rem rgba(0, 0, 0, 0.25); opacity: 0; transform: translateY(4px);
+  transition: opacity 0.15s ease-out, transform 0.15s ease-out;
+}
+.tooltip[data-placement='bottom'] { transform: translateY(-4px); }
+.tooltip.visible { opacity: 1; transform: none; }
+.tooltip::after {
+  content: ''; position: absolute; left: var(--arrow-x, 50%); width: 0.5rem; height: 0.5rem; background: inherit;
+  transform: translateX(-50%) rotate(45deg); bottom: -0.25rem;
+}
+.tooltip[data-placement='bottom']::after { bottom: auto; top: -0.25rem; }
+@media (hover: none) { .tooltip { display: none; } }
+@media (prefers-reduced-motion: reduce) { .tooltip { transition: none; } }
