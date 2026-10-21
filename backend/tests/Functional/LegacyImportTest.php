@@ -133,7 +133,7 @@ final class LegacyImportTest extends KernelTestCase
         self::assertSame(2, $report->entities['user']['created']);
         self::assertSame(['Pá', 'Ví'], array_column($this->rows('SELECT short_name FROM party ORDER BY id'), 'short_name'), 'party short names are generated from the names');
         self::assertSame(['Anna', 'Bob'], array_column($this->rows('SELECT nickname FROM app_user ORDER BY id'), 'nickname'), 'nicknames come from the linked legacy player');
-        self::assertSame([['role' => 'admin'], ['role' => 'writer'], ['role' => 'admin']], $this->rows('SELECT role FROM party_member ORDER BY party_id, user_id'), 'owner -> admin, user -> writer');
+        self::assertSame([['role' => 'admin'], ['role' => 'member'], ['role' => 'admin']], $this->rows('SELECT role FROM party_member ORDER BY party_id, user_id'), 'owner -> admin, user -> member');
 
         // hráči: jeden na dvojici (hráč, parta), shodná jména dostanou číslo, hráč s účtem je s ním propojený
         $players = array_column($this->rows('SELECT name, user_id FROM player WHERE party_id = 1 ORDER BY id'), 'user_id', 'name');

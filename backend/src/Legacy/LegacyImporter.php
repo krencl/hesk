@@ -186,8 +186,8 @@ final class LegacyImporter
             if (null === $partyId || null === $userId) {
                 continue;
             }
-            // ve staré aplikaci mohl zapisovat každý člen → zapisovatel; vlastník → admin
-            $role = 'owner' === $m['role'] ? 'admin' : 'writer';
+            // vlastník → admin, ostatní → obyčejný člen (zapisovatele určuje admin v nové aplikaci)
+            $role = 'owner' === $m['role'] ? 'admin' : 'member';
             $seen["$partyId:$userId"] = true;
             $row = $this->target->fetchAssociative('SELECT id, role FROM party_member WHERE party_id = ? AND user_id = ?', [$partyId, $userId]);
             if (!$row) {
