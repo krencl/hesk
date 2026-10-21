@@ -38,10 +38,9 @@ describe('game form (/games/:id/edit)', () => {
     expect(screen.getByLabelText('Rozšíření 2')).toHaveValue('Halloween');
     expect(screen.getByLabelText('Postava 1')).toHaveValue('Gigazaur');
     expect(screen.getByLabelText('Postava 2')).toHaveValue('Kraken');
-    expect(screen.getByLabelText('Hráč hry')).toHaveValue('2');
-    // hráčem hry může být host, člen s účtem se nenabízí
-    expect(screen.getByRole('option', { name: 'Host' })).toBeInTheDocument();
-    expect(screen.queryByRole('option', { name: 'Anna' })).not.toBeInTheDocument();
+    // hráč hry je textové pole se jménem, ne výběr z existujících hráčů
+    expect(screen.getByLabelText('Hráč hry')).toHaveValue('Boss');
+    expect(screen.queryByRole('option', { name: 'Host' })).not.toBeInTheDocument();
     // úprava hry je jediné místo, odkud se odchází zpět do správy her
     expect(screen.getByRole('link', { name: 'Zpět' })).toHaveAttribute('href', '/manage/games');
   });
@@ -69,22 +68,46 @@ describe('game form (/games/:id/edit)', () => {
     expect(await screen.findByRole('heading', { name: 'Správa her' })).toBeInTheDocument();
   });
 
-  it('can remove the own player and create a new one by name', async () => {
-    const fetchMock = mockApi({ ...routes, 'PUT /games/5': { body: FULL_GAME }, 'POST /parties/3/players': { status: 201, body: { id: 9, name: 'T.I.M.E', hasAccount: false, visible: true } } });
+  it('keeps the own player when its name is unchanged', async () => {
+    const fetchMock = mockApi({ ...routes, 'PUT /games/5': { body: FULL_GAME } });
     renderApp('/games/5/edit');
-    await waitFor(() => expect(screen.getByLabelText('Hráč hry')).toHaveValue('2'));
+    await waitFor(() => expect(screen.getByLabelText('Hráč hry')).toHaveValue('Boss'));
+    fireEvent.click(screen.getByRole('button', { name: 'Uložit' }));
+    await waitFor(() => expect(sent(fetchMock, 'PUT', '/games/5')?.playerId).toBe(2));
+    expect(sent(fetchMock, 'PATCH', '/players/2')).toBeUndefined();
+  });
 
+  it('renames the own player in place when its name is changed', async () => {
+    const fetchMock = mockApi({ ...routes, 'PUT /games/5': { body: FULL_GAME }, 'PATCH /players/2': { body: { id: 2, name: 'Šéf', hasAccount: false, visible: true } } });
+    renderApp('/games/5/edit');
+    await waitFor(() => expect(screen.getByLabelText('Hráč hry')).toHaveValue('Boss'));
+    fireEvent.change(screen.getByLabelText('Hráč hry'), { target: { value: ' Šéf ' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Uložit' }));
+    await waitFor(() => expect(sent(fetchMock, 'PUT', '/games/5')?.playerId).toBe(2));
+    expect(sent(fetchMock, 'PATCH', '/players/2')).toEqual({ name: 'Šéf' });
+    expect(sent(fetchMock, 'POST', '/parties/3/players')).toBeUndefined();
+  });
+
+  it('removes the own player when the name is cleared', async () => {
+    const fetchMock = mockApi({ ...routes, 'PUT /games/5': { body: FULL_GAME } });
+    renderApp('/games/5/edit');
+    await waitFor(() => expect(screen.getByLabelText('Hráč hry')).toHaveValue('Boss'));
     fireEvent.change(screen.getByLabelText('Hráč hry'), { target: { value: '' } });
     fireEvent.click(screen.getByRole('button', { name: 'Uložit' }));
     await waitFor(() => expect(sent(fetchMock, 'PUT', '/games/5')?.playerId).toBeNull());
   });
 
-  it('creates a new player for the game when "Nový hráč…" is chosen', async () => {
-    const fetchMock = mockApi({ ...routes, 'PUT /games/5': { body: FULL_GAME }, 'POST /parties/3/players': { status: 201, body: { id: 9, name: 'T.I.M.E', hasAccount: false, visible: true } } });
+  it('creates a new player for a game that has none when a name is typed', async () => {
+    const fetchMock = mockApi({
+      ...routes,
+      '/games/5': { body: { ...FULL_GAME, player: null } },
+      'PUT /games/5': { body: FULL_GAME },
+      'POST /parties/3/players': { status: 201, body: { id: 9, name: 'T.I.M.E', hasAccount: false, visible: true } },
+    });
     renderApp('/games/5/edit');
-    await waitFor(() => expect(screen.getByLabelText('Hráč hry')).toHaveValue('2'));
-    fireEvent.change(screen.getByLabelText('Hráč hry'), { target: { value: 'new' } });
-    fireEvent.change(screen.getByLabelText('Jméno nového hráče hry'), { target: { value: 'T.I.M.E' } });
+    await waitFor(() => expect(screen.getByLabelText('Název')).toHaveValue('King of Tokyo'));
+    expect(screen.getByLabelText('Hráč hry')).toHaveValue('');
+    fireEvent.change(screen.getByLabelText('Hráč hry'), { target: { value: 'T.I.M.E' } });
     fireEvent.click(screen.getByRole('button', { name: 'Uložit' }));
 
     await waitFor(() => expect(sent(fetchMock, 'POST', '/parties/3/players')).toEqual({ name: 'T.I.M.E' }));
