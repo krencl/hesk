@@ -48,7 +48,7 @@ export function NewPlayPage() {
   if (!canWrite(party.role)) {
     return (
       <section className="page pad">
-        <p className="empty">Zapisovat hry může jen zapisovač nebo admin.</p>
+        <p className="empty">Zapisovat hry může jen zapisovač nebo správce.</p>
         <Actions><Link className="btn outline-secondary" to={`/games/${gameId}`}>Zpět</Link></Actions>
       </section>
     );

@@ -9,6 +9,6 @@ describe('roles', () => {
   });
 
   it('has Czech labels', () => {
-    expect(ROLE_LABELS).toEqual({ admin: 'Admin', writer: 'Zapisovač', member: 'Člen' });
+    expect(ROLE_LABELS).toEqual({ admin: 'Správce', writer: 'Zapisovač', member: 'Člen' });
   });
 });

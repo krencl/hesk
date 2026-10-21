@@ -3,7 +3,7 @@
 Stav: přijato (2026-10-20)
 
 ## Kontext
-Zkratka party v kulatém tlačítku hlavičky se jen odvozovala z názvu na frontendu a nešla změnit. Detail party říkal „Jsi admin/člen této party“, což je vidět i ze seznamu členů. Nadpisy stránek se nelišily od podnadpisů.
+Zkratka party v kulatém tlačítku hlavičky se jen odvozovala z názvu na frontendu a nešla změnit. Detail party říkal „Jsi správce/člen této party“, což je vidět i ze seznamu členů. Nadpisy stránek se nelišily od podnadpisů.
 
 ## Rozhodnutí
 - **Zkratka party** je povinný sloupec `party.short_name` (1–3 znaky; migrace `Version20261020000000` a `…21000000`, která stávajícím partám zkratku vygeneruje a sloupec zpřísní na NOT NULL). API vrací `shortName` u party i u detailu.

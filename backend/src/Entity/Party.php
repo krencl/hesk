@@ -218,6 +218,6 @@ class Party
                 return;
             }
         }
-        throw new DomainException('Parta musí mít alespoň jednoho admina.');
+        throw new DomainException('Parta musí mít alespoň jednoho správce.');
     }
 }

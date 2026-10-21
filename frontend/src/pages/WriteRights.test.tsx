@@ -35,7 +35,7 @@ describe('who may write plays', () => {
   it('blocks the new play page for a member without asking the server for the defaults', async () => {
     const fetchMock = mockApi(routesFor('member'));
     renderApp('/games/1/new-play');
-    expect(await screen.findByText('Zapisovat hry může jen zapisovač nebo admin.')).toBeInTheDocument();
+    expect(await screen.findByText('Zapisovat hry může jen zapisovač nebo správce.')).toBeInTheDocument();
     expect(screen.queryByRole('heading', { name: 'Nový zápis' })).not.toBeInTheDocument();
     expect(requestedUrls(fetchMock).some((u) => u.includes('/plays/defaults'))).toBe(false);
     expect(screen.getByRole('link', { name: 'Zpět' })).toHaveAttribute('href', '/games/1');
@@ -44,7 +44,7 @@ describe('who may write plays', () => {
   it('blocks the edit page for a member', async () => {
     mockApi(routesFor('member'));
     renderApp('/plays/9/edit');
-    expect(await screen.findByText('Upravovat zápisy může jen zapisovač nebo admin.')).toBeInTheDocument();
+    expect(await screen.findByText('Upravovat zápisy může jen zapisovač nebo správce.')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Smazat zápis' })).not.toBeInTheDocument();
   });
 

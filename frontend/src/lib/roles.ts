@@ -1,7 +1,7 @@
 import type { PartyRole } from '../api/types';
 
 export const ROLE_LABELS: Record<PartyRole, string> = {
-  admin: 'Admin',
+  admin: 'Správce',
   writer: 'Zapisovač',
   member: 'Člen',
 };

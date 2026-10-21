@@ -38,7 +38,7 @@ export function EditPlayPage() {
   if (!canWrite(party.role)) {
     return (
       <section className="page pad">
-        <p className="empty">Upravovat zápisy může jen zapisovač nebo admin.</p>
+        <p className="empty">Upravovat zápisy může jen zapisovač nebo správce.</p>
         <Actions><Link className="btn outline-secondary" to="/games">Zpět na hry</Link></Actions>
       </section>
     );

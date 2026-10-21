@@ -78,7 +78,7 @@ describe('party detail (/parties/:id)', () => {
     expect(await screen.findByRole('heading', { name: 'Parta Pátek' })).toBeInTheDocument();
     expect(screen.queryByText(/Jsi (admin|člen)/)).not.toBeInTheDocument(); // role je vidět ze seznamu členů
     expect(screen.getByText('Petr')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Role – Anna' })).toHaveTextContent('Admin');
+    expect(screen.getByRole('button', { name: 'Role – Anna' })).toHaveTextContent('Správce');
     expect(screen.getByRole('button', { name: 'Role – Petr' })).toHaveTextContent('Člen');
     expect(screen.getAllByRole('button', { name: /^Odebrat / })).toHaveLength(1); // sebe odebrat nelze
     expect(screen.getByRole('button', { name: 'Odebrat Petr' })).toBeInTheDocument();
@@ -99,7 +99,7 @@ describe('party detail (/parties/:id)', () => {
     });
     renderApp('/parties/3');
     fireEvent.click(await screen.findByRole('button', { name: 'Role – Petr' }));
-    expect(screen.getAllByRole('option').map((o) => o.textContent?.replace(/radio_button_(un)?checked/, ''))).toEqual(['Člen', 'Zapisovač', 'Admin']);
+    expect(screen.getAllByRole('option').map((o) => o.textContent?.replace(/radio_button_(un)?checked/, ''))).toEqual(['Člen', 'Zapisovač', 'Správce']);
     expect(screen.queryByRole('searchbox')).not.toBeInTheDocument(); // u tří rolí se nehledá
     fireEvent.click(screen.getByRole('option', { name: 'Zapisovač' }));
 

@@ -88,7 +88,7 @@ describe('toasts', () => {
 });
 
 describe('ErrorMessage', () => {
-  const apiError = new ApiError(422, 'Nelze odebrat jediného admina.', [{ field: 'name', message: 'Detail 1' }]);
+  const apiError = new ApiError(422, 'Nelze odebrat jediného správce.', [{ field: 'name', message: 'Detail 1' }]);
 
   function Page({ inline = false }: { inline?: boolean }) {
     const [error, setError] = useState<unknown>(null);
@@ -99,7 +99,7 @@ describe('ErrorMessage', () => {
     const { container } = render(<ToastProvider><Page /></ToastProvider>);
     expect(screen.queryByRole('alert')).not.toBeInTheDocument();
     fireEvent.click(screen.getByText('fail'));
-    expect(screen.getByRole('alert')).toHaveTextContent('Nelze odebrat jediného admina.');
+    expect(screen.getByRole('alert')).toHaveTextContent('Nelze odebrat jediného správce.');
     expect(screen.getByText('Detail 1')).toBeInTheDocument();
     expect(container.querySelector('.error')).toBeNull();
   });
@@ -107,7 +107,7 @@ describe('ErrorMessage', () => {
   it('keeps the message on the page in the inline variant', () => {
     const { container } = render(<ToastProvider><Page inline /></ToastProvider>);
     fireEvent.click(screen.getByText('fail'));
-    expect(container.querySelector('.error')).toHaveTextContent('Nelze odebrat jediného admina.');
+    expect(container.querySelector('.error')).toHaveTextContent('Nelze odebrat jediného správce.');
     expect(container.querySelector('.toast')).toBeNull();
   });
 
