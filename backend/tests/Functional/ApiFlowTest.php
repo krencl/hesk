@@ -322,7 +322,7 @@ final class ApiFlowTest extends WebTestCase
         self::assertSame(['Anna' => 1, 'Bobík' => 1, 'Cyril' => 0, 'Dora' => 0], $counts);
         $this->api('DELETE', "/api/players/{$bob['id']}", expected: 422);
         $this->api('DELETE', "/api/players/{$anna['id']}", expected: 422);
-        $this->api('POST', "$base/games", ['name' => 'Coop', 'scoreType' => 'winner_only', 'playerId' => $dora['id']], 201);
+        $this->api('POST', "$base/games", ['name' => 'Coop', 'scoreType' => 'winner_only', 'players' => [['id' => $dora['id'], 'name' => 'Dora']]], 201);
         $this->api('DELETE', "/api/players/{$dora['id']}", expected: 422); // hráč hry
 
         $this->login('eve@example.com', 'Eve');
@@ -403,7 +403,7 @@ final class ApiFlowTest extends WebTestCase
         $bob = $players['Bob'];
         $bobUser = array_values(array_filter($this->api('GET', $base)['members'], static fn (array $m): bool => 'Bob' === $m['nickname']))[0];
         $host = $this->api('POST', "$base/players", ['name' => 'Bobík'], 201);
-        $coop = $this->api('POST', "$base/games", ['name' => 'Coop', 'scoreType' => 'winner_only', 'playerId' => $host['id']], 201);
+        $coop = $this->api('POST', "$base/games", ['name' => 'Coop', 'scoreType' => 'winner_only', 'players' => [['id' => $host['id'], 'name' => 'Bobík']]], 201);
         $play('2026-03-01', [$host['id'], $anna['id']]);
         $play('2026-03-02', [$host['id']]);
         $play('2026-03-03', [$bob['id']]);
@@ -419,7 +419,7 @@ final class ApiFlowTest extends WebTestCase
         self::assertSame(['Bob', 3], [$linked['name'], $linked['playCount']], 'zápisy hosta přešly na člena (2 + 1 vlastní)');
         $after = array_column($this->api('GET', "$base/players"), 'playCount', 'name');
         self::assertSame(['Anna' => 1, 'Bob' => 3], $after, 'host zmizel');
-        self::assertSame($bob['id'], $this->api('GET', "/api/games/{$coop['id']}")['player']['id'] ?? null, 'hráč hry se přepsal na člena');
+        self::assertSame([$bob['id']], array_column($this->api('GET', "/api/games/{$coop['id']}")['players'], 'id'), 'hráč hry se přepsal na člena');
         self::assertSame(1, \count(array_filter($this->api('GET', "$base/plays?limit=10"), static fn (array $p): bool => \in_array('Bob', array_column($p['results'], 'name'), true) && \in_array('Anna', array_column($p['results'], 'name'), true))));
     }
 
@@ -533,11 +533,11 @@ final class ApiFlowTest extends WebTestCase
         $boss = $this->api('POST', "$base/players", ['name' => 'Boss'], 201)['id'];
 
         $game = $this->api('POST', "$base/games", [
-            'name' => 'King of Tokyo', 'shortName' => ' Tokyo ', 'scoreType' => 'winner_only', 'playerId' => $boss,
+            'name' => 'King of Tokyo', 'shortName' => ' Tokyo ', 'scoreType' => 'winner_only', 'players' => [['id' => $boss, 'name' => 'Boss']],
             'addons' => [['name' => 'Power Up']], 'characters' => [['name' => 'Gigazaur'], ['name' => 'Kraken'], ['name' => '  ']],
         ], 201);
         self::assertSame('Tokyo', $game['shortName']);
-        self::assertSame(['id' => $boss, 'name' => 'Boss'], $game['player']);
+        self::assertSame([['id' => $boss, 'name' => 'Boss']], $game['players']);
         self::assertSame(['Gigazaur', 'Kraken'], array_column($game['characters'], 'name'));
 
         // postava ve výsledku zápisu
@@ -553,7 +553,7 @@ final class ApiFlowTest extends WebTestCase
 
         // přejmenování podle id zachová id (vazby na zápisy), odebrání postavy ji z výsledku odpojí
         $updated = $this->api('PUT', "/api/games/{$game['id']}", [
-            'name' => 'King of Tokyo', 'scoreType' => 'winner_only', 'shortName' => null, 'playerId' => null,
+            'name' => 'King of Tokyo', 'scoreType' => 'winner_only', 'shortName' => null, 'players' => [],
             'addons' => [['id' => $game['addons'][0]['id'], 'name' => 'Power Up 2']],
             'characters' => [['id' => $giga, 'name' => 'Giga'], ['name' => 'Alienoid']],
         ]);
@@ -561,7 +561,7 @@ final class ApiFlowTest extends WebTestCase
         self::assertSame(['Giga', 'Alienoid'], array_column($updated['characters'], 'name'));
         self::assertSame($game['addons'][0]['id'], $updated['addons'][0]['id']);
         self::assertNull($updated['shortName']);
-        self::assertNull($updated['player']);
+        self::assertSame([], $updated['players']);
         $reloaded = $this->api('GET', "/api/plays/{$play['id']}");
         self::assertSame('Giga', array_column($reloaded['results'], 'character', 'name')['Anna']['name']);
         self::assertSame(['Power Up 2'], array_column($reloaded['addons'], 'name'));
@@ -571,12 +571,47 @@ final class ApiFlowTest extends WebTestCase
         $this->api('POST', "$base/plays", $payload($other['characters'][0]['id']), 422);
         $foreign = $this->api('POST', '/api/parties', ['name' => 'Cizí'], 201);
         $foreignPlayer = $this->api('GET', "/api/parties/{$foreign['id']}/players")[0]['id'];
-        $this->api('PUT', "/api/games/{$game['id']}", ['name' => 'King of Tokyo', 'scoreType' => 'winner_only', 'playerId' => $foreignPlayer], 422);
+        $this->api('PUT', "/api/games/{$game['id']}", ['name' => 'King of Tokyo', 'scoreType' => 'winner_only', 'players' => [['id' => $foreignPlayer, 'name' => 'Cizí']]], 422);
 
         // zkrácený název ve statistikách
         $this->api('PUT', "/api/games/{$game['id']}", ['name' => 'King of Tokyo', 'scoreType' => 'winner_only', 'shortName' => 'Tokyo', 'addons' => [['id' => $game['addons'][0]['id'], 'name' => 'Power Up 2']], 'characters' => [['id' => $giga, 'name' => 'Giga']]]);
         $stats = $this->api('GET', "$base/stats");
         self::assertSame(['Tokyo'], array_column($stats['topGames'], 'shortName'));
+    }
+
+    public function testGameCanHaveSeveralOwnPlayersEditedByNameLikeCharacters(): void
+    {
+        $this->login('anna@example.com', 'Anna');
+        $party = $this->api('POST', '/api/parties', ['name' => 'Pátek'], 201);
+        $base = "/api/parties/{$party['id']}";
+        $anna = $this->api('GET', "$base/players")[0];
+        $boss = $this->api('POST', "$base/players", ['name' => 'Boss'], 201);
+
+        // existující host podle id, nový podle jména (vznikne host), jméno existujícího hráče se spáruje, prázdné a duplicitní se zahodí
+        $game = $this->api('POST', "$base/games", [
+            'name' => 'Coop', 'scoreType' => 'winner_only',
+            'players' => [['id' => $boss['id'], 'name' => 'Boss'], ['name' => 'Minion'], ['name' => 'minion'], ['name' => ' '], ['name' => 'anna']],
+        ], 201);
+        $byName = array_column($game['players'], 'id', 'name');
+        self::assertSame(['Boss', 'Minion', 'Anna'], array_keys($byName));
+        self::assertSame($boss['id'], $byName['Boss']);
+        self::assertSame($anna['id'], $byName['Anna'], 'jméno člena se spáruje s jeho hráčem, nový se nezakládá');
+        self::assertSame(['Anna', 'Boss', 'Minion'], array_column($this->api('GET', "$base/players"), 'name'));
+
+        // přejmenování podle id zachová hráče, odebraný zůstává v partě; člena s účtem přejmenovat nejde
+        $updated = $this->api('PUT', "/api/games/{$game['id']}", [
+            'name' => 'Coop', 'scoreType' => 'winner_only',
+            'players' => [['id' => $boss['id'], 'name' => 'Velký Boss'], ['id' => $byName['Minion'], 'name' => 'Minion']],
+        ]);
+        self::assertSame([['id' => $boss['id'], 'name' => 'Velký Boss'], ['id' => $byName['Minion'], 'name' => 'Minion']], $updated['players']);
+        self::assertSame(['Anna', 'Minion', 'Velký Boss'], array_column($this->api('GET', "$base/players"), 'name'));
+        $this->api('PUT', "/api/games/{$game['id']}", ['name' => 'Coop', 'scoreType' => 'winner_only', 'players' => [['id' => $anna['id'], 'name' => 'Jiná']]], 422);
+        $this->api('PUT', "/api/games/{$game['id']}", ['name' => 'Coop', 'scoreType' => 'winner_only', 'players' => [['id' => $boss['id'], 'name' => 'Anna']]], 422);
+
+        // hráč hry se nesmaže, dokud u hry je; po odebrání ano
+        $this->api('DELETE', "/api/players/{$byName['Minion']}", expected: 422);
+        $this->api('PUT', "/api/games/{$game['id']}", ['name' => 'Coop', 'scoreType' => 'winner_only', 'players' => [['id' => $boss['id'], 'name' => 'Velký Boss']]]);
+        $this->api('DELETE', "/api/players/{$byName['Minion']}", expected: 204);
     }
 
     public function testGameImageUrlAcceptsHttpLinksAndLocalPathsOnly(): void

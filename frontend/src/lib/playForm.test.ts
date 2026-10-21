@@ -4,7 +4,7 @@ import { toLocalInput } from './datetime';
 import { bestScoreIds, defaultPlayerIds, defaultTimes, draftFromPlay, emptyDraft, isWinner, type PlayDraft, toPlayInput, validateDraft } from './playForm';
 
 const game = (scoreType: Game['scoreType']): Game => ({
-  id: 7, name: 'G', shortName: null, scoreType, imageUrl: null, description: null, cheatSheet: null, addons: [{ id: 1, name: 'X' }], characters: [{ id: 3, name: 'Gigazaur' }], player: null,
+  id: 7, name: 'G', shortName: null, scoreType, imageUrl: null, description: null, cheatSheet: null, addons: [{ id: 1, name: 'X' }], characters: [{ id: 3, name: 'Gigazaur' }], players: [],
 });
 
 const draft = (over: Partial<PlayDraft> = {}): PlayDraft => ({
@@ -122,7 +122,7 @@ describe('defaultPlayerIds', () => {
 
 describe('emptyDraft', () => {
   it('prefills players and the session number without duplicating the own player of the game', () => {
-    const d = emptyDraft({ id: 7, player: { id: 3, name: 'Boss' } }, new Date(2026, 2, 1, 20, 0), { playerIds: [1, 3], sessionNumber: 95 });
+    const d = emptyDraft({ id: 7, players: [{ id: 3, name: 'Boss' }] }, new Date(2026, 2, 1, 20, 0), { playerIds: [1, 3], sessionNumber: 95 });
     expect(d.players.map((p) => p.playerId)).toEqual([3, 1]);
     expect(d).toMatchObject({ sessionNumber: '95', sessionNumberTouched: false, tags: [] });
   });
@@ -133,7 +133,7 @@ describe('emptyDraft', () => {
 
   it('starts and ends now', () => {
     const now = new Date(2026, 2, 1, 20, 0);
-    expect(emptyDraft({ id: 7, player: null }, now)).toMatchObject({ gameId: 7, startedAt: '2026-03-01T20:00', endedAt: '2026-03-01T20:00', players: [], addonIds: [] });
+    expect(emptyDraft({ id: 7, players: [] }, now)).toMatchObject({ gameId: 7, startedAt: '2026-03-01T20:00', endedAt: '2026-03-01T20:00', players: [], addonIds: [] });
   });
 });
 
@@ -206,8 +206,9 @@ describe('characters and the game player', () => {
 
   it('starts a new play with the own player of the game selected', () => {
     const now = new Date(2026, 2, 1, 20, 0);
-    expect(emptyDraft({ id: 7, player: { id: 9, name: 'Boss' } }, now).players).toEqual([{ playerId: 9, score: '', rank: '', winner: false, starting: false, characterId: null }]);
-    expect(emptyDraft({ id: 7, player: null }, now).players).toEqual([]);
+    expect(emptyDraft({ id: 7, players: [{ id: 9, name: 'Boss' }] }, now).players).toEqual([{ playerId: 9, score: '', rank: '', winner: false, starting: false, characterId: null }]);
+    expect(emptyDraft({ id: 7, players: [] }, now).players).toEqual([]);
+    expect(emptyDraft({ id: 7, players: [{ id: 9, name: 'Boss' }, { id: 4, name: 'Minion' }] }, now, { playerIds: [1, 4] }).players.map((p) => p.playerId)).toEqual([9, 4, 1]);
   });
 
   it('fills the character when editing a play', () => {

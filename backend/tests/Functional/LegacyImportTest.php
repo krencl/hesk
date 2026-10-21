@@ -145,7 +145,7 @@ final class LegacyImportTest extends KernelTestCase
         $tokyo = $this->rows("SELECT * FROM game WHERE name = 'King of Tokyo'")[0];
         self::assertSame('Tokyo', $tokyo['short_name']);
         self::assertSame('winner_only', $tokyo['score_type']);
-        self::assertSame('Boss', $this->target->fetchOne('SELECT name FROM player WHERE id = ?', [$tokyo['player_id']]));
+        self::assertSame(['Boss'], $this->target->fetchFirstColumn('SELECT p.name FROM game_player gp JOIN player p ON p.id = gp.player_id WHERE gp.game_id = ?', [$tokyo['id']]));
         self::assertSame(['Power Up'], $this->target->fetchFirstColumn('SELECT name FROM game_addon WHERE game_id = ?', [$tokyo['id']]));
         self::assertSame(['Gigazaur', 'Kraken'], $this->target->fetchFirstColumn('SELECT name FROM game_character WHERE game_id = ? ORDER BY id', [$tokyo['id']]));
         $azul = $this->rows("SELECT * FROM game WHERE name = 'Azul' AND party_id = 1")[0];

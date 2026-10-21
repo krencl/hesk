@@ -50,8 +50,8 @@ export interface Game {
   cheatSheet: string | null;
   addons: Addon[];
   characters: Character[];
-  /** Vlastní hráč hry (kooperativní hry s „protihráčem“). */
-  player: { id: number; name: string } | null;
+  /** Vlastní hráči hry (kooperativní hry s „protihráčem“); jsou to hráči party (typicky hosté). */
+  players: { id: number; name: string }[];
 }
 
 export type GameSort = 'activity' | 'name';
@@ -100,7 +100,8 @@ export interface GameInput {
   cheatSheet: string | null;
   addons: NamedItemInput[];
   characters: NamedItemInput[];
-  playerId: number | null;
+  /** Hráči hry: `id` je id hráče party (přejmenuje se), bez něj se spáruje podle jména nebo vznikne host. */
+  players: NamedItemInput[];
 }
 
 export interface Player {

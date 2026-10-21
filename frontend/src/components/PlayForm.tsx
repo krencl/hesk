@@ -106,11 +106,11 @@ export function PlayForm({ game, initial, heading, submitLabel, saving, error, c
   // Hlavní hráči (členové s účtem) jsou vidět vždy, hosté až po „Přidat hosty“ (vybraní hosté ale vždy).
   // Host, který je ve správě hostů skrytý, se nenabízí; pokud už v zápisu hraje (úprava zápisu), zůstává vidět.
   const isSelected = (id: number) => draft.players.some((p) => p.playerId === id);
-  // Vlastní hráč hry (kooperativní hry) je vidět vždy a první.
-  const gamePlayerId = game.player?.id;
-  const rank = (m: { id: number; hasAccount: boolean }) => (m.id === gamePlayerId ? 0 : m.hasAccount ? 1 : 2);
+  // Vlastní hráči hry (kooperativní hry) jsou vidět vždy a první.
+  const isGamePlayer = (id: number) => game.players.some((p) => p.id === id);
+  const rank = (m: { id: number; hasAccount: boolean }) => (isGamePlayer(m.id) ? 0 : m.hasAccount ? 1 : 2);
   const visible = (players.data ?? [])
-    .filter((m) => m.id === gamePlayerId || m.hasAccount || isSelected(m.id) || (showGuests && m.visible))
+    .filter((m) => isGamePlayer(m.id) || m.hasAccount || isSelected(m.id) || (showGuests && m.visible))
     .sort((a, b) => rank(a) - rank(b));
 
   return (
@@ -135,7 +135,7 @@ export function PlayForm({ game, initial, heading, submitLabel, saving, error, c
                 <label className="check">
                   <input type="checkbox" checked={!!player} onChange={() => togglePlayer(m.id)} />
                   {m.name}
-                  {m.id === gamePlayerId && <span className="muted hint"> hráč hry</span>}
+                  {isGamePlayer(m.id) && <span className="muted hint"> hráč hry</span>}
                 </label>
                 {player && scored && (
                   <input inputMode="decimal" aria-label={`Skóre ${m.name}`} placeholder="skóre" value={player.score} onChange={(e) => patchPlayer(m.id, { score: e.target.value })} />

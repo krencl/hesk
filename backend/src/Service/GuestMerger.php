@@ -12,7 +12,7 @@ use App\Entity\PlayResult;
 use Doctrine\ORM\EntityManagerInterface;
 
 /**
- * Propojení hosta s členem party: všechny zápisy hosta (výsledky, hráč hry) přejdou na hráče člena a host zmizí.
+ * Propojení hosta s členem party: všechny zápisy hosta (výsledky, hráči her) přejdou na hráče člena a host zmizí.
  * Hráč člena (navázaný na účet) zůstává, takže jeho jméno dál sleduje přezdívku.
  */
 final class GuestMerger
@@ -54,7 +54,12 @@ final class GuestMerger
 
         $this->em->wrapInTransaction(function () use ($guest, $member, $party): void {
             $this->em->createQuery('UPDATE '.PlayResult::class.' r SET r.player = :to WHERE r.player = :from')->setParameters(['to' => $member, 'from' => $guest])->execute();
-            $this->em->createQuery('UPDATE '.Game::class.' g SET g.player = :to WHERE g.player = :from')->setParameters(['to' => $member, 'from' => $guest])->execute();
+            foreach ($this->em->createQuery('SELECT g FROM '.Game::class.' g WHERE :guest MEMBER OF g.players')->setParameter('guest', $guest)->getResult() as $game) {
+                $game->getPlayers()->removeElement($guest);
+                if (!$game->getPlayers()->contains($member)) {
+                    $game->getPlayers()->add($member);
+                }
+            }
             $this->forgetInvitations($guest);
             $party->getPlayers()->removeElement($guest);
             $this->em->remove($guest);

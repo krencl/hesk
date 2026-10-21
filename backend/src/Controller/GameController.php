@@ -9,7 +9,6 @@ use App\Dto\GameRequest;
 use App\Dto\NamedItemRequest;
 use App\Entity\Game;
 use App\Entity\Party;
-use App\Entity\Player;
 use App\Repository\GameRepository;
 use App\Repository\PlayRepository;
 use App\Security\PartyVoter;
@@ -92,17 +91,10 @@ final class GameController extends ApiController
         return new Response(status: Response::HTTP_NO_CONTENT);
     }
 
-    /** Přenese údaje z požadavku na hru; hráč hry musí patřit do stejné party. */
+    /** Přenese údaje z požadavku na hru; hráči hry se řeší v entitě (musí patřit do stejné party). */
     private function apply(Game $game, GameRequest $req): void
     {
-        $player = null;
-        if (null !== $req->playerId) {
-            $player = $this->em->find(Player::class, $req->playerId);
-            if (!$player || $player->getParty() !== $game->getParty()) {
-                throw new DomainException('Hráč nepatří do této party.');
-            }
-        }
         $items = static fn (array $list): array => array_map(static fn (NamedItemRequest $i): array => ['id' => $i->id, 'name' => $i->name], $list);
-        $game->update(trim($req->name), $req->shortName, $req->scoreType, $req->imageUrl, $req->description, $req->cheatSheet, $items($req->addons), $items($req->characters), $player);
+        $game->update(trim($req->name), $req->shortName, $req->scoreType, $req->imageUrl, $req->description, $req->cheatSheet, $items($req->addons), $items($req->characters), $items($req->players));
     }
 }

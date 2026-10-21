@@ -64,7 +64,10 @@ final class Presenter
                 static fn ($c): array => ['id' => $c->getId(), 'name' => $c->getName()],
                 $game->getCharacters()->toArray(),
             )),
-            'player' => null === $game->getPlayer() ? null : ['id' => $game->getPlayer()->getId(), 'name' => $game->getPlayer()->getName()],
+            'players' => array_values(array_map(
+                static fn ($p): array => ['id' => $p->getId(), 'name' => $p->getName()],
+                $game->getPlayers()->toArray(),
+            )),
         ];
     }
 

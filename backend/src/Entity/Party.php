@@ -136,6 +136,24 @@ class Party
         return $player;
     }
 
+    /** Přejmenuje hosta; jméno musí být v partě volné (velikost písmen se nerozlišuje) a člena s účtem přejmenovat nejde. */
+    public function renamePlayer(Player $player, string $name): void
+    {
+        $name = trim($name);
+        if (null !== $player->getUser()) {
+            throw new DomainException('Člena s účtem tu upravit nejde, jeho jméno se mění přezdívkou.');
+        }
+        if ('' === $name) {
+            throw new DomainException('Jméno nesmí být prázdné.');
+        }
+        foreach ($this->players as $other) {
+            if ($other !== $player && 0 === strcasecmp($other->getName(), $name)) {
+                throw new DomainException('Hráč s tímto jménem už v partě existuje.');
+            }
+        }
+        $player->rename($name);
+    }
+
     /** Přejmenuje hráče navázaného na účet podle nové přezdívky, pokud je jméno v partě volné. */
     public function syncPlayerName(User $user): void
     {

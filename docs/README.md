@@ -22,6 +22,7 @@ Primárně architektonická rozhodnutí (ADR). Aplikační dokumentace je zámě
 | [0016](adr/0016-party-management-tabs-and-guests.md) | Správa party po záložkách, správa hostů |
 | [0017](adr/0017-party-roles.md) | Role v partě: člen, zapisovač, správce |
 | [0018](adr/0018-guest-to-member-linking.md) | Z hosta se stane člen: sloučení hosta s členem, pozvánka pro hosta |
+| [0019](adr/0019-multiple-game-players.md) | Víc hráčů hry, editace jménem jako postavy |
 
 Poznámky ke vzoru z předchozích verzí: [prototype-notes.md](prototype-notes.md).
 

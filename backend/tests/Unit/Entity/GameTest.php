@@ -99,7 +99,7 @@ final class GameTest extends TestCase
         self::assertNull($game->getImageUrl());
         self::assertNull($game->getDescription());
         self::assertNull($game->getCheatSheet());
-        self::assertNull($game->getPlayer());
+        self::assertCount(0, $game->getPlayers());
         self::assertSame(ScoreType::WinnerOnly, $game->getScoreType());
     }
 }

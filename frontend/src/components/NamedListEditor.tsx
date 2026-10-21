@@ -12,10 +12,14 @@ interface Props {
   nounAccusative?: string;
   addLabel: string;
   emptyText: string;
+  /** Vysvětlivka pod seznamem. */
+  hint?: string;
+  /** Nejvyšší délka názvu (výchozí 150). */
+  maxLength?: number;
 }
 
 /** Editor seznamu pojmenovaných položek: samostatné pole pro každou, Enter přidá další, křížek odebere. */
-export function NamedListEditor({ label, items, onChange, noun, nounAccusative = noun, addLabel, emptyText }: Props) {
+export function NamedListEditor({ label, items, onChange, noun, nounAccusative = noun, addLabel, emptyText, hint, maxLength = 150 }: Props) {
   const [focusKey, setFocusKey] = useState<number | null>(null);
   const add = () => {
     const key = nextItemKey();
@@ -32,7 +36,7 @@ export function NamedListEditor({ label, items, onChange, noun, nounAccusative =
         <div key={item.key} className="item-row">
           <input
             value={item.name}
-            maxLength={150}
+            maxLength={maxLength}
             aria-label={`${noun1} ${i + 1}`}
             autoFocus={item.key === focusKey}
             onChange={(e) => onChange(items.map((x) => (x.key === item.key ? { ...x, name: e.target.value } : x)))}
@@ -51,6 +55,7 @@ export function NamedListEditor({ label, items, onChange, noun, nounAccusative =
       <div className="field-actions">
         <button type="button" className="btn small outline" onClick={add}>{addLabel}</button>
       </div>
+      {hint && <span className="muted hint">{hint}</span>}
     </div>
   );
 }

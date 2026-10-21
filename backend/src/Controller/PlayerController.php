@@ -63,16 +63,7 @@ final class PlayerController extends ApiController
             throw new DomainException('Není co měnit.');
         }
         if (null !== $req->name) {
-            $name = trim($req->name);
-            if ('' === $name) {
-                throw new DomainException('Jméno nesmí být prázdné.');
-            }
-            foreach ($player->getParty()->getPlayers() as $other) {
-                if ($other !== $player && 0 === strcasecmp($other->getName(), $name)) {
-                    throw new DomainException('Hráč s tímto jménem už v partě existuje.');
-                }
-            }
-            $player->rename($name);
+            $player->getParty()->renamePlayer($player, $req->name);
         }
         if (null !== $req->visible) {
             $player->setVisible($req->visible);
@@ -94,7 +85,7 @@ final class PlayerController extends ApiController
         if ($played > 0) {
             throw new DomainException(sprintf('Host už hrál v %d zápisech, smazat ho nejde.', $played));
         }
-        if ($game = $this->em->getRepository(Game::class)->findOneBy(['player' => $player])) {
+        if ($game = $this->em->createQuery('SELECT g FROM '.Game::class.' g WHERE :player MEMBER OF g.players')->setParameter('player', $player)->setMaxResults(1)->getOneOrNullResult()) {
             throw new DomainException(sprintf('Host je hráčem hry %s, smazat ho nejde.', $game->getName()));
         }
         $this->merger->forgetInvitations($player);

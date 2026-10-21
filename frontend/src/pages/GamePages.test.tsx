@@ -367,7 +367,7 @@ describe('new play', () => {
 
 describe('game with characters and an own player', () => {
   const players = [{ id: 1, name: 'Anna', hasAccount: true, visible: true }, { id: 2, name: 'Boss', hasAccount: false, visible: true }, { id: 3, name: 'Host', hasAccount: false, visible: true }];
-  const game = { ...GAME, id: 1, player: { id: 2, name: 'Boss' }, characters: [{ id: 21, name: 'Gigazaur' }, { id: 22, name: 'Kraken' }] };
+  const game = { ...GAME, id: 1, players: [{ id: 2, name: 'Boss' }], characters: [{ id: 21, name: 'Gigazaur' }, { id: 22, name: 'Kraken' }] };
   const routes = {
     ...base,
     '/games/1': { body: game },

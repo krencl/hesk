@@ -348,16 +348,18 @@ final class LegacyImporter
             if (null !== ($cover = $this->coverUrl($g['cover_image']))) {
                 $values['image_url'] = $cover;
             }
-            // vlastní hráč hry (typ „game“ ve staré aplikaci)
-            $ownPlayer = null;
+            $newGameId = $this->upsert('game', "$gameId:$legacyPartyId", 'game', fn () => $this->findId('SELECT id FROM game WHERE party_id = ? AND LOWER(name) = LOWER(?)', [$partyId, $name]), $values);
+
+            // vlastní hráči hry (typ „game“ ve staré aplikaci); import je jen přidává, ruční změny v nové aplikaci neodebírá
             foreach ($d['players'] as $p) {
-                if ('game' === $p['type'] && (int) $p['game_id'] === $gameId) {
-                    $ownPlayer = $this->map('player', $p['id'].':'.$legacyPartyId);
-                    break;
+                if ('game' !== $p['type'] || (int) $p['game_id'] !== $gameId) {
+                    continue;
+                }
+                $ownPlayer = $this->map('player', $p['id'].':'.$legacyPartyId);
+                if (null !== $ownPlayer && false === $this->target->fetchOne('SELECT 1 FROM game_player WHERE game_id = ? AND player_id = ?', [$newGameId, $ownPlayer])) {
+                    $this->target->insert('game_player', ['game_id' => $newGameId, 'player_id' => $ownPlayer]);
                 }
             }
-            $values['player_id'] = $ownPlayer;
-            $newGameId = $this->upsert('game', "$gameId:$legacyPartyId", 'game', fn () => $this->findId('SELECT id FROM game WHERE party_id = ? AND LOWER(name) = LOWER(?)', [$partyId, $name]), $values);
 
             // rozšíření = verze hry kromě „Základní“ (ta je hra sama)
             foreach ($d['versions'] as $v) {

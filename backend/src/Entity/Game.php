@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Entity;
 
+use App\Domain\Exception\DomainException;
 use App\Enum\ScoreType;
 use App\Repository\GameRepository;
 use Doctrine\Common\Collections\ArrayCollection;
@@ -31,10 +32,17 @@ class Game
     #[ORM\Column(length: 50, nullable: true)]
     private ?string $shortName = null;
 
-    /** Vlastní hráč hry (u kooperativních her „protivník“ hry, např. Boss); patří do stejné party. */
-    #[ORM\ManyToOne]
-    #[ORM\JoinColumn(onDelete: 'SET NULL')]
-    private ?Player $player = null;
+    /**
+     * Vlastní hráči hry (u kooperativních her „protivníci“ hry, např. Boss); patří do stejné party.
+     *
+     * @var Collection<int, Player>
+     */
+    #[ORM\ManyToMany(targetEntity: Player::class)]
+    #[ORM\JoinTable(name: 'game_player')]
+    #[ORM\JoinColumn(onDelete: 'CASCADE')]
+    #[ORM\InverseJoinColumn(onDelete: 'CASCADE')]
+    #[ORM\OrderBy(['id' => 'ASC'])]
+    private Collection $players;
 
     /** @var Collection<int, GameAddon> */
     #[ORM\OneToMany(targetEntity: GameAddon::class, mappedBy: 'game', cascade: ['persist', 'remove'], orphanRemoval: true)]
@@ -57,6 +65,7 @@ class Game
     ) {
         $this->addons = new ArrayCollection();
         $this->characters = new ArrayCollection();
+        $this->players = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -105,9 +114,10 @@ class Game
         return $this->shortName;
     }
 
-    public function getPlayer(): ?Player
+    /** @return Collection<int, Player> */
+    public function getPlayers(): Collection
     {
-        return $this->player;
+        return $this->players;
     }
 
     /** @return Collection<int, GameCharacter> */
@@ -119,6 +129,7 @@ class Game
     /**
      * @param list<array{id: ?int, name: string}> $addons     rozšíření (s `id` se přejmenují, bez něj se spárují podle názvu nebo vytvoří)
      * @param list<array{id: ?int, name: string}> $characters postavy, stejná pravidla
+     * @param list<array{id: ?int, name: string}> $players    hráči hry: `id` je id hráče party (přejmenuje se), bez `id` se spáruje podle jména s hráčem party nebo vznikne nový host
      */
     public function update(
         string $name,
@@ -129,7 +140,7 @@ class Game
         ?string $cheatSheet,
         array $addons,
         array $characters = [],
-        ?Player $player = null,
+        array $players = [],
     ): void {
         $this->name = $name;
         $this->shortName = null !== $shortName && '' !== trim($shortName) ? trim($shortName) : null;
@@ -137,9 +148,78 @@ class Game
         $this->imageUrl = $imageUrl ?: null;
         $this->description = $description ?: null;
         $this->cheatSheet = $cheatSheet ?: null;
-        $this->player = $player;
         $this->sync($this->addons, $addons, fn (string $n): GameAddon => new GameAddon($this, $n));
         $this->sync($this->characters, $characters, fn (string $n): GameCharacter => new GameCharacter($this, $n));
+        $this->syncPlayers($players);
+    }
+
+    /**
+     * Hráči hry jako pojmenované položky (jako postavy): s `id` se hráč party přejmenuje, bez `id` se spáruje
+     * podle jména s hráčem party, jinak vznikne nový host. Odebraný hráč zůstává v partě, jen přestane být hráčem hry.
+     * Prázdná a opakovaná jména se zahodí.
+     *
+     * @param list<array{id: ?int, name: string}> $items
+     */
+    private function syncPlayers(array $items): void
+    {
+        $wanted = [];
+        $seen = [];
+        foreach ($items as $item) {
+            $name = trim($item['name']);
+            $key = mb_strtolower($name);
+            if ('' === $name || isset($seen[$key])) {
+                continue;
+            }
+            if (mb_strlen($name) > 100) {
+                throw new DomainException('Jméno hráče hry může mít nejvýš 100 znaků.');
+            }
+            $seen[$key] = true;
+            $wanted[] = ['id' => $item['id'] ?? null, 'name' => $name];
+        }
+
+        $resolved = [];
+        foreach ($wanted as $item) {
+            $player = $this->resolvePlayer($item['id'], $item['name']);
+            if (!\in_array($player, $resolved, true)) {
+                $resolved[] = $player;
+            }
+        }
+
+        foreach ($this->players->toArray() as $current) {
+            if (!\in_array($current, $resolved, true)) {
+                $this->players->removeElement($current);
+            }
+        }
+        foreach ($resolved as $player) {
+            if (!$this->players->contains($player)) {
+                $this->players->add($player);
+            }
+        }
+    }
+
+    private function resolvePlayer(?int $id, string $name): Player
+    {
+        if (null !== $id) {
+            foreach ($this->party->getPlayers() as $player) {
+                if ($player->getId() !== $id) {
+                    continue;
+                }
+                if ($player->getName() !== $name) {
+                    $this->party->renamePlayer($player, $name);
+                }
+
+                return $player;
+            }
+
+            throw new DomainException('Hráč nepatří do této party.');
+        }
+        foreach ($this->party->getPlayers() as $player) {
+            if (0 === strcasecmp($player->getName(), $name)) {
+                return $player;
+            }
+        }
+
+        return $this->party->addGuest($name);
     }
 
     /**

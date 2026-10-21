@@ -22,11 +22,10 @@ interface FormState {
   cheatSheet: string;
   addons: EditItem[];
   characters: EditItem[];
-  /** Jméno vlastního hráče hry (host); prázdné = hra nemá vlastního hráče. */
-  playerName: string;
+  players: EditItem[];
 }
 
-const EMPTY: FormState = { name: '', shortName: '', scoreType: 'most_points', imageUrl: '', description: '', cheatSheet: '', addons: [], characters: [], playerName: '' };
+const EMPTY: FormState = { name: '', shortName: '', scoreType: 'most_points', imageUrl: '', description: '', cheatSheet: '', addons: [], characters: [], players: [] };
 
 /** Formulář hry (nová hra / úprava); vstupuje se do něj ze správy her. */
 export function GameFormPage() {
@@ -50,7 +49,7 @@ export function GameFormPage() {
         cheatSheet: g.cheatSheet ?? '',
         addons: toEditItems(g.addons),
         characters: toEditItems(g.characters),
-        playerName: g.player?.name ?? '',
+        players: toEditItems(g.players),
       });
     }
   }, [existing.data]);
@@ -62,20 +61,6 @@ export function GameFormPage() {
   };
   const save = useMutation({
     mutationFn: async () => {
-      // Hráč hry se edituje jménem jako postavy: přejmenuje se stávající host, nebo vznikne nový; prázdné jméno hráče hry odpojí.
-      const current = existing.data?.player ?? null;
-      const playerName = form.playerName.trim();
-      let playerId: number | null = null;
-      if (playerName !== '') {
-        if (current && current.name === playerName) {
-          playerId = current.id;
-        } else if (current) {
-          playerId = (await api.updatePlayer(current.id, { name: playerName })).id;
-        } else {
-          playerId = (await api.createGuest(party.id, playerName)).id;
-        }
-        await queryClient.invalidateQueries({ queryKey: ['players', party.id] });
-      }
       const input: GameInput = {
         name: form.name.trim(),
         shortName: form.shortName.trim() || null,
@@ -85,7 +70,7 @@ export function GameFormPage() {
         cheatSheet: form.cheatSheet.trim() || null,
         addons: fromEditItems(form.addons),
         characters: fromEditItems(form.characters),
-        playerId,
+        players: fromEditItems(form.players),
       };
       return gameId ? api.updateGame(gameId, input) : api.createGame(party.id, input);
     },
@@ -137,11 +122,17 @@ export function GameFormPage() {
           onChange={(characters) => set({ characters })}
         />
 
-        <div className="field">
-          <label htmlFor="game-player">Hráč hry</label>
-          <input id="game-player" value={form.playerName} maxLength={100} placeholder="např. Boss (jen kooperativní hry)" onChange={(e) => set({ playerName: e.target.value })} />
-          <span className="muted hint">Proti němu hrají lidští hráči (kooperativní hry); v zápisu je vybraný automaticky. Prázdné = hra nemá vlastního hráče.</span>
-        </div>
+        <NamedListEditor
+          label="Hráči hry"
+          noun="hráč hry"
+          nounAccusative="hráče hry"
+          addLabel="Přidat hráče hry"
+          emptyText="Hra nemá vlastní hráče."
+          maxLength={100}
+          hint="Proti nim hrají lidští hráči (kooperativní hry); v zápisu jsou vybraní automaticky."
+          items={form.players}
+          onChange={(players) => set({ players })}
+        />
 
         <label>Cheatsheet (Markdown nebo HTML)<textarea rows={6} value={form.cheatSheet} onChange={(e) => set({ cheatSheet: e.target.value })} /></label>
         {form.cheatSheet.trim() && (
