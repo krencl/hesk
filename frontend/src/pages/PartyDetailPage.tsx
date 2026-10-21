@@ -7,6 +7,7 @@ import { ApiError } from '../api/client';
 import type { PartyRole } from '../api/types';
 import { Actions } from '../components/Actions';
 import { ErrorMessage } from '../components/ErrorMessage';
+import { ConfirmPopup } from '../components/ConfirmPopup';
 import { Icon } from '../components/Icon';
 import { PartyHeader } from '../components/PartyHeader';
 import { SelectPopup } from '../components/SelectPopup';
@@ -21,6 +22,8 @@ export function PartyDetailPage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [inviteLink, setInviteLink] = useState<string | null>(null);
+  // člen, kterého se právě potvrzuje odebrání (nebo já při opuštění party)
+  const [confirming, setConfirming] = useState<{ userId: number; nickname: string } | null>(null);
   const detail = useQuery({ queryKey: ['party', id], queryFn: () => api.party(id), retry: false });
   const refresh = () => Promise.all([queryClient.invalidateQueries({ queryKey: ['parties'] }), queryClient.invalidateQueries({ queryKey: ['party'] })]);
 
@@ -78,7 +81,7 @@ export function PartyDetailPage() {
                     type="button"
                     className="icon-button danger"
                     aria-label={`Odebrat ${m.nickname}`}
-                    onClick={() => window.confirm(`Odebrat ${m.nickname}?`) && remove.mutate(m.userId)}
+                    onClick={() => setConfirming({ userId: m.userId, nickname: m.nickname ?? 'člen' })}
                   >
                     <Icon name="delete" />
                   </button>
@@ -86,7 +89,7 @@ export function PartyDetailPage() {
               </span>
             )}
             {!isAdmin && m.userId === me.id && (
-              <button type="button" className="link danger" onClick={() => window.confirm('Opustit partu?') && remove.mutate(m.userId)}>Opustit</button>
+              <button type="button" className="link danger" onClick={() => setConfirming({ userId: m.userId, nickname: m.nickname ?? 'člen' })}>Opustit</button>
             )}
           </li>
         ))}
@@ -101,6 +104,30 @@ export function PartyDetailPage() {
           </p>
         )}
       </div>
+      {confirming && (
+        <ConfirmPopup
+          title={confirming.userId === me.id ? 'Opustit partu?' : `Odebrat člena ${confirming.nickname}?`}
+          confirmLabel={confirming.userId === me.id ? 'Opustit' : 'Odebrat'}
+          destructive
+          onCancel={() => setConfirming(null)}
+          onConfirm={() => {
+            remove.mutate(confirming.userId);
+            setConfirming(null);
+          }}
+        >
+          {confirming.userId === me.id ? (
+            <>
+              <p>Ztratíš přístup do party {party.name}. Tvoje zápisy a statistiky v ní zůstanou, ale z tebe se stane host (bez účtu).</p>
+              <p>Zpátky se dostaneš jen přes novou pozvánku.</p>
+            </>
+          ) : (
+            <>
+              <p>{confirming.nickname} přijde o přístup do party. Z člena se stane host, takže jeho zápisy a statistiky zůstanou a půjde ho dál zapisovat do her.</p>
+              <p>Zpátky se dostane jen přes novou pozvánku.</p>
+            </>
+          )}
+        </ConfirmPopup>
+      )}
       <Actions>
         {isAdmin && <button type="button" className="btn" onClick={() => invite.mutate()}>Pozvat hráče</button>}
         <Link className="btn outline-secondary" to={LEAVE_PARTY_MANAGEMENT_PATH}>Zrušit</Link>

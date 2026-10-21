@@ -4,6 +4,7 @@ import { Link, useParams } from 'react-router-dom';
 import { api } from '../api';
 import { ApiError } from '../api/client';
 import { Actions } from '../components/Actions';
+import { ConfirmPopup } from '../components/ConfirmPopup';
 import { ErrorMessage } from '../components/ErrorMessage';
 import { Icon } from '../components/Icon';
 import { PartyHeader } from '../components/PartyHeader';
@@ -20,6 +21,7 @@ export function PartyGuestsPage() {
   // rozpracované změny hostů (jméno, zobrazování), ukládají se najednou tlačítkem Uložit
   const [edited, setEdited] = useState<Record<number, { name?: string; visible?: boolean }>>({});
   const [newName, setNewName] = useState('');
+  const [confirming, setConfirming] = useState<{ id: number; name: string } | null>(null);
 
   const refresh = () => queryClient.invalidateQueries({ queryKey: ['players', id] });
   const add = useMutation({
@@ -108,7 +110,7 @@ export function PartyGuestsPage() {
                     className="icon-button danger"
                     aria-label={`Smazat hosta ${g.name}`}
                     disabled={remove.isPending}
-                    onClick={() => window.confirm(`Smazat hosta ${g.name}?`) && remove.mutate(g.id)}
+                    onClick={() => setConfirming({ id: g.id, name: g.name })}
                   >
                     <Icon name="delete" />
                   </button>
@@ -122,6 +124,21 @@ export function PartyGuestsPage() {
           <button type="button" className="btn outline" disabled={!newName.trim() || add.isPending} onClick={() => add.mutate()}>Přidat</button>
         </div>
         <ErrorMessage error={add.error ?? save.error ?? remove.error} />
+        {confirming && (
+          <ConfirmPopup
+            title={`Smazat hosta ${confirming.name}?`}
+            confirmLabel="Smazat"
+            destructive
+            onCancel={() => setConfirming(null)}
+            onConfirm={() => {
+              remove.mutate(confirming.id);
+              setConfirming(null);
+            }}
+          >
+            <p>{confirming.name} nikde nehrál, takže se z party smaže úplně a nejde to vrátit zpět.</p>
+            <p>Jen nechceš, aby se nabízel při zápisu? Stačí ho skrýt tlačítkem s okem.</p>
+          </ConfirmPopup>
+        )}
         <Actions>
           <button className="btn" type="submit" disabled={changed.length === 0 || save.isPending}>Uložit</button>
           <Link className="btn outline-secondary" to={LEAVE_PARTY_MANAGEMENT_PATH}>Zrušit</Link>

@@ -484,3 +484,11 @@ input[type='datetime-local'] { font-size: 0.9rem; padding-left: 0.4rem; padding-
 }
 .role-select:hover { background: var(--light-blue); }
 .role-select .icon { font-size: 1.3rem; }
+
+/* Potvrzovací popup (stejný základ jako výběr) */
+.confirm-text { margin-bottom: 1.5rem; font-size: 1.1rem; }
+.confirm-text p { margin: 0 0 0.75rem; }
+.confirm-actions { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 0.5rem; }
+.confirm-actions .btn { width: 100%; margin: 0; }
+.btn.destructive { background: var(--error); border-color: var(--error); }
+.btn.destructive:hover { background: #b81f2c; border-color: #b81f2c; }

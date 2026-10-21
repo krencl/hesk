@@ -1,4 +1,4 @@
-import { fireEvent, screen, waitFor } from '@testing-library/react';
+import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { GAME, mockApi, ME, PARTY, renderApp } from '../test/helpers';
 
@@ -97,12 +97,16 @@ describe('party guests (/parties/:id/guests)', () => {
     await waitFor(() => expect(input).toHaveValue(''));
   });
 
-  it('deletes an unused guest after confirmation', async () => {
-    const confirm = vi.spyOn(window, 'confirm').mockReturnValue(true);
+  it('deletes an unused guest after confirming in a popup', async () => {
+    const confirm = vi.spyOn(window, 'confirm');
     const fetchMock = mockApi({ ...base, 'DELETE /players/3': { status: 204, body: null } });
     renderApp('/parties/3/guests');
     fireEvent.click(await screen.findByRole('button', { name: 'Smazat hosta Cyril' }));
-    expect(confirm).toHaveBeenCalled();
+    const dialog = screen.getByRole('alertdialog', { name: 'Smazat hosta Cyril?' });
+    expect(within(dialog).getByText(/nejde to vrátit zpět/)).toBeInTheDocument();
+    expect(confirm).not.toHaveBeenCalled();
+    expect(fetchMock.mock.calls.some(([, init]) => init?.method === 'DELETE')).toBe(false);
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Smazat' }));
     await waitFor(() => expect(fetchMock.mock.calls.some(([u, init]) => String(u) === '/api/players/3' && init?.method === 'DELETE')).toBe(true));
   });
 

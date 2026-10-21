@@ -201,20 +201,47 @@ describe('party detail (/parties/:id)', () => {
     expect(screen.queryByRole('button', { name: /Přepnout na tuto partu/ })).not.toBeInTheDocument();
   });
 
-  it('removes a member with the trash icon button after confirmation', async () => {
-    const confirm = vi.spyOn(window, 'confirm').mockReturnValue(true);
+  it('removes a member with the trash icon button after confirming in a popup that explains what happens', async () => {
+    const confirm = vi.spyOn(window, 'confirm');
     const fetchMock = mockApi({ ...base, '/parties/3': { body: detail(PARTY) }, 'DELETE /parties/3/members/2': { status: 204, body: null } });
     renderApp('/parties/3');
     const trash = await screen.findByRole('button', { name: 'Odebrat Petr' });
     expect(trash).toHaveClass('icon-button', 'danger');
     expect(trash).toHaveTextContent('delete'); // ikona koše
     fireEvent.click(trash);
-    expect(confirm).toHaveBeenCalledWith('Odebrat Petr?');
+    // nic se nemaže hned a nepoužívá se alert prohlížeče; popup vysvětluje, že z člena se stane host
+    const dialog = screen.getByRole('alertdialog', { name: 'Odebrat člena Petr?' });
+    expect(within(dialog).getByText(/Z člena se stane host/)).toBeInTheDocument();
+    expect(confirm).not.toHaveBeenCalled();
+    expect(fetchMock.mock.calls.some(([, init]) => init?.method === 'DELETE')).toBe(false);
+    expect(within(dialog).getByRole('button', { name: 'Zrušit' })).toHaveFocus(); // Enter omylem nic nesmaže
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Odebrat' }));
+    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
     await waitFor(() => expect(fetchMock.mock.calls.some(([u, init]) => String(u) === '/api/parties/3/members/2' && init?.method === 'DELETE')).toBe(true));
   });
 
+  it('cancelling the popup (button, cross, Escape) removes nobody', async () => {
+    const fetchMock = mockApi({ ...base, '/parties/3': { body: detail(PARTY) } });
+    renderApp('/parties/3');
+    const trash = await screen.findByRole('button', { name: 'Odebrat Petr' });
+
+    trash.focus(); // klik myší tlačítko zaostří (fireEvent.click to nedělá)
+    fireEvent.click(trash);
+    fireEvent.click(screen.getByRole('button', { name: 'Zrušit' }));
+    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
+    expect(trash).toHaveFocus(); // zaostření se vrací na tlačítko, které popup otevřelo
+
+    fireEvent.click(trash);
+    fireEvent.click(screen.getByRole('button', { name: 'Zavřít' }));
+    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
+
+    fireEvent.click(trash);
+    fireEvent.keyDown(screen.getByRole('alertdialog'), { key: 'Escape' });
+    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
+    expect(fetchMock.mock.calls.some(([, init]) => init?.method === 'DELETE')).toBe(false);
+  });
+
   it('asks for confirmation before leaving and returns to the management page afterwards', async () => {
-    const confirm = vi.spyOn(window, 'confirm').mockReturnValue(true);
     const fetchMock = mockApi({
       ...base,
       '/parties/4': { body: detail(MEMBER_PARTY, [{ userId: 1, nickname: 'Anna', role: 'member' }]) },
@@ -222,7 +249,9 @@ describe('party detail (/parties/:id)', () => {
     });
     renderApp('/parties/4');
     fireEvent.click(await screen.findByRole('button', { name: 'Opustit' }));
-    expect(confirm).toHaveBeenCalledWith('Opustit partu?');
+    const dialog = screen.getByRole('alertdialog', { name: 'Opustit partu?' });
+    expect(within(dialog).getByText(/z tebe se stane host/)).toBeInTheDocument();
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Opustit' }));
     await waitFor(() => expect(fetchMock.mock.calls.some(([u, init]) => String(u) === '/api/parties/4/members/1' && init?.method === 'DELETE')).toBe(true));
     expect(await screen.findByRole('heading', { name: 'Správa part' })).toBeInTheDocument();
   });
