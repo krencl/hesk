@@ -1,8 +1,16 @@
 import { fireEvent, screen, waitFor } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+vi.mock('react-easy-crop', () => ({
+  // zjednodušený editor: hned ohlásí výřez, jako když ho uživatel nastaví
+  default: ({ onCropComplete }: { onCropComplete: (a: unknown, p: unknown) => void }) => (
+    <button type="button" onClick={() => onCropComplete({}, { x: 10, y: 20, width: 300, height: 300 })}>Nastavit výřez</button>
+  ),
+}));
+vi.mock('../lib/cropImage', () => ({ cropToBlob: vi.fn(async () => new Blob(['x'], { type: 'image/jpeg' })) }));
+
 import { GAME, mockApi, ME, PARTY, renderApp } from '../test/helpers';
 
-afterEach(() => { vi.unstubAllGlobals(); sessionStorage.clear(); });
+afterEach(() => { vi.unstubAllGlobals(); vi.clearAllMocks(); sessionStorage.clear(); });
 
 const PLAYERS = [
   { id: 1, name: 'Anna', hasAccount: true, visible: true },
@@ -110,5 +118,64 @@ describe('game form (/games/:id/edit)', () => {
     fireEvent.change(screen.getByLabelText('Název'), { target: { value: 'Nová' } });
     fireEvent.click(screen.getByRole('button', { name: 'Uložit' }));
     await waitFor(() => expect(sent(fetchMock, 'POST', '/parties/3/games')).toMatchObject({ name: 'Nová', shortName: null, addons: [], characters: [], players: [] }));
+  });
+
+  describe('cover upload', () => {
+    const pick = (file = new File(['x'], 'cover.png', { type: 'image/png' })) => {
+      fireEvent.change(screen.getByLabelText('Soubor s obrázkem'), { target: { files: [file] } });
+    };
+    const stubUrls = () => {
+      vi.stubGlobal('URL', Object.assign(URL, { createObjectURL: vi.fn(() => 'blob:cover'), revokeObjectURL: vi.fn() }));
+    };
+
+    it('crops the chosen file in the editor, uploads the square and saves its address with the game', async () => {
+      stubUrls();
+      const fetchMock = mockApi({ ...routes, 'POST /parties/3/game-images': { status: 201, body: { url: '/uploads/covers/abc.jpg' } }, 'PUT /games/5': { body: FULL_GAME } });
+      renderApp('/games/5/edit');
+      await waitFor(() => expect(screen.getByLabelText('Název')).toHaveValue('King of Tokyo'));
+
+      pick();
+      expect(await screen.findByRole('dialog', { name: 'Oříznout obrázek' })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Použít' })).toBeDisabled(); // dokud není výřez
+      fireEvent.click(screen.getByRole('button', { name: 'Nastavit výřez' }));
+      fireEvent.click(screen.getByRole('button', { name: 'Použít' }));
+
+      await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+      const upload = fetchMock.mock.calls.find(([u, init]) => String(u) === '/api/parties/3/game-images' && init?.method === 'POST');
+      expect(upload?.[1]?.body).toBeInstanceOf(FormData);
+      expect((upload?.[1]?.body as FormData).get('file')).toBeInstanceOf(Blob);
+      expect(screen.getByLabelText('URL obrázku')).toHaveValue('/uploads/covers/abc.jpg');
+
+      fireEvent.click(screen.getByRole('button', { name: 'Uložit' }));
+      await waitFor(() => expect(sent(fetchMock, 'PUT', '/games/5')?.imageUrl).toBe('/uploads/covers/abc.jpg'));
+    });
+
+    it('cancelling the editor changes nothing, and the picture can be removed', async () => {
+      stubUrls();
+      const fetchMock = mockApi({ ...routes, '/games/5': { body: { ...FULL_GAME, imageUrl: '/static/covers/tokyo.jpg' } }, 'PUT /games/5': { body: FULL_GAME } });
+      renderApp('/games/5/edit');
+      await waitFor(() => expect(screen.getByLabelText('URL obrázku')).toHaveValue('/static/covers/tokyo.jpg'));
+
+      pick();
+      fireEvent.click(await screen.findByRole('button', { name: 'Zrušit' }));
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+      expect(screen.getByLabelText('URL obrázku')).toHaveValue('/static/covers/tokyo.jpg');
+
+      fireEvent.click(screen.getByRole('button', { name: 'Odebrat obrázek' }));
+      fireEvent.click(screen.getByRole('button', { name: 'Uložit' }));
+      await waitFor(() => expect(sent(fetchMock, 'PUT', '/games/5')?.imageUrl).toBeNull());
+    });
+
+    it('keeps the editor open and shows the server error when the upload is refused', async () => {
+      stubUrls();
+      mockApi({ ...routes, 'POST /parties/3/game-images': { status: 422, body: { error: 'Obrázek musí být čtvercový.' } } });
+      renderApp('/games/5/edit');
+      await waitFor(() => expect(screen.getByLabelText('Název')).toHaveValue('King of Tokyo'));
+      pick();
+      fireEvent.click(await screen.findByRole('button', { name: 'Nastavit výřez' }));
+      fireEvent.click(screen.getByRole('button', { name: 'Použít' }));
+      expect(await screen.findByText('Obrázek musí být čtvercový.')).toBeInTheDocument();
+      expect(screen.getByRole('dialog')).toBeInTheDocument();
+    });
   });
 });

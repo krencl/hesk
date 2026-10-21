@@ -8,6 +8,7 @@ use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\Tools\SchemaTool;
 use Symfony\Bundle\FrameworkBundle\KernelBrowser;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
+use Symfony\Component\HttpFoundation\File\UploadedFile;
 
 /** End-to-end průchod API nad SQLite databází (viz docs/adr/0003). */
 final class ApiFlowTest extends WebTestCase
@@ -612,6 +613,51 @@ final class ApiFlowTest extends WebTestCase
         $this->api('DELETE', "/api/players/{$byName['Minion']}", expected: 422);
         $this->api('PUT', "/api/games/{$game['id']}", ['name' => 'Coop', 'scoreType' => 'winner_only', 'players' => [['id' => $boss['id'], 'name' => 'Velký Boss']]]);
         $this->api('DELETE', "/api/players/{$byName['Minion']}", expected: 204);
+    }
+
+    public function testGameImageUploadAcceptsOnlySquareImagesAndReturnsAUsableUrl(): void
+    {
+        $this->login('anna@example.com', 'Anna');
+        $party = $this->api('POST', '/api/parties', ['name' => 'Pátek'], 201);
+        $upload = function (string $png, string $name = 'cover.png') use ($party): int {
+            $path = tempnam(sys_get_temp_dir(), 'cover');
+            file_put_contents($path, $png);
+            $this->client->request('POST', "/api/parties/{$party['id']}/game-images", files: ['file' => new UploadedFile($path, $name, null, null, true)]);
+
+            return $this->client->getResponse()->getStatusCode();
+        };
+
+        self::assertSame(201, $upload(self::png(200, 200)));
+        $url = json_decode($this->client->getResponse()->getContent(), true)['url'];
+        self::assertMatchesRegularExpression('~^/uploads/covers/[0-9a-f]{40}\.png$~', $url);
+        self::assertFileExists(static::getContainer()->getParameter('app.uploads_dir').'/covers/'.basename($url));
+        self::assertSame(201, $upload(self::png(200, 200)), 'stejný obrázek = stejná adresa');
+        self::assertSame($url, json_decode($this->client->getResponse()->getContent(), true)['url']);
+
+        // adresu jde uložit k hře
+        $game = $this->api('POST', "/api/parties/{$party['id']}/games", ['name' => 'Hra', 'scoreType' => 'most_points', 'imageUrl' => $url], 201);
+        self::assertSame($url, $game['imageUrl']);
+
+        self::assertSame(422, $upload(self::png(200, 100)), 'není čtverec');
+        self::assertSame(422, $upload(self::png(50, 50)), 'příliš malý');
+        self::assertSame(422, $upload('<?php echo 1;', 'cover.png'), 'není obrázek');
+        self::assertSame(422, $upload('GIF89a'.str_repeat("\0", 20), 'cover.gif'), 'nepodporovaný formát');
+
+        $this->client->request('POST', "/api/parties/{$party['id']}/game-images");
+        self::assertSame(422, $this->client->getResponse()->getStatusCode(), 'bez souboru');
+
+        // jen člen party
+        $this->login('eve@example.com', 'Eve');
+        self::assertSame(403, $upload(self::png(200, 200)));
+    }
+
+    /** Jednobarevné PNG zadaného rozměru bez závislosti na GD. */
+    private static function png(int $width, int $height): string
+    {
+        $chunk = static fn (string $type, string $data): string => pack('N', \strlen($data)).$type.$data.pack('N', crc32($type.$data));
+        $rows = str_repeat("\0".str_repeat("\x20\x60\xa0", $width), $height);
+
+        return "\x89PNG\r\n\x1a\n".$chunk('IHDR', pack('NNCCCCC', $width, $height, 8, 2, 0, 0, 0)).$chunk('IDAT', (string) gzcompress($rows)).$chunk('IEND', '');
     }
 
     public function testGameImageUrlAcceptsHttpLinksAndLocalPathsOnly(): void

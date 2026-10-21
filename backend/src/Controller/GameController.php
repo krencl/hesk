@@ -12,6 +12,7 @@ use App\Entity\Party;
 use App\Repository\GameRepository;
 use App\Repository\PlayRepository;
 use App\Security\PartyVoter;
+use App\Service\CoverStorage;
 use App\Service\Presenter;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -23,7 +24,7 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 
 final class GameController extends ApiController
 {
-    public function __construct(Presenter $presenter, private readonly EntityManagerInterface $em, private readonly PlayRepository $plays, private readonly GameRepository $games)
+    public function __construct(Presenter $presenter, private readonly EntityManagerInterface $em, private readonly PlayRepository $plays, private readonly GameRepository $games, private readonly CoverStorage $covers)
     {
         parent::__construct($presenter);
     }
@@ -54,6 +55,14 @@ final class GameController extends ApiController
         $this->em->flush();
 
         return new JsonResponse($this->presenter->game($game), Response::HTTP_CREATED);
+    }
+
+    /** Nahraje obrázek hry (už oříznutý na čtverec v prohlížeči); vrací adresu pro `imageUrl`. */
+    #[Route('/api/parties/{id}/game-images', requirements: ['id' => '\d+'], methods: ['POST'])]
+    #[IsGranted(PartyVoter::VIEW, 'party')]
+    public function uploadImage(Party $party, Request $request): JsonResponse
+    {
+        return new JsonResponse(['url' => $this->covers->store($request->files->get('file'))], Response::HTTP_CREATED);
     }
 
     #[Route('/api/games/{id}', requirements: ['id' => '\d+'], methods: ['GET'])]

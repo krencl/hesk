@@ -7,6 +7,7 @@ use App\Kernel;
  *
  *  - /api/*, /oauth/*    → Symfony (backend/)
  *  - /static/*           → statika z web/static/ (jen vestavěný PHP server; v produkci ji servíruje web server)
+ *  - /uploads/*          → nahrané obrázky her z web/uploads/ (stejně)
  *  - cokoli jiného       → SPA (web/static/index.html), routing řeší React Router
  *
  * Dev: php -S 127.0.0.1:8000 -t web web/index.php
@@ -16,7 +17,7 @@ $staticDir = __DIR__.'/static';
 $path = rawurldecode((string) parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH));
 
 if (!str_starts_with($path, '/api') && !str_starts_with($path, '/oauth/')) {
-    if ('cli-server' === PHP_SAPI && str_starts_with($path, '/static/') && !str_contains($path, '..') && is_file(__DIR__.$path)) {
+    if ('cli-server' === PHP_SAPI && (str_starts_with($path, '/static/') || str_starts_with($path, '/uploads/')) && !str_contains($path, '..') && is_file(__DIR__.$path)) {
         return false;
     }
 

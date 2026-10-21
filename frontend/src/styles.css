@@ -516,3 +516,10 @@ input[type='datetime-local'] { font-size: 0.9rem; padding-left: 0.4rem; padding-
 .select-option.choice span { display: grid; gap: 0.1rem; }
 .select-option.choice small { display: block; font-size: 0.85rem; color: var(--secondary); line-height: 1.3; }
 .confirm-text input { margin-top: 0.25rem; }
+
+/* Online editor obrázku (ImageCropPopup): čtvercová plocha, nad ní se přetahuje a přibližuje */
+.crop-area { position: relative; width: 100%; aspect-ratio: 1; background: #222; margin-bottom: 0.75rem; overflow: hidden; touch-action: none; }
+.crop-zoom { display: grid; gap: 0.25rem; margin-bottom: 0.5rem; color: var(--secondary); }
+.crop-zoom input { width: 100%; }
+.cover-field { display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; }
+.cover-field .btn { margin: 0; }

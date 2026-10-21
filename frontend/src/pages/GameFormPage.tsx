@@ -1,15 +1,18 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { type FormEvent, useEffect, useState } from 'react';
+import { type FormEvent, useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useActiveParty } from '../AppContext';
 import { api } from '../api';
 import type { GameInput } from '../api/types';
 import { Actions } from '../components/Actions';
 import { ErrorMessage } from '../components/ErrorMessage';
+import { GameImage } from '../components/GameImage';
+import { ImageCropPopup } from '../components/ImageCropPopup';
 import { NamedListEditor } from '../components/NamedListEditor';
 import { PageTitle } from '../components/PageTitle';
 import { SafeHtml } from '../components/SafeHtml';
 import { renderCheatSheet } from '../lib/cheatSheet';
+import { type CropArea, cropToBlob } from '../lib/cropImage';
 import { type EditItem, fromEditItems, toEditItems } from '../lib/namedItems';
 import { SCORE_TYPE_LABELS, SCORE_TYPES } from '../lib/scoring';
 
@@ -36,6 +39,9 @@ export function GameFormPage() {
   const queryClient = useQueryClient();
   const existing = useQuery({ queryKey: ['game', gameId], queryFn: () => api.game(gameId!), enabled: gameId !== null });
   const [form, setForm] = useState<FormState>(EMPTY);
+  // Vybraný soubor čeká v editoru na oříznutí (object URL; po zavření se uvolní).
+  const [cropSrc, setCropSrc] = useState<string | null>(null);
+  const fileInput = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     const g = existing.data;
@@ -76,6 +82,22 @@ export function GameFormPage() {
     },
     onSuccess: () => done('/manage/games'),
   });
+  const upload = useMutation({
+    mutationFn: async (area: CropArea) => api.uploadGameImage(party.id, await cropToBlob(cropSrc!, area)),
+    onSuccess: ({ url }) => {
+      set({ imageUrl: url });
+      closeCrop();
+    },
+  });
+  const closeCrop = () => {
+    if (cropSrc) URL.revokeObjectURL(cropSrc);
+    setCropSrc(null);
+    upload.reset();
+  };
+  const pickFile = (file: File | undefined) => {
+    if (fileInput.current) fileInput.current.value = ''; // stejný soubor jde vybrat znovu
+    if (file) setCropSrc(URL.createObjectURL(file));
+  };
   const remove = useMutation({ mutationFn: () => api.deleteGame(gameId!), onSuccess: () => done('/manage/games') });
 
   const submit = (e: FormEvent) => {
@@ -101,7 +123,19 @@ export function GameFormPage() {
             {SCORE_TYPES.map((t) => <option key={t} value={t}>{SCORE_TYPE_LABELS[t]}</option>)}
           </select>
         </label>
-        <label>URL obrázku<input inputMode="url" value={form.imageUrl} placeholder="https://… nebo /static/covers/…" onChange={(e) => set({ imageUrl: e.target.value })} /></label>
+        <div className="field">
+          <span className="field-label">Obrázek</span>
+          <div className="cover-field">
+            <GameImage url={form.imageUrl.trim() || null} />
+            <input ref={fileInput} type="file" accept="image/*" hidden aria-label="Soubor s obrázkem" onChange={(e) => pickFile(e.target.files?.[0])} />
+            <button type="button" className="btn small outline" onClick={() => fileInput.current?.click()}>{form.imageUrl.trim() ? 'Změnit obrázek' : 'Nahrát obrázek'}</button>
+            {form.imageUrl.trim() && <button type="button" className="btn small outline-secondary" onClick={() => set({ imageUrl: '' })}>Odebrat obrázek</button>}
+          </div>
+          <details>
+            <summary>Zadat adresu obrázku</summary>
+            <input inputMode="url" aria-label="URL obrázku" value={form.imageUrl} placeholder="https://… nebo /uploads/covers/…" onChange={(e) => set({ imageUrl: e.target.value })} />
+          </details>
+        </div>
         <label>Popis<textarea rows={3} value={form.description} onChange={(e) => set({ description: e.target.value })} /></label>
 
         <NamedListEditor
@@ -142,6 +176,15 @@ export function GameFormPage() {
           </details>
         )}
         <ErrorMessage error={save.error ?? remove.error} />
+        {cropSrc && (
+          <ImageCropPopup
+            src={cropSrc}
+            busy={upload.isPending}
+            error={upload.error ? (upload.error.message) : null}
+            onConfirm={(area) => upload.mutate(area)}
+            onCancel={closeCrop}
+          />
+        )}
         <Actions>
           <button className="btn" type="submit" disabled={save.isPending}>Uložit</button>
           <Link className="btn outline-secondary" to="/manage/games">Zpět</Link>

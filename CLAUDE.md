@@ -20,7 +20,7 @@ Není tu PHP ani MySQL ani sudo. PHP 8.4 je statický binár v `~/bin/php` + `~/
 ## Backend – orientace
 - `src/Entity` – `User, Party, PartyMember, PartyInvitation, Player (hráč party, i host bez účtu), Game, GameAddon (rozšíření), GameCharacter (postavy), Tag, GameSession, Play, PlayResult`.
 - `src/Domain` – čistá logika: `ResultCalculator` (pořadí/vítězové dle `ScoreType`), `PlayerInput/Outcome`, `Exception/DomainException` (→ HTTP 422).
-- `src/Service` – `PlayService` (create/update/delete zápisu), `GuestMerger` (host → člen, ADR 0018), `SessionAssigner` (24h seance, návrh čísla, ruční číslo; ADR 0013), `Presenter` (entity → JSON).
+- `src/Service` – `CoverStorage` (upload obrázků her), `PlayService` (create/update/delete zápisu), `GuestMerger` (host → člen, ADR 0018), `SessionAssigner` (24h seance, návrh čísla, ruční číslo; ADR 0013), `Presenter` (entity → JSON).
 - `src/Controller` – tenké kontrolery (`Party, Game, Play, Tag, Stats, Auth, Health`; `Tag` = seznam tagů pro našeptávání); vstup přes `#[MapRequestPayload]` DTO v `src/Dto`.
 - `src/Security` – `PartyVoter` (`PARTY_VIEW`/`PARTY_WRITE`/`PARTY_ADMIN`; role člen/zapisovač/správce (v kódu `admin`), ADR 0017), `JsonEntryPoint` (401 JSON), `SessionLoginAuthenticator`.
 - `src/EventListener/ApiExceptionListener` – chyby pod `/api` jako JSON `{error, violations?}`.
@@ -38,9 +38,10 @@ Není tu PHP ani MySQL ani sudo. PHP 8.4 je statický binár v `~/bin/php` + `~/
 - Funkční testy mažou a vytvářejí schéma pro každý test (pomalé, ~35 s celkem).
 - Cheatsheet her je Markdown (import ze staré app) nebo HTML od uživatelů → vždy přes `renderCheatSheet` + `SafeHtml` (marked + DOMPurify).
 - Čísla seancí (`game_session.number`) jsou uložená, ne odvozená (stará čísla mají mezery); novou seanci číslo přiřadí `SessionAssigner` (max+1).
+- Nahrané obrázky her (ADR 0020): `POST /api/parties/{id}/game-images`, soubory v `web/uploads/covers/` (git-ignorováno, `/uploads/…`; v produkci je musí servírovat web server a zálohovat se); ve formuláři hry je ořez do čtverce v prohlížeči (`ImageCropPopup`, `react-easy-crop`).
 - Obálky her jsou lokálně v `frontend/public/covers/` (git-ignorováno) a `game.image_url` = `/static/covers/…`; statika se servíruje pod `/static/` (Vite `base`).
 - Git: větev `master`, commity s trailerem `Co-Authored-By` dle zadání prostředí. Remote `origin` = `git@github.com:krencl/hesk.git` (privátní repo); push jde SSH klíčem `/workspace/github-ssh-key` (v `.gitignore`, **nikdy necommitovat ani nevypisovat**), který je zapojený v lokálním `core.sshCommand` (+ ověřený otisk hostitele v `.git/github_known_hosts`; po novém kontejneru nastavit znovu). Pushuje se jen na výslovné vyžádání.
 
 ## Stav (2026-10-14)
 Hotovo: dev DB zmigrována na nové schéma s importem dat, hráči-hosté, auth (Google + dev login, spárování starých účtů podle e-mailu), party/členové/pozvánky, hry (+rozšíření), zápisy se seancemi, statistiky (výhry, top hry), mobilní UI; UX podle prototypu (seznam her s hledáním/filtrem, detail hry se zápisy a cheatsheetem, čísla seancí, ADR 0009).
-Nehotovo/nápady: vynucení přezdívky na backendu, upload obrázků, WYSIWYG cheatsheet, CI s MySQL, import z původní app.
+Nehotovo/nápady: vynucení přezdívky na backendu, úklid osiřelých nahraných obrázků, WYSIWYG cheatsheet, CI s MySQL, import z původní app.

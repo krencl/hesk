@@ -37,6 +37,12 @@ export const api = {
   game: (id: number) => get<GameWithStats>(`/games/${id}`),
   sessions: (partyId: number) => get<SessionInfo[]>(`/parties/${partyId}/sessions`),
   createGame: (partyId: number, input: GameInput) => post<Game>(`/parties/${partyId}/games`, input),
+  /** Nahraje už oříznutý čtvercový obrázek hry; vrací adresu pro `imageUrl`. */
+  uploadGameImage: (partyId: number, image: Blob) => {
+    const form = new FormData();
+    form.append('file', image, 'cover.jpg');
+    return post<{ url: string }>(`/parties/${partyId}/game-images`, form);
+  },
   updateGame: (id: number, input: GameInput) => put<Game>(`/games/${id}`, input),
   deleteGame: (id: number) => del(`/games/${id}`),
 

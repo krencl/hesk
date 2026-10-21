@@ -9,6 +9,9 @@
 # Build frontendu (generuje se: cd frontend && npm run build)
 /web/static/
 
+# Obrázky her nahrané uživateli (ADR 0020)
+/web/uploads/
+
 # Obálky her převzaté ze starého prototypu (lokálně, ~13 MB; upload obrázků viz TODO v CLAUDE.md)
 /frontend/public/covers/
 

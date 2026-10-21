@@ -14,8 +14,9 @@ export async function request<T>(method: string, path: string, body?: unknown): 
   const res = await fetch(`/api${path}`, {
     method,
     credentials: 'include',
-    headers: body === undefined ? { Accept: 'application/json' } : { Accept: 'application/json', 'Content-Type': 'application/json' },
-    body: body === undefined ? undefined : JSON.stringify(body),
+    // FormData (nahrání souboru) si Content-Type s hranicí nastaví prohlížeč sám
+    headers: body === undefined || body instanceof FormData ? { Accept: 'application/json' } : { Accept: 'application/json', 'Content-Type': 'application/json' },
+    body: body === undefined || body instanceof FormData ? (body as FormData | undefined) : JSON.stringify(body),
   });
   if (res.status === 204) {
     return undefined as T;
