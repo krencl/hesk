@@ -67,6 +67,13 @@ describe('party guests (/parties/:id/guests)', () => {
     expect(bodies).toEqual({ '/api/players/2': { visible: false }, '/api/players/3': { visible: true } });
   });
 
+  it('has "Zrušit" as the secondary button, closing the whole party management', async () => {
+    mockApi(base);
+    renderApp('/parties/3/guests');
+    await screen.findByLabelText('Jméno hosta Bob');
+    expect(screen.getByRole('link', { name: 'Zrušit' })).toHaveAttribute('href', '/games');
+  });
+
   it('keeps Save disabled while nothing is changed', async () => {
     mockApi(base);
     renderApp('/parties/3/guests');

@@ -85,7 +85,9 @@ describe('party detail (/parties/:id)', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Pozvat hráče' }));
     const link = (await screen.findByLabelText('Odkaz pozvánky')) as HTMLInputElement;
     expect(link.value).toMatch(/\/join\/abc$/);
-    expect(screen.getByRole('link', { name: 'Správa part' })).toHaveAttribute('href', '/parties');
+    // sekundární tlačítko je na všech záložkách „Zrušit“ a zavře celou správu party
+    expect(screen.getByRole('link', { name: 'Zrušit' })).toHaveAttribute('href', '/games');
+    expect(screen.queryByRole('link', { name: 'Správa part' })).not.toBeInTheDocument();
   });
 
   it('lets an admin change a member role in a popup with the three roles', async () => {
@@ -140,7 +142,7 @@ describe('party detail (/parties/:id)', () => {
     renderApp('/parties/3/edit');
     expect(await screen.findByRole('heading', { name: 'Parta Pátek' })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Nastavení' })).toHaveClass('active');
-    expect(screen.getByRole('link', { name: 'Zrušit' })).toHaveAttribute('href', '/parties/3');
+    expect(screen.getByRole('link', { name: 'Zrušit' })).toHaveAttribute('href', '/games');
   });
 
   it('offers the sections as tabs with their own addresses; settings only for an admin', async () => {

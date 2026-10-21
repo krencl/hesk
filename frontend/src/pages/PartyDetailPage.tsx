@@ -9,6 +9,7 @@ import { Actions } from '../components/Actions';
 import { ErrorMessage } from '../components/ErrorMessage';
 import { PartyHeader } from '../components/PartyHeader';
 import { SelectPopup } from '../components/SelectPopup';
+import { LEAVE_PARTY_MANAGEMENT_PATH } from '../lib/partyPath';
 import { ROLE_LABELS, ROLE_ORDER } from '../lib/roles';
 import { ListSkeleton } from '../components/Skeleton';
 
@@ -94,7 +95,7 @@ export function PartyDetailPage() {
       </div>
       <Actions>
         {isAdmin && <button type="button" className="btn" onClick={() => invite.mutate()}>Pozvat hráče</button>}
-        <Link className="btn outline-secondary" to="/parties">Správa part</Link>
+        <Link className="btn outline-secondary" to={LEAVE_PARTY_MANAGEMENT_PATH}>Zrušit</Link>
       </Actions>
     </section>
   );

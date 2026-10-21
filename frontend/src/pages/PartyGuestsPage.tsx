@@ -8,6 +8,7 @@ import { ErrorMessage } from '../components/ErrorMessage';
 import { Icon } from '../components/Icon';
 import { PartyHeader } from '../components/PartyHeader';
 import { ListSkeleton } from '../components/Skeleton';
+import { LEAVE_PARTY_MANAGEMENT_PATH } from '../lib/partyPath';
 import { playsLabel } from '../lib/plural';
 
 /** Hosté party (hráči bez účtu): přidání, přejmenování a smazání těch, kteří nikde nehráli. */
@@ -123,7 +124,7 @@ export function PartyGuestsPage() {
         <ErrorMessage error={add.error ?? save.error ?? remove.error} />
         <Actions>
           <button className="btn" type="submit" disabled={changed.length === 0 || save.isPending}>Uložit</button>
-          <Link className="btn outline-secondary" to="/parties">Správa part</Link>
+          <Link className="btn outline-secondary" to={LEAVE_PARTY_MANAGEMENT_PATH}>Zrušit</Link>
         </Actions>
       </form>
     </section>

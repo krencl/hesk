@@ -8,6 +8,7 @@ import { Actions } from '../components/Actions';
 import { ErrorMessage } from '../components/ErrorMessage';
 import { PartyHeader } from '../components/PartyHeader';
 import { ListSkeleton } from '../components/Skeleton';
+import { LEAVE_PARTY_MANAGEMENT_PATH } from '../lib/partyPath';
 
 /** Úprava názvu a zkratky party (jen admin); po uložení se vrací na detail party. */
 export function PartyEditPage() {
@@ -59,7 +60,7 @@ function PartyEditForm({ party }: { party: PartyDetail }) {
         <ErrorMessage error={update.error} />
         <Actions>
           <button className="btn" type="submit" disabled={update.isPending || !name.trim() || !shortName.trim()}>Uložit</button>
-          <Link className="btn outline-secondary" to={`/parties/${party.id}`}>Zrušit</Link>
+          <Link className="btn outline-secondary" to={LEAVE_PARTY_MANAGEMENT_PATH}>Zrušit</Link>
         </Actions>
       </form>
     </section>
