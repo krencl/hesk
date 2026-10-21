@@ -4,7 +4,7 @@ import { toLocalInput } from './datetime';
 import { bestScoreIds, defaultPlayerIds, defaultTimes, draftFromPlay, emptyDraft, isWinner, type PlayDraft, toPlayInput, validateDraft } from './playForm';
 
 const game = (scoreType: Game['scoreType']): Game => ({
-  id: 7, name: 'G', shortName: null, scoreType, imageUrl: null, description: null, cheatSheet: null, addons: [{ id: 1, name: 'X' }], characters: [{ id: 3, name: 'Gigazaur' }], players: [],
+  id: 7, name: 'G', shortName: null, scoreType, imageUrl: null, bggId: null, description: null, cheatSheet: null, addons: [{ id: 1, name: 'X' }], characters: [{ id: 3, name: 'Gigazaur' }], players: [],
 });
 
 const draft = (over: Partial<PlayDraft> = {}): PlayDraft => ({

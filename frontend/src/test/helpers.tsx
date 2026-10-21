@@ -40,7 +40,7 @@ export const ME = { id: 1, nickname: 'Anna', email: 'a@b.cz', hasNickname: true 
 export const PARTY = { id: 3, name: 'Pátek', shortName: 'Pá', role: 'admin' };
 
 export const GAME = {
-  id: 1, name: 'Carcassonne', shortName: null, scoreType: 'most_points', imageUrl: null, description: null, cheatSheet: null, addons: [], characters: [], players: [],
+  id: 1, name: 'Carcassonne', shortName: null, scoreType: 'most_points', imageUrl: null, bggId: null, description: null, cheatSheet: null, addons: [], characters: [], players: [],
   playCount: 2, lastPlay: { id: 9, startedAt: '2022-02-06T20:06:00+00:00', sessionNumber: 69, winners: ['Anna'], winnerScore: 90 },
 };
 

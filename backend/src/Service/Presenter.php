@@ -53,6 +53,7 @@ final class Presenter
             'name' => $game->getName(),
             'scoreType' => $game->getScoreType()->value,
             'imageUrl' => $game->getImageUrl(),
+            'bggId' => $game->getBggId(),
             'description' => $game->getDescription(),
             'cheatSheet' => $game->getCheatSheet(),
             'shortName' => $game->getShortName(),

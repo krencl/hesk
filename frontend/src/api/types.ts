@@ -46,6 +46,8 @@ export interface Game {
   shortName: string | null;
   scoreType: ScoreType;
   imageUrl: string | null;
+  /** Id hry na BoardGameGeek; null = vlastní hra. */
+  bggId: number | null;
   description: string | null;
   cheatSheet: string | null;
   addons: Addon[];
@@ -96,6 +98,7 @@ export interface GameInput {
   shortName: string | null;
   scoreType: ScoreType;
   imageUrl: string | null;
+  bggId: number | null;
   description: string | null;
   cheatSheet: string | null;
   addons: NamedItemInput[];
@@ -173,4 +176,26 @@ export interface PlayDefaults {
 export interface Stats {
   wins: { playerId: number; name: string; wins: number; plays: number }[];
   topGames: { gameId: number; name: string; shortName: string | null; plays: number }[];
+}
+
+/** Výsledek hledání při zakládání hry: `party` = hra už v partě (`gameId`), `cache` = lokální cache BGG, `bgg` = živé BGG API. */
+export interface BggSearchResult {
+  source: 'party' | 'cache' | 'bgg';
+  name: string;
+  year: number | null;
+  bggId: number | null;
+  gameId: number | null;
+}
+
+export interface BggSearch {
+  results: BggSearchResult[];
+  /** Jestli se použilo živé BGG: `used`, `skipped` (stačily lokální zdroje) nebo `unavailable` (nedostupné). */
+  bgg: 'used' | 'skipped' | 'unavailable';
+}
+
+/** Hra z BGG připravená pro formulář: `bggImageUrl` je originál na BGG CDN (lokálně se uloží až výřez). */
+export interface BggPreparedGame {
+  bggId: number;
+  name: string;
+  bggImageUrl: string | null;
 }

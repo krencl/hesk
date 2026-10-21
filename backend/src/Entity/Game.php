@@ -28,6 +28,10 @@ class Game
     #[ORM\Column(type: Types::TEXT, nullable: true)]
     private ?string $cheatSheet = null;
 
+    /** Id hry na BoardGameGeek (ADR 0021); null = vlastní hra. */
+    #[ORM\Column(nullable: true)]
+    private ?int $bggId = null;
+
     /** Zkrácený název (statistiky, kde se celý název špatně vejde). */
     #[ORM\Column(length: 50, nullable: true)]
     private ?string $shortName = null;
@@ -109,6 +113,11 @@ class Game
         return $this->addons;
     }
 
+    public function getBggId(): ?int
+    {
+        return $this->bggId;
+    }
+
     public function getShortName(): ?string
     {
         return $this->shortName;
@@ -141,8 +150,10 @@ class Game
         array $addons,
         array $characters = [],
         array $players = [],
+        ?int $bggId = null,
     ): void {
         $this->name = $name;
+        $this->bggId = $bggId;
         $this->shortName = null !== $shortName && '' !== trim($shortName) ? trim($shortName) : null;
         $this->scoreType = $scoreType;
         $this->imageUrl = $imageUrl ?: null;

@@ -1,5 +1,5 @@
 import { del, get, patch, post, put } from './client';
-import type { Game, GameListQuery, GameWithStats, Player, GameInput, SessionInfo, Me, Party, PartyDetail, PartyRole, Play, PlayDefaults, PlayInput, Stats } from './types';
+import type { BggPreparedGame, BggSearch, Game, GameListQuery, GameWithStats, Player, GameInput, SessionInfo, Me, Party, PartyDetail, PartyRole, Play, PlayDefaults, PlayInput, Stats } from './types';
 
 /** Sestaví `?a=1&b=2`; prázdné hodnoty (undefined, null, '') vynechá. */
 export function queryString(params: object): string {
@@ -43,6 +43,9 @@ export const api = {
     form.append('file', image, image.type === 'image/webp' ? 'cover.webp' : 'cover.jpg');
     return post<{ url: string }>(`/parties/${partyId}/game-images`, form);
   },
+  /** Hledání hry pro založení: hry party, pak cache BGG, pak živé BGG. */
+  bggSearch: (partyId: number, q: string) => get<BggSearch>(`/parties/${partyId}/bgg/search${queryString({ q })}`),
+  bggImport: (partyId: number, bggId: number) => post<BggPreparedGame>(`/parties/${partyId}/bgg/import`, { bggId }),
   updateGame: (id: number, input: GameInput) => put<Game>(`/games/${id}`, input),
   deleteGame: (id: number) => del(`/games/${id}`),
 
@@ -58,3 +61,6 @@ export const api = {
 
   stats: (partyId: number) => get<Stats>(`/parties/${partyId}/stats`),
 };
+
+/** Obrázek z BGG CDN přes náš server (stejný origin, takže ho jde načíst do canvasu při ořezu). */
+export const bggImageProxyUrl = (cdnUrl: string) => `/api/bgg/image${queryString({ url: cdnUrl })}`;

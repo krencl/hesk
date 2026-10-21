@@ -24,6 +24,7 @@ Primárně architektonická rozhodnutí (ADR). Aplikační dokumentace je zámě
 | [0018](adr/0018-guest-to-member-linking.md) | Z hosta se stane člen: sloučení hosta s členem, pozvánka pro hosta |
 | [0019](adr/0019-multiple-game-players.md) | Víc hráčů hry, editace jménem jako postavy |
 | [0020](adr/0020-game-image-upload.md) | Nahrání obrázku hry s oříznutím na čtverec |
+| [0021](adr/0021-bgg-game-search.md) | Zakládání her přes BoardGameGeek (hry party → cache → BGG API) |
 
 Poznámky ke vzoru z předchozích verzí: [prototype-notes.md](prototype-notes.md).
 

@@ -31,3 +31,6 @@ when@test:
         # dev kontejner nemá GD s WebP; testy převod nahrazují
         App\Tests\Support\FakeWebpConverter: ~
         App\Service\Image\WebpConverter: '@App\Tests\Support\FakeWebpConverter'
+        # BGG se v testech nevolá
+        App\Tests\Support\FakeBggClient: ~
+        App\Service\Bgg\BggClient: '@App\Tests\Support\FakeBggClient'

@@ -2,9 +2,10 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { type FormEvent, useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useActiveParty } from '../AppContext';
-import { api } from '../api';
-import type { GameInput } from '../api/types';
+import { api, bggImageProxyUrl } from '../api';
+import type { BggPreparedGame, GameInput } from '../api/types';
 import { Actions } from '../components/Actions';
+import { BggGameSearch } from '../components/BggGameSearch';
 import { ErrorMessage } from '../components/ErrorMessage';
 import { GameImage } from '../components/GameImage';
 import { ImageCropPopup } from '../components/ImageCropPopup';
@@ -26,9 +27,10 @@ interface FormState {
   addons: EditItem[];
   characters: EditItem[];
   players: EditItem[];
+  bggId: number | null;
 }
 
-const EMPTY: FormState = { name: '', shortName: '', scoreType: 'most_points', imageUrl: '', description: '', cheatSheet: '', addons: [], characters: [], players: [] };
+const EMPTY: FormState = { name: '', shortName: '', scoreType: 'most_points', imageUrl: '', description: '', cheatSheet: '', addons: [], characters: [], players: [], bggId: null };
 
 /** Formulář hry (nová hra / úprava); vstupuje se do něj ze správy her. */
 export function GameFormPage() {
@@ -41,6 +43,10 @@ export function GameFormPage() {
   const [form, setForm] = useState<FormState>(EMPTY);
   // Vybraný soubor čeká v editoru na oříznutí (object URL; po zavření se uvolní).
   const [cropSrc, setCropSrc] = useState<string | null>(null);
+  // Nová hra začíná hledáním; formulář se ukáže po výběru hry z BGG nebo po „Založit vlastní hru“.
+  const [started, setStarted] = useState(gameId !== null);
+  // Originál obrázku na BGG CDN: jen náhled, lokálně se uloží až výřez z ořezového editoru.
+  const [bggImage, setBggImage] = useState<string | null>(null);
   const fileInput = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -56,6 +62,7 @@ export function GameFormPage() {
         addons: toEditItems(g.addons),
         characters: toEditItems(g.characters),
         players: toEditItems(g.players),
+        bggId: g.bggId,
       });
     }
   }, [existing.data]);
@@ -77,6 +84,7 @@ export function GameFormPage() {
         addons: fromEditItems(form.addons),
         characters: fromEditItems(form.characters),
         players: fromEditItems(form.players),
+        bggId: form.bggId,
       };
       return gameId ? api.updateGame(gameId, input) : api.createGame(party.id, input);
     },
@@ -86,17 +94,29 @@ export function GameFormPage() {
     mutationFn: async (area: CropArea) => api.uploadGameImage(party.id, await cropToBlob(cropSrc!, area)),
     onSuccess: ({ url }) => {
       set({ imageUrl: url });
+      setBggImage(null);
       closeCrop();
     },
   });
   const closeCrop = () => {
-    if (cropSrc) URL.revokeObjectURL(cropSrc);
+    if (cropSrc?.startsWith('blob:')) URL.revokeObjectURL(cropSrc);
     setCropSrc(null);
     upload.reset();
   };
   const pickFile = (file: File | undefined) => {
     if (fileInput.current) fileInput.current.value = ''; // stejný soubor jde vybrat znovu
     if (file) setCropSrc(URL.createObjectURL(file));
+  };
+  const pickBgg = (game: BggPreparedGame) => {
+    setForm({ ...EMPTY, name: game.name, bggId: game.bggId });
+    setBggImage(game.bggImageUrl);
+    setStarted(true);
+    // uživatel obrázek potvrdí a ořízne hned (zrušením zůstane náhled a tlačítko níž)
+    if (game.bggImageUrl) setCropSrc(bggImageProxyUrl(game.bggImageUrl));
+  };
+  const startCustom = (name: string) => {
+    setForm({ ...EMPTY, name });
+    setStarted(true);
   };
   const remove = useMutation({ mutationFn: () => api.deleteGame(gameId!), onSuccess: () => done('/manage/games') });
 
@@ -107,6 +127,16 @@ export function GameFormPage() {
   const set = (changes: Partial<FormState>) => setForm((f) => ({ ...f, ...changes }));
 
   if (gameId !== null && existing.isPending) return <p className="muted pad">Načítám…</p>;
+
+  if (!started) {
+    return (
+      <section className="page">
+        <PageTitle>Nová hra</PageTitle>
+        <BggGameSearch partyId={party.id} onPick={pickBgg} onCustom={startCustom} />
+      </section>
+    );
+  }
+  const preview = form.imageUrl.trim() || bggImage;
 
   return (
     <section className="page">
@@ -126,12 +156,15 @@ export function GameFormPage() {
         <div className="field">
           <span className="field-label">Obrázek</span>
           <div className="cover-field">
-            <GameImage url={form.imageUrl.trim() || null} />
+            <GameImage url={preview || null} />
             <input ref={fileInput} type="file" accept="image/*" hidden aria-label="Soubor s obrázkem" onChange={(e) => pickFile(e.target.files?.[0])} />
-            <button type="button" className="btn small outline" onClick={() => fileInput.current?.click()}>{form.imageUrl.trim() ? 'Změnit obrázek' : 'Nahrát obrázek'}</button>
-            {form.imageUrl.trim() && <button type="button" className="btn small outline-secondary" onClick={() => set({ imageUrl: '' })}>Odebrat obrázek</button>}
+            {bggImage && !form.imageUrl.trim() && <button type="button" className="btn small" onClick={() => setCropSrc(bggImageProxyUrl(bggImage))}>Oříznout obrázek z BGG</button>}
+            <button type="button" className="btn small outline" onClick={() => fileInput.current?.click()}>{form.imageUrl.trim() ? 'Změnit obrázek' : bggImage ? 'Nahrát vlastní obrázek' : 'Nahrát obrázek'}</button>
+            {preview && <button type="button" className="btn small outline-secondary" onClick={() => { set({ imageUrl: '' }); setBggImage(null); }}>Odebrat obrázek</button>}
           </div>
+          {bggImage && !form.imageUrl.trim() && <p className="muted hint">Obrázek z BoardGameGeek se uloží až po oříznutí.</p>}
         </div>
+        {form.bggId && <p className="muted hint">Hra na <a href={`https://boardgamegeek.com/boardgame/${form.bggId}`} target="_blank" rel="noreferrer">BoardGameGeek</a>.</p>}
         <label>Popis<textarea rows={3} value={form.description} onChange={(e) => set({ description: e.target.value })} /></label>
 
         <NamedListEditor

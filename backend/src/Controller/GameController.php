@@ -104,6 +104,6 @@ final class GameController extends ApiController
     private function apply(Game $game, GameRequest $req): void
     {
         $items = static fn (array $list): array => array_map(static fn (NamedItemRequest $i): array => ['id' => $i->id, 'name' => $i->name], $list);
-        $game->update(trim($req->name), $req->shortName, $req->scoreType, $req->imageUrl, $req->description, $req->cheatSheet, $items($req->addons), $items($req->characters), $items($req->players));
+        $game->update(trim($req->name), $req->shortName, $req->scoreType, $req->imageUrl, $req->description, $req->cheatSheet, $items($req->addons), $items($req->characters), $items($req->players), $req->bggId);
     }
 }

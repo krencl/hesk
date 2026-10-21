@@ -31,6 +31,8 @@ final readonly class GameRequest
         public array $characters = [],
         #[Assert\Valid]
         public array $players = [],
+        #[Assert\Positive]
+        public ?int $bggId = null,
     ) {
     }
 }
