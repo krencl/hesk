@@ -30,8 +30,10 @@ export async function cropToBlob(src: string, area: CropArea, size = COVER_SIZE)
   ctx.fillRect(0, 0, size, size);
   ctx.imageSmoothingQuality = 'high';
   ctx.drawImage(img, area.x, area.y, area.width, area.height, 0, 0, size, size);
+  // Test cesty pro prohlížeče bez WebP (iPhone): v adrese formuláře hry `?coverFormat=jpeg` přeskočí kódování WebP.
+  const forceJpeg = new URLSearchParams(window.location.search).get('coverFormat') === 'jpeg';
   const encode = (type: string, quality: number) => new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, type, quality));
-  const webp = await encode('image/webp', 0.85);
+  const webp = forceJpeg ? null : await encode('image/webp', 0.85);
   if (webp?.type === 'image/webp') return webp;
   const jpeg = await encode('image/jpeg', 0.9);
   if (!jpeg) throw new Error('Obrázek se nepodařilo zpracovat.');
