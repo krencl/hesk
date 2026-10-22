@@ -18,6 +18,12 @@ final class LegacyImportTest extends KernelTestCase
     private Connection $target;
     private Connection $legacy;
 
+    public static function setUpBeforeClass(): void
+    {
+        // jediné testy, které sahají na (SQLite) databázi: import je SQL z cizí DB do schématu aplikace, mockem by se neověřil
+        TestDatabase::createSchema();
+    }
+
     protected function setUp(): void
     {
         self::bootKernel();

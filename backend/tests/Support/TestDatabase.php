@@ -10,8 +10,8 @@ use Doctrine\ORM\Tools\SchemaTool;
 use Psr\Container\ContainerInterface;
 
 /**
- * Testovací SQLite databáze: schéma se vytvoří jednou na začátku běhu testů (`tests/bootstrap.php`),
- * mezi testy se jen vymažou data (jedna transakce místo desítek DDL příkazů s fsync).
+ * Testovací SQLite databáze pro `LegacyImportTest` (jediné testy s databází): schéma se vytvoří jednou za třídu,
+ * mezi testy se jen vymažou data (jedna transakce místo desítek DDL příkazů).
  */
 final class TestDatabase
 {

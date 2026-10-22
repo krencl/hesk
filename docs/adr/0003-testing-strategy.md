@@ -1,6 +1,6 @@
 # 0003 – Strategie testování
 
-Stav: přijato (2026-10-02)
+Stav: přijato (2026-10-02); funkční testy API nahrazeny unit testy s mocky, viz [0022](0022-backend-tests-without-database.md)
 
 ## Rozhodnutí
 - **Backend – unit testy** (`backend/tests/Unit`): čistá doménová logika bez DB – `ResultCalculator`, `Party` (invarianty adminů), `GameSession` (24h okno), `Game` (synchronizace rozšíření), `SessionAssigner` (repozitář jako stub).

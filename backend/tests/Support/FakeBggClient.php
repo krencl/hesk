@@ -9,7 +9,7 @@ use App\Service\Bgg\BggItem;
 use App\Service\Bgg\BggUnavailableException;
 
 /**
- * BGG v testech: hry a počítadla volání jsou statické, protože `KernelBrowser` mezi požadavky restartuje kontejner.
+ * BGG v testech: hry a počítadla volání jsou statické (kontejner se mezi požadavky může restartovat), `reset()` je vynuluje.
  */
 final class FakeBggClient extends BggClient
 {

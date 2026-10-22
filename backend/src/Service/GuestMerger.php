@@ -15,7 +15,7 @@ use Doctrine\ORM\EntityManagerInterface;
  * Propojení hosta s členem party: všechny zápisy hosta (výsledky, hráči her) přejdou na hráče člena a host zmizí.
  * Hráč člena (navázaný na účet) zůstává, takže jeho jméno dál sleduje přezdívku.
  */
-final class GuestMerger
+class GuestMerger
 {
     public function __construct(private readonly EntityManagerInterface $em)
     {

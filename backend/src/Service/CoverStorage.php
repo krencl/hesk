@@ -15,7 +15,7 @@ use Symfony\Component\HttpFoundation\File\UploadedFile;
  * JPEG/PNG převede na WebP a uloží ho pod názvem podle obsahu (stejný soubor = stejná adresa). Interně existuje jen
  * WebP, takže adresa obrázku vždy odpovídá `URL_PATTERN`.
  */
-final class CoverStorage
+class CoverStorage
 {
     public const URL_PREFIX = '/uploads/covers/';
     public const MAX_BYTES = 2 * 1024 * 1024;

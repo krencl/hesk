@@ -25,7 +25,7 @@ Není tu MySQL ani sudo. PHP 8.4 je systémové (`/usr/bin/php`, s GD vč. WebP/
 - `src/Security` – `PartyVoter` (`PARTY_VIEW`/`PARTY_WRITE`/`PARTY_ADMIN`; role člen/zapisovač/správce (v kódu `admin`), ADR 0017), `JsonEntryPoint` (401 JSON), `SessionLoginAuthenticator`.
 - `src/EventListener/ApiExceptionListener` – chyby pod `/api` jako JSON `{error, violations?}`.
 - `migrations/` – `…000000` přejmenuje legacy tabulky, `…000100` schéma, `…000200` import dat ze staré app. Po změně entit vygenerovat novou migraci (`doctrine:migrations:diff`, `schema_filter` ignoruje `legacy_*`).
-- Testy: `tests/Unit` (bez DB), `tests/Functional` (SQLite, `ApiFlowTest`).
+- Testy (ADR 0022): `tests/Unit` – vše bez DB (kontrolery, služby, DTO validace, voter; `EntityManager`/repozitáře jsou mocky), `tests/Support` – `Fixtures` (entity s `id`), `DoctrineMocks`, `ControllerHarness` (volá akce kontrolerů přímo se skutečným voterem a `#[IsGranted]`); jediný test s DB je `tests/Functional/LegacyImportTest` (SQLite).
 
 ## Frontend – orientace
 - `src/api` (klient + typy + endpointy) · `src/lib` (čistá logika: `playForm`, `scoring`, `activeParty`, `afterLogin`, `datetime`) · `src/pages` · `src/components` (`Skeleton`, `GameHeader`, `Autocomplete`, `TagInput`, …) · `src/AppContext.tsx` (me, parties, aktivní parta) · `src/App.tsx` (routy + gating login → přezdívka → parta).
@@ -35,7 +35,7 @@ Není tu MySQL ani sudo. PHP 8.4 je systémové (`/usr/bin/php`, s GD vč. WebP/
 - Terminologie v UI i dokumentaci: *Party* = **parta** (ne „skupina“), přepínání = „Přepnout“, tlačítko „Vytvořit novou partu“. V kódu zůstává anglicky `party`.
 - Pravidla domény patří do entit/`Domain`, ne do kontrolerů; kontrolery vrací `Presenter` pole.
 - `list<DTO>` v DTO funguje jen díky `phpdocumentor/reflection-docblock` + `phpstan/phpdoc-parser` (bez nich se pole nedeserializují na objekty).
-- Funkční testy: schéma SQLite se vytvoří jednou v `tests/bootstrap.php` (`tests/Support/TestDatabase`), mezi testy se jen smažou data všech tabulek (`TestDatabase::clear()` v `setUp`; i spojovací M:N tabulky). V testovacím prostředí `SqliteNoFsyncMiddleware` vypíná fsync – bez něj trvá běh na pomalém disku minuty (celý běh ~3 s).
+- Testy nesahají do DB (ADR 0022), celá sada běží ~1 s. Co je jen v SQL/DQL (řazení/hledání her, statistiky, `PlayRepository`, `statsFor`, unikáty, migrace) automaticky netestujeme – při změně těchto dotazů je ověřit ručně proti dev DB. Nová logika kontrolerů/služeb: unit test s mocky, přes `ControllerHarness::as($user)->call($controller, 'akce', [...])`. `LegacyImportTest` je výjimka (SQLite, `SqliteNoFsyncMiddleware` vypíná fsync).
 - Cheatsheet her je Markdown (import ze staré app) nebo HTML od uživatelů → vždy přes `renderCheatSheet` + `SafeHtml` (marked + DOMPurify).
 - Čísla seancí (`game_session.number`) jsou uložená, ne odvozená (stará čísla mají mezery); novou seanci číslo přiřadí `SessionAssigner` (max+1).
 - BGG (ADR 0021): API vyžaduje registrovanou aplikaci a `BGG_API_TOKEN` (bez něj se hledá jen v partě a v cache). Obrázek z BGG se neukládá na serveru – náhled je z CDN, ořez v prohlížeči jde přes proxy `/api/bgg/image` a lokálně se uloží až výřez (ADR 0020). Testy používají `FakeBggClient`.

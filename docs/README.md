@@ -25,6 +25,7 @@ Primárně architektonická rozhodnutí (ADR). Aplikační dokumentace je zámě
 | [0019](adr/0019-multiple-game-players.md) | Víc hráčů hry, editace jménem jako postavy |
 | [0020](adr/0020-game-image-upload.md) | Nahrání obrázku hry s oříznutím na čtverec |
 | [0021](adr/0021-bgg-game-search.md) | Zakládání her přes BoardGameGeek (hry party → cache → BGG API) |
+| [0022](adr/0022-backend-tests-without-database.md) | Backendové testy bez databáze (mocky místo SQLite) |
 
 Poznámky ke vzoru z předchozích verzí: [prototype-notes.md](prototype-notes.md).
 
