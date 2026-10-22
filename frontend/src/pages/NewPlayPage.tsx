@@ -10,6 +10,7 @@ import { ListSkeleton } from '../components/Skeleton';
 import { fromLocalInput } from '../lib/datetime';
 import { defaultPlayerIds, defaultTimes, emptyDraft } from '../lib/playForm';
 import { refreshAfterPlayChange } from '../lib/refresh';
+import { useGame } from '../lib/useGame';
 import { canWrite } from '../lib/roles';
 
 /** Nový zápis dané hry (hra se nevybírá, formulář se otevírá z jejího detailu). */
@@ -18,7 +19,7 @@ export function NewPlayPage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const gameId = Number(useParams().id);
-  const game = useQuery({ queryKey: ['game', gameId], queryFn: () => api.game(gameId), retry: false });
+  const game = useGame(gameId);
 
   // Výchozí hodnoty závisejí na čase zápisu: sezení (a jeho číslo) a hráči posledního zápisu stejného sezení.
   const [now] = useState(() => new Date());

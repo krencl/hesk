@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Entity;
 
+use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Security\Core\User\UserInterface;
 
@@ -11,6 +12,9 @@ use Symfony\Component\Security\Core\User\UserInterface;
 #[ORM\Table(name: 'app_user')]
 class User implements UserInterface
 {
+    /** Správce sdíleného katalogu her: smí upravovat a mazat hry (ADR 0023). */
+    public const ROLE_GAMES_ADMIN = 'ROLE_GAMES_ADMIN';
+
     #[ORM\Id, ORM\GeneratedValue, ORM\Column]
     private ?int $id = null;
 
@@ -19,6 +23,14 @@ class User implements UserInterface
 
     #[ORM\Column]
     private \DateTimeImmutable $createdAt;
+
+    /**
+     * Role navíc kromě `ROLE_USER`, např. `ROLE_GAMES_ADMIN` (správce sdíleného katalogu her, ADR 0023).
+     *
+     * @var list<string>
+     */
+    #[ORM\Column(type: Types::JSON, options: ['default' => '[]'])]
+    private array $roles = [];
 
     public function __construct(
         #[ORM\Column(length: 180, unique: true, nullable: true)]
@@ -73,7 +85,19 @@ class User implements UserInterface
 
     public function getRoles(): array
     {
-        return ['ROLE_USER'];
+        return array_values(array_unique(['ROLE_USER', ...$this->roles]));
+    }
+
+    public function addRole(string $role): void
+    {
+        if (!\in_array($role, $this->roles, true)) {
+            $this->roles[] = $role;
+        }
+    }
+
+    public function removeRole(string $role): void
+    {
+        $this->roles = array_values(array_filter($this->roles, static fn (string $r): bool => $r !== $role));
     }
 
     public function eraseCredentials(): void

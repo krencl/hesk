@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Service;
 
 use App\Domain\Exception\DomainException;
-use App\Entity\Game;
+use App\Entity\PartyGame;
 use App\Entity\PartyInvitation;
 use App\Entity\Player;
 use App\Entity\PlayResult;
@@ -54,10 +54,10 @@ final class GuestMerger
 
         $this->em->wrapInTransaction(function () use ($guest, $member, $party): void {
             $this->em->createQuery('UPDATE '.PlayResult::class.' r SET r.player = :to WHERE r.player = :from')->setParameters(['to' => $member, 'from' => $guest])->execute();
-            foreach ($this->em->createQuery('SELECT g FROM '.Game::class.' g WHERE :guest MEMBER OF g.players')->setParameter('guest', $guest)->getResult() as $game) {
-                $game->getPlayers()->removeElement($guest);
-                if (!$game->getPlayers()->contains($member)) {
-                    $game->getPlayers()->add($member);
+            foreach ($this->em->createQuery('SELECT pg FROM '.PartyGame::class.' pg WHERE :guest MEMBER OF pg.players')->setParameter('guest', $guest)->getResult() as $link) {
+                $link->getPlayers()->removeElement($guest);
+                if (!$link->getPlayers()->contains($member)) {
+                    $link->getPlayers()->add($member);
                 }
             }
             $this->forgetInvitations($guest);

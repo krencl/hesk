@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Tests\Unit\Service;
 
 use App\Domain\Exception\DomainException;
-use App\Entity\Game;
+use App\Entity\PartyGame;
 use App\Entity\Party;
 use App\Entity\PartyInvitation;
 use App\Entity\Player;
@@ -29,7 +29,7 @@ final class GuestMergerTest extends TestCase
     private Player $bobPlayer;
     private \ArrayObject $calls;
     private int $sharedPlays = 0;
-    /** @var list<Game> hry, ve kterých je host hráčem */
+    /** @var list<PartyGame> hry party, ve kterých je host hráčem */
     private array $gamesOfHost = [];
     /** @var list<PartyInvitation> */
     private array $invitations = [];
@@ -63,9 +63,14 @@ final class GuestMergerTest extends TestCase
         return new GuestMerger($em);
     }
 
+    private function coop(): PartyGame
+    {
+        return $this->party->findGameLink(Fixtures::game($this->party, 'Coop', ScoreType::WinnerOnly));
+    }
+
     public function testMergeMovesGuestGamesToTheMemberAndRemovesTheGuest(): void
     {
-        $coop = Fixtures::game($this->party, 'Coop', ScoreType::WinnerOnly);
+        $coop = $this->coop();
         $coop->getPlayers()->add($this->host);
         $this->gamesOfHost = [$coop];
         $invitation = new PartyInvitation($this->party, $this->anna, guest: $this->host);
@@ -82,7 +87,7 @@ final class GuestMergerTest extends TestCase
 
     public function testMemberKeepsExistingGamePlayerSlotWithoutDuplicate(): void
     {
-        $coop = Fixtures::game($this->party, 'Coop', ScoreType::WinnerOnly);
+        $coop = $this->coop();
         $coop->getPlayers()->add($this->host);
         $coop->getPlayers()->add($this->bobPlayer);
         $this->gamesOfHost = [$coop];

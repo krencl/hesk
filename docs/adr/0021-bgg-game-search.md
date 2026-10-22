@@ -22,3 +22,4 @@ BGG XML API2 **vyžaduje registrovanou aplikaci a token** (`Authorization: Beare
 - Hry založené dřív nemají `bgg_id`; napojení na BGG se jim dá doplnit jen novým zakládáním (zatím bez „napárování“ existující hry).
 - Hledání her z ostatních part prozrazuje členům party názvy (a zkratky, obrázky) her jiných part; jiné údaje se nevracejí.
 - **Přejmenování cesty** (2026-10-22): hledání je `GET /api/parties/{id}/game-search` (původně `…/bgg/search`), protože primárním zdrojem je lokální databáze a BGG je až poslední krok. Pod `…/bgg/` zůstává jen převzetí hry z BGG (`POST …/bgg/import`) a proxy obrázků (`/api/bgg/image`).
+- **Sdílený katalog** (ADR 0023, 2026-10-22): zdroj 2 jsou všechny hry katalogu, které party nemá; výsledek nese `gameId` a `imageUrl` (už ne `prefill`) a jeho výběr hru **rovnou zařadí do party** (`POST /api/parties/{id}/game-links`), nezakládá novou. U všech výsledků se vrací `imageUrl` (lokální nebo z BGG CDN z cache, u živého hledání bývá `null`).

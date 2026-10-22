@@ -11,6 +11,7 @@ import { PlayForm } from '../components/PlayForm';
 import { ListSkeleton } from '../components/Skeleton';
 import { draftFromPlay } from '../lib/playForm';
 import { refreshAfterPlayChange } from '../lib/refresh';
+import { useGame } from '../lib/useGame';
 import { canWrite } from '../lib/roles';
 
 /** Úprava zápisu; smazání zápisu je až pod formulářem. */
@@ -22,7 +23,7 @@ export function EditPlayPage() {
   const [confirmDelete, setConfirmDelete] = useState(false);
   const play = useQuery({ queryKey: ['play', id], queryFn: () => api.play(id), retry: false, staleTime: 0, gcTime: 0 });
   const gameId = play.data?.game.id;
-  const game = useQuery({ queryKey: ['game', gameId], queryFn: () => api.game(gameId!), enabled: gameId !== undefined, retry: false });
+  const game = useGame(gameId);
 
   const finish = async (leavingGameId: number) => {
     queryClient.removeQueries({ queryKey: ['play', id] });

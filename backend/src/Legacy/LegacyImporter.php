@@ -325,33 +325,22 @@ final class LegacyImporter
     private function importCatalog(array $d): void
     {
         $gamePairs = $this->gamePairs($d);
-        foreach ($gamePairs as [$gameId, $legacyPartyId]) {
-            $partyId = $this->map('party', (string) $legacyPartyId);
+
+        // hry jsou ve sdíleném katalogu (ADR 0023) jednou, jako ve staré aplikaci; bez vazby se hra převezme podle názvu
+        foreach (array_values(array_unique(array_column($gamePairs, 0))) as $gameId) {
             $g = $d['games'][$gameId] ?? null;
-            if (null === $partyId || null === $g) {
+            if (null === $g) {
                 continue;
             }
             $name = (string) $g['name'];
             $short = trim((string) $g['short_name']);
             $values = [
-                'party_id' => $partyId,
                 'name' => $name,
                 'short_name' => '' !== $short && $short !== $name ? $short : null,
                 'score_type' => self::SCORE_TYPES[$g['scoring_type']] ?? 'most_points',
                 'cheat_sheet' => '' !== trim((string) $g['cheat_sheet']) ? $g['cheat_sheet'] : null,
             ];
-            $newGameId = $this->upsert('game', "$gameId:$legacyPartyId", 'game', fn () => $this->findId('SELECT id FROM game WHERE party_id = ? AND LOWER(name) = LOWER(?)', [$partyId, $name]), $values);
-
-            // vlastní hráči hry (typ „game“ ve staré aplikaci); import je jen přidává, ruční změny v nové aplikaci neodebírá
-            foreach ($d['players'] as $p) {
-                if ('game' !== $p['type'] || (int) $p['game_id'] !== $gameId) {
-                    continue;
-                }
-                $ownPlayer = $this->map('player', $p['id'].':'.$legacyPartyId);
-                if (null !== $ownPlayer && false === $this->target->fetchOne('SELECT 1 FROM game_player WHERE game_id = ? AND player_id = ?', [$newGameId, $ownPlayer])) {
-                    $this->target->insert('game_player', ['game_id' => $newGameId, 'player_id' => $ownPlayer]);
-                }
-            }
+            $newGameId = $this->upsert('game', (string) $gameId, 'game', fn () => $this->findId('SELECT id FROM game WHERE LOWER(name) = LOWER(?)', [$name]), $values);
 
             // rozšíření = verze hry kromě „Základní“ (ta je hra sama)
             foreach ($d['versions'] as $v) {
@@ -359,14 +348,41 @@ final class LegacyImporter
                     continue;
                 }
                 $vName = trim((string) $v['name']);
-                $this->upsert('addon', $v['id'].":$legacyPartyId", 'game_addon', fn () => $this->findId('SELECT id FROM game_addon WHERE game_id = ? AND LOWER(name) = LOWER(?)', [$newGameId, $vName]), ['game_id' => $newGameId, 'name' => $vName]);
+                $this->upsert('addon', (string) $v['id'], 'game_addon', fn () => $this->findId('SELECT id FROM game_addon WHERE game_id = ? AND LOWER(name) = LOWER(?)', [$newGameId, $vName]), ['game_id' => $newGameId, 'name' => $vName]);
             }
             foreach ($d['characters'] as $c) {
                 if ((int) $c['game_id'] !== $gameId) {
                     continue;
                 }
                 $cName = trim((string) $c['name']);
-                $this->upsert('character', $c['id'].":$legacyPartyId", 'game_character', fn () => $this->findId('SELECT id FROM game_character WHERE game_id = ? AND LOWER(name) = LOWER(?)', [$newGameId, $cName]), ['game_id' => $newGameId, 'name' => $cName]);
+                $this->upsert('character', (string) $c['id'], 'game_character', fn () => $this->findId('SELECT id FROM game_character WHERE game_id = ? AND LOWER(name) = LOWER(?)', [$newGameId, $cName]), ['game_id' => $newGameId, 'name' => $cName]);
+            }
+        }
+
+        // zařazení her do part, kde se hrálo, a vlastní hráči hry v těch partách (typ „game“ ve staré aplikaci);
+        // import je jen přidává, ruční změny v nové aplikaci neodebírá
+        foreach ($gamePairs as [$gameId, $legacyPartyId]) {
+            $partyId = $this->map('party', (string) $legacyPartyId);
+            $newGameId = $this->map('game', (string) $gameId);
+            if (null === $partyId || null === $newGameId) {
+                continue;
+            }
+            $linkId = $this->target->fetchOne('SELECT id FROM party_game WHERE party_id = ? AND game_id = ?', [$partyId, $newGameId]);
+            if (false === $linkId) {
+                $this->target->insert('party_game', ['party_id' => $partyId, 'game_id' => $newGameId]);
+                $linkId = (int) $this->target->lastInsertId();
+                $this->report->count('link', 'created');
+            } else {
+                $this->report->count('link', 'unchanged');
+            }
+            foreach ($d['players'] as $p) {
+                if ('game' !== $p['type'] || (int) $p['game_id'] !== $gameId) {
+                    continue;
+                }
+                $ownPlayer = $this->map('player', $p['id'].':'.$legacyPartyId);
+                if (null !== $ownPlayer && false === $this->target->fetchOne('SELECT 1 FROM party_game_player WHERE party_game_id = ? AND player_id = ?', [$linkId, $ownPlayer])) {
+                    $this->target->insert('party_game_player', ['party_game_id' => $linkId, 'player_id' => $ownPlayer]);
+                }
             }
         }
 
@@ -428,7 +444,7 @@ final class LegacyImporter
             $roundId = (int) $r['id'];
             $legacyParty = (int) $r['party_id'];
             $partyId = $this->map('party', (string) $legacyParty);
-            $gameId = $this->map('game', $r['game_id'].":$legacyParty");
+            $gameId = $this->map('game', (string) $r['game_id']);
             $sessionId = $this->map('session', $legacyParty.':'.$r['session_number']);
             if (null === $partyId || null === $gameId || null === $sessionId) {
                 continue;
@@ -447,7 +463,7 @@ final class LegacyImporter
             $addon = null;
             $version = $d['versionsById'][(int) $r['game_version_id']] ?? null;
             if ($version && self::BASE_VERSION !== trim((string) $version['name'])) {
-                $addon = $this->map('addon', $version['id'].":$legacyParty");
+                $addon = $this->map('addon', (string) $version['id']);
             }
             $this->syncLinks('play_addon', 'game_addon_id', $playId, null === $addon ? [] : [$addon]);
             $tagIds = array_values(array_filter(array_map(fn (int $t) => $this->map('tag', "$t:$legacyParty"), $tagsByRound[$roundId] ?? [])));
@@ -490,7 +506,7 @@ final class LegacyImporter
             if (null === $playerId) {
                 continue;
             }
-            $characterId = null === $row['game_character_id'] ? null : $this->map('character', $row['game_character_id'].":$legacyParty");
+            $characterId = null === $row['game_character_id'] ? null : $this->map('character', (string) $row['game_character_id']);
             $this->upsert(
                 'result',
                 (string) $row['id'],

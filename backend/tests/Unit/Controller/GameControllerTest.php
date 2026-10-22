@@ -6,6 +6,8 @@ namespace App\Tests\Unit\Controller;
 
 use App\Controller\GameController;
 use App\Domain\Exception\DomainException;
+use App\Dto\GameLinkRequest;
+use App\Dto\GamePlayersRequest;
 use App\Dto\GameRequest;
 use App\Dto\NamedItemRequest;
 use App\Entity\Game;
@@ -25,6 +27,7 @@ use App\Tests\Support\Fixtures;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Symfony\Component\Security\Core\Exception\AccessDeniedException;
 
 /** Hry party: repozitáře a úložiště obrázků jsou mocky, entity žijí jen v paměti. */
@@ -54,6 +57,14 @@ final class GameControllerTest extends TestCase
             $games ?? $this->createStub(GameRepository::class),
             $covers ?? $this->createStub(CoverStorage::class),
         );
+    }
+
+    /** Správce her: smí upravovat a mazat sdílené hry. */
+    private function admin(): User
+    {
+        $this->anna->addRole(User::ROLE_GAMES_ADMIN);
+
+        return $this->anna;
     }
 
     private function request(array $overrides = []): GameRequest
@@ -122,10 +133,11 @@ final class GameControllerTest extends TestCase
         foreach ([
             ['list', ['party' => $this->party, 'request' => new Request()]],
             ['create', ['party' => $this->party, 'req' => $this->request()]],
+            ['link', ['party' => $this->party, 'req' => new GameLinkRequest($game->getId())]],
+            ['unlink', ['party' => $this->party, 'game' => $game]],
+            ['show', ['party' => $this->party, 'game' => $game]],
+            ['setPlayers', ['party' => $this->party, 'game' => $game, 'req' => new GamePlayersRequest()]],
             ['uploadImage', ['party' => $this->party, 'request' => new Request()]],
-            ['show', ['game' => $game]],
-            ['update', ['game' => $game, 'req' => $this->request()]],
-            ['delete', ['game' => $game]],
         ] as [$action, $args]) {
             try {
                 $harness->call($controller, $action, $args);
@@ -136,7 +148,24 @@ final class GameControllerTest extends TestCase
         }
     }
 
-    public function testCreateStoresTheGameWithAddonsCharactersAndShortName(): void
+    public function testOnlyGamesAdminMayEditOrDeleteTheSharedGame(): void
+    {
+        $game = Fixtures::game($this->party);
+        $controller = $this->controller(known: [$game]);
+        $admin = $this->admin();
+
+        foreach ([['update', ['game' => $game, 'req' => $this->request()]], ['delete', ['game' => $game]]] as [$action, $args]) {
+            try {
+                ControllerHarness::as($this->eve)->call($controller, $action, $args);
+                self::fail("Uživatel bez role správce her nesmí volat $action.");
+            } catch (AccessDeniedException) {
+                $this->addToAssertionCount(1);
+            }
+            ControllerHarness::as($admin)->call($controller, $action, $args);
+        }
+    }
+
+    public function testCreateStoresTheGameInTheCatalogAndPutsItIntoTheParty(): void
     {
         $response = ControllerHarness::as($this->anna)->call($this->controller(), 'create', ['party' => $this->party, 'req' => $this->request([
             'name' => ' King of Tokyo ', 'shortName' => ' Tokyo ', 'scoreType' => ScoreType::WinnerOnly, 'bggId' => 13,
@@ -149,8 +178,47 @@ final class GameControllerTest extends TestCase
         self::assertSame(['King of Tokyo', 'Tokyo', 'winner_only', 13], [$game['name'], $game['shortName'], $game['scoreType'], $game['bggId']]);
         self::assertSame(['Power Up'], array_column($game['addons'], 'name'));
         self::assertSame(['Gigazaur', 'Kraken'], array_column($game['characters'], 'name'), 'opakované jméno se zahodí');
-        self::assertCount(1, array_filter($this->calls['persist'], static fn (object $e): bool => $e instanceof Game));
+        [$created] = array_values(array_filter($this->calls['persist'], static fn (object $e): bool => $e instanceof Game));
+        self::assertTrue($this->party->hasGame($created), 'nová hra je rovnou v partě');
         self::assertSame(1, $this->calls['flush']);
+    }
+
+    public function testCreateRefusesDuplicatesOfTheCatalog(): void
+    {
+        $existing = Fixtures::catalogGame('Catan');
+        $games = $this->createMock(GameRepository::class);
+        $games->expects(self::exactly(2))->method('findDuplicate')
+            ->willReturnCallback(static fn (?int $bgg, string $name): Game => $existing);
+        $controller = $this->controller($games);
+
+        foreach ([['bggId' => 13], ['bggId' => null, 'name' => ' catan ']] as $overrides) {
+            try {
+                ControllerHarness::as($this->anna)->call($controller, 'create', ['party' => $this->party, 'req' => $this->request($overrides)]);
+                self::fail('Duplicitní hra se nesmí založit.');
+            } catch (DomainException $e) {
+                self::assertStringContainsString('Catan', $e->getMessage());
+            }
+        }
+        self::assertArrayNotHasKey('persist', $this->calls->getArrayCopy());
+        self::assertCount(0, $this->party->getGameLinks());
+    }
+
+    public function testDuplicateCheckUsesTheBggIdOrTheTrimmedNameOfACustomGame(): void
+    {
+        $games = $this->createMock(GameRepository::class);
+        $games->expects(self::exactly(2))->method('findDuplicate')
+            ->willReturnCallback(function (?int $bgg, string $name, ?Game $except): ?Game {
+                static $call = 0;
+                self::assertSame(1 === ++$call ? [13, 'Azul'] : [null, 'Vlastní'], [$bgg, $name]);
+                self::assertNull($except);
+
+                return null;
+            });
+        $controller = $this->controller($games);
+        $harness = ControllerHarness::as($this->anna);
+
+        $harness->call($controller, 'create', ['party' => $this->party, 'req' => $this->request(['bggId' => 13])]);
+        $harness->call($controller, 'create', ['party' => $this->party, 'req' => $this->request(['name' => ' Vlastní '])]);
     }
 
     public function testCreateGameWithoutOptionalFieldsHasNulls(): void
@@ -158,6 +226,72 @@ final class GameControllerTest extends TestCase
         $game = ControllerHarness::json(ControllerHarness::as($this->anna)->call($this->controller(), 'create', ['party' => $this->party, 'req' => $this->request(['imageUrl' => '', 'bggId' => null])]));
 
         self::assertSame([null, null, null], [$game['imageUrl'], $game['bggId'], $game['shortName']]);
+    }
+
+    public function testLinkPutsACatalogGameIntoThePartyOnlyOnce(): void
+    {
+        $game = Fixtures::catalogGame('Tokaido');
+        $controller = $this->controller(known: [$game]);
+        $harness = ControllerHarness::as($this->anna);
+
+        $first = $harness->call($controller, 'link', ['party' => $this->party, 'req' => new GameLinkRequest($game->getId())]);
+        $second = $harness->call($controller, 'link', ['party' => $this->party, 'req' => new GameLinkRequest($game->getId())]);
+
+        self::assertSame([201, 200], [$first->getStatusCode(), $second->getStatusCode()]);
+        self::assertSame('Tokaido', ControllerHarness::json($first)['name']);
+        self::assertCount(1, $this->party->getGameLinks());
+        self::assertSame(1, $this->calls['flush'], 'podruhé se nic neukládá');
+    }
+
+    public function testLinkOfAnUnknownGameIsNotFound(): void
+    {
+        $this->expectException(NotFoundHttpException::class);
+        ControllerHarness::as($this->anna)->call($this->controller(), 'link', ['party' => $this->party, 'req' => new GameLinkRequest(999999)]);
+    }
+
+    public function testUnlinkRemovesTheGameFromThePartyButKeepsItInTheCatalog(): void
+    {
+        $game = Fixtures::game($this->party, 'Tokaido');
+
+        $response = ControllerHarness::as($this->anna)->call($this->controller(), 'unlink', ['party' => $this->party, 'game' => $game]);
+
+        self::assertSame(204, $response->getStatusCode());
+        self::assertFalse($this->party->hasGame($game));
+        self::assertArrayNotHasKey('remove', $this->calls->getArrayCopy(), 'hra v katalogu zůstává');
+    }
+
+    public function testGameWithPlaysOfThePartyCannotBeUnlinked(): void
+    {
+        $game = Fixtures::game($this->party);
+        $plays = $this->createMock(PlayRepository::class);
+        $plays->expects(self::once())->method('countForGame')->with($game, $this->party)->willReturn(1);
+
+        try {
+            ControllerHarness::as($this->anna)->call($this->controller(plays: $plays), 'unlink', ['party' => $this->party, 'game' => $game]);
+            self::fail('Hru se zápisy nelze z party odebrat.');
+        } catch (DomainException) {
+        }
+        self::assertTrue($this->party->hasGame($game));
+    }
+
+    public function testGamesOfOtherPartiesAreNotReachableThroughThisParty(): void
+    {
+        $foreign = Fixtures::catalogGame('Cizí');
+        $harness = ControllerHarness::as($this->anna);
+        $controller = $this->controller();
+
+        foreach ([
+            ['show', ['party' => $this->party, 'game' => $foreign]],
+            ['unlink', ['party' => $this->party, 'game' => $foreign]],
+            ['setPlayers', ['party' => $this->party, 'game' => $foreign, 'req' => new GamePlayersRequest()]],
+        ] as [$action, $args]) {
+            try {
+                $harness->call($controller, $action, $args);
+                self::fail("$action nesmí fungovat pro hru, která v partě není.");
+            } catch (NotFoundHttpException) {
+                $this->addToAssertionCount(1);
+            }
+        }
     }
 
     public function testGamePlayersAreResolvedByIdOrNameAndGuestsAreCreated(): void
@@ -184,7 +318,7 @@ final class GameControllerTest extends TestCase
         $game = Fixtures::game($this->party, 'Coop', ScoreType::WinnerOnly);
         $controller = $this->controller(known: [$game]);
         $harness = ControllerHarness::as($this->anna);
-        $edit = fn (array $players): array => ControllerHarness::json($harness->call($controller, 'update', ['game' => $game, 'req' => $this->request(['name' => 'Coop', 'scoreType' => ScoreType::WinnerOnly, 'players' => $players])]));
+        $edit = fn (array $players): array => ControllerHarness::json($harness->call($controller, 'setPlayers', ['party' => $this->party, 'game' => $game, 'req' => new GamePlayersRequest($players)]));
 
         $edit([new NamedItemRequest('Boss', $boss->getId()), new NamedItemRequest('Minion', $minion->getId())]);
         $updated = $edit([new NamedItemRequest('Velký Boss', $boss->getId()), new NamedItemRequest('Minion', $minion->getId())]);
@@ -192,6 +326,19 @@ final class GameControllerTest extends TestCase
 
         $edit([new NamedItemRequest('Velký Boss', $boss->getId())]);
         self::assertContains('Minion', $this->party->getPlayers()->map(static fn ($p): string => $p->getName())->toArray(), 'odebraný hráč zůstává v partě');
+    }
+
+    public function testGamePlayersBelongToThePartyNotToTheSharedGame(): void
+    {
+        $other = Fixtures::party($this->eve, 'Jiná');
+        $game = Fixtures::game($this->party, 'Coop', ScoreType::WinnerOnly);
+        $other->addGame($game);
+        $boss = Fixtures::guest($this->party, 'Boss');
+
+        ControllerHarness::as($this->anna)->call($this->controller(known: [$game]), 'setPlayers', ['party' => $this->party, 'game' => $game, 'req' => new GamePlayersRequest([new NamedItemRequest('Boss', $boss->getId())])]);
+
+        self::assertSame(['Boss'], $this->party->findGameLink($game)->getPlayers()->map(static fn ($p): string => $p->getName())->toArray());
+        self::assertCount(0, $other->findGameLink($game)->getPlayers());
     }
 
     public function testGamePlayerRenameRejectsMembersDuplicatesAndForeignPlayers(): void
@@ -210,7 +357,7 @@ final class GameControllerTest extends TestCase
             [new NamedItemRequest('Cizí', $foreign->getId())],    // hráč z jiné party
         ] as $players) {
             try {
-                $harness->call($controller, 'update', ['game' => $game, 'req' => $this->request(['name' => 'Coop', 'scoreType' => ScoreType::WinnerOnly, 'players' => $players])]);
+                $harness->call($controller, 'setPlayers', ['party' => $this->party, 'game' => $game, 'req' => new GamePlayersRequest($players)]);
                 self::fail('Úprava hráče hry se musí odmítnout.');
             } catch (DomainException) {
                 $this->addToAssertionCount(1);
@@ -226,7 +373,7 @@ final class GameControllerTest extends TestCase
         [$giga, $kraken] = array_map(static fn ($c): object => Fixtures::id($c), $game->getCharacters()->toArray());
         $controller = $this->controller(known: [$game]);
 
-        $updated = ControllerHarness::json(ControllerHarness::as($this->anna)->call($controller, 'update', ['game' => $game, 'req' => $this->request([
+        $updated = ControllerHarness::json(ControllerHarness::as($this->admin())->call($controller, 'update', ['game' => $game, 'req' => $this->request([
             'name' => 'King of Tokyo', 'scoreType' => ScoreType::WinnerOnly, 'shortName' => null,
             'addons' => [new NamedItemRequest('Power Up 2', $addon->getId())],
             'characters' => [new NamedItemRequest('Giga', $giga->getId()), new NamedItemRequest('Alienoid')],
@@ -239,13 +386,35 @@ final class GameControllerTest extends TestCase
         self::assertSame(1, $this->calls['flush']);
     }
 
+    public function testUpdateIgnoresPlayersOfTheRequestBecauseTheyBelongToTheParty(): void
+    {
+        $game = Fixtures::game($this->party, 'Coop', ScoreType::WinnerOnly);
+        $boss = Fixtures::guest($this->party, 'Boss');
+
+        $updated = ControllerHarness::json(ControllerHarness::as($this->admin())->call($this->controller(known: [$game]), 'update', ['game' => $game, 'req' => $this->request(['name' => 'Coop', 'scoreType' => ScoreType::WinnerOnly, 'players' => [new NamedItemRequest('Boss', $boss->getId())]])]));
+
+        self::assertSame([], $updated['players']);
+        self::assertCount(0, $this->party->findGameLink($game)->getPlayers());
+    }
+
+    public function testUpdateRefusesADuplicateOfAnotherGame(): void
+    {
+        $game = Fixtures::game($this->party, 'Azul');
+        $other = Fixtures::catalogGame('Catan');
+        $games = $this->createMock(GameRepository::class);
+        $games->expects(self::once())->method('findDuplicate')->with(13, 'Azul', $game)->willReturn($other);
+
+        $this->expectException(DomainException::class);
+        ControllerHarness::as($this->admin())->call($this->controller($games), 'update', ['game' => $game, 'req' => $this->request(['bggId' => 13])]);
+    }
+
     public function testScoreTypeCannotChangeWhenGameHasPlays(): void
     {
         $game = Fixtures::game($this->party, 'Azul', ScoreType::MostPoints);
         $plays = $this->createStub(PlayRepository::class);
         $plays->method('countForGame')->willReturn(3);
         $controller = $this->controller(plays: $plays);
-        $harness = ControllerHarness::as($this->anna);
+        $harness = ControllerHarness::as($this->admin());
 
         // stejný typ se uložit smí, jiný ne
         $same = $harness->call($controller, 'update', ['game' => $game, 'req' => $this->request(['name' => 'Azul 2', 'scoreType' => ScoreType::MostPoints])]);
@@ -259,19 +428,19 @@ final class GameControllerTest extends TestCase
     {
         $game = Fixtures::game($this->party);
 
-        $updated = ControllerHarness::json(ControllerHarness::as($this->anna)->call($this->controller(), 'update', ['game' => $game, 'req' => $this->request(['bggId' => 13])]));
+        $updated = ControllerHarness::json(ControllerHarness::as($this->admin())->call($this->controller(), 'update', ['game' => $game, 'req' => $this->request(['bggId' => 13])]));
 
         self::assertSame(13, $updated['bggId']);
     }
 
-    public function testShowAddsStatsOfTheGame(): void
+    public function testShowAddsStatsOfTheGameInThisParty(): void
     {
         $game = Fixtures::game($this->party, 'Dixit');
         $last = $this->lastPlay($game);
-        $games = $this->createStub(GameRepository::class);
-        $games->method('statsFor')->willReturn([$game->getId() => ['lastPlay' => $last, 'playCount' => 2]]);
+        $games = $this->createMock(GameRepository::class);
+        $games->expects(self::once())->method('statsFor')->with($this->party, [$game])->willReturn([$game->getId() => ['lastPlay' => $last, 'playCount' => 2]]);
 
-        $detail = ControllerHarness::json(ControllerHarness::as($this->anna)->call($this->controller($games), 'show', ['game' => $game]));
+        $detail = ControllerHarness::json(ControllerHarness::as($this->anna)->call($this->controller($games), 'show', ['party' => $this->party, 'game' => $game]));
 
         self::assertSame([2, $last->getId()], [$detail['playCount'], $detail['lastPlay']['id']]);
     }
@@ -279,11 +448,11 @@ final class GameControllerTest extends TestCase
     public function testGameWithPlaysCannotBeDeleted(): void
     {
         $game = Fixtures::game($this->party);
-        $plays = $this->createStub(PlayRepository::class);
-        $plays->method('countForGame')->willReturn(1);
+        $plays = $this->createMock(PlayRepository::class);
+        $plays->expects(self::once())->method('countForGame')->with($game)->willReturn(1);
 
         try {
-            ControllerHarness::as($this->anna)->call($this->controller(plays: $plays), 'delete', ['game' => $game]);
+            ControllerHarness::as($this->admin())->call($this->controller(plays: $plays), 'delete', ['game' => $game]);
             self::fail('Hru se zápisy nelze smazat.');
         } catch (DomainException) {
         }
@@ -294,7 +463,7 @@ final class GameControllerTest extends TestCase
     {
         $game = Fixtures::game($this->party);
 
-        $response = ControllerHarness::as($this->anna)->call($this->controller(), 'delete', ['game' => $game]);
+        $response = ControllerHarness::as($this->admin())->call($this->controller(), 'delete', ['game' => $game]);
 
         self::assertSame(204, $response->getStatusCode());
         self::assertSame([$game], $this->calls['remove']);

@@ -20,7 +20,7 @@ use Symfony\Component\DependencyInjection\Attribute\Autowire;
 final class ImportLegacyCommand extends Command
 {
     private const LABELS = [
-        'user' => 'Uživatelé', 'party' => 'Party', 'member' => 'Členové part', 'player' => 'Hráči', 'game' => 'Hry',
+        'user' => 'Uživatelé', 'party' => 'Party', 'member' => 'Členové part', 'player' => 'Hráči', 'game' => 'Hry', 'link' => 'Hry v partách',
         'addon' => 'Rozšíření', 'character' => 'Postavy', 'tag' => 'Tagy', 'session' => 'Seance', 'play' => 'Zápisy', 'result' => 'Výsledky',
     ];
 

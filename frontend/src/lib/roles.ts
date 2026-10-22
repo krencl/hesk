@@ -1,4 +1,4 @@
-import type { PartyRole } from '../api/types';
+import type { Me, PartyRole } from '../api/types';
 
 export const ROLE_LABELS: Record<PartyRole, string> = {
   admin: 'Správce',
@@ -11,3 +11,6 @@ export const ROLE_ORDER: PartyRole[] = ['member', 'writer', 'admin'];
 
 /** Zápisy her smí přidávat, upravovat a mazat jen admin a zapisovač (člen je jen čte). */
 export const canWrite = (role: PartyRole): boolean => role === 'admin' || role === 'writer';
+
+/** Správce her smí upravovat a mazat sdílené hry v katalogu (ostatní jen zařazovat do party). */
+export const canManageGames = (me: Me): boolean => me.roles.includes('ROLE_GAMES_ADMIN');

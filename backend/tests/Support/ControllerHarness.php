@@ -13,11 +13,12 @@ use Symfony\Component\Security\Core\Authentication\Token\Storage\TokenStorage;
 use Symfony\Component\Security\Core\Authentication\Token\UsernamePasswordToken;
 use Symfony\Component\Security\Core\Authorization\AccessDecisionManager;
 use Symfony\Component\Security\Core\Authorization\AuthorizationChecker;
+use Symfony\Component\Security\Core\Authorization\Voter\RoleVoter;
 use Symfony\Component\Security\Core\Exception\AccessDeniedException;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 
 /**
- * Spouští akce kontrolerů přímo, bez HTTP a kernelu: přihlášený uživatel, skutečný `PartyVoter` a kontrola
+ * Spouští akce kontrolerů přímo, bez HTTP a kernelu: přihlášený uživatel, skutečný `PartyVoter` a `RoleVoter` (role uživatele) a kontrola
  * atributů `#[IsGranted]` (ty by jinak vyhodnotil až kernel), takže se ověřují i oprávnění.
  */
 final class ControllerHarness
@@ -31,7 +32,7 @@ final class ControllerHarness
         if (null !== $user) {
             $tokens->setToken(new UsernamePasswordToken($user, 'main', $user->getRoles()));
         }
-        $this->checker = new AuthorizationChecker($tokens, new AccessDecisionManager([new PartyVoter()]));
+        $this->checker = new AuthorizationChecker($tokens, new AccessDecisionManager([new PartyVoter(), new RoleVoter()]));
         $this->tokens = $tokens;
     }
 

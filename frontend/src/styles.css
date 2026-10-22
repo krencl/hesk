@@ -340,8 +340,11 @@ a.link:hover { text-decoration: underline; }
 .skeleton-row.with-image .skeleton-lines { padding: 0.5rem 0; }
 
 /* Formulář zápisu: pole bez rámečků, hráči jako řádky s přepínači */
-.form > label { font-weight: 500; }
-.form > label > input, .form > label > select, .form > label > textarea { font-weight: 400; }
+.form > label, .form > fieldset.plain > label { font-weight: 500; }
+.form > label > input, .form > label > select, .form > label > textarea,
+.form > fieldset.plain > label > input, .form > fieldset.plain > label > select, .form > fieldset.plain > label > textarea { font-weight: 400; }
+/* Skupina polí, která jde zamknout celá (`disabled`), ale v rozvržení formuláře se tváří jako by tam nebyla. */
+fieldset.plain { display: contents; border: 0; margin: 0; padding: 0; min-width: 0; }
 .field { display: grid; gap: 0.25rem; }
 .field-label { font-size: 0.9rem; color: var(--secondary); }
 .player {

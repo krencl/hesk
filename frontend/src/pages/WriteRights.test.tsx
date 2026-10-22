@@ -7,7 +7,7 @@ afterEach(() => { vi.unstubAllGlobals(); sessionStorage.clear(); localStorage.cl
 const routesFor = (role: 'admin' | 'writer' | 'member') => ({
   '/me': { body: ME },
   '/parties': { body: [{ ...PARTY, role }] },
-  '/games/1': { body: GAME },
+  '/parties/3/games/1': { body: GAME },
   '/plays/9': { body: PLAY },
   '/parties/3/players': { body: [{ id: 1, name: 'Anna', hasAccount: true, visible: true }, { id: 2, name: 'Petr', hasAccount: true, visible: true }] },
   '/parties/3/plays/defaults*': { body: { sessionNumber: 70, playerIds: null, tags: [] } },

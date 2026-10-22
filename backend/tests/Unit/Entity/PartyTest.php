@@ -5,9 +5,11 @@ declare(strict_types=1);
 namespace App\Tests\Unit\Entity;
 
 use App\Domain\Exception\DomainException;
+use App\Entity\Game;
 use App\Entity\Party;
 use App\Entity\User;
 use App\Enum\PartyRole;
+use App\Enum\ScoreType;
 use PHPUnit\Framework\TestCase;
 
 final class PartyTest extends TestCase
@@ -19,6 +21,22 @@ final class PartyTest extends TestCase
 
         self::assertTrue($party->isAdmin($creator));
         self::assertCount(1, $party->getMembers());
+    }
+
+    public function testGamesAreLinkedToThePartyOnceAndCanBeRemoved(): void
+    {
+        $party = Party::create('Hrajeme', new User('g1', 'a@example.com'));
+        $game = new Game('Azul', ScoreType::MostPoints);
+
+        self::assertFalse($party->hasGame($game));
+        $link = $party->addGame($game);
+        self::assertSame($link, $party->addGame($game), 'podruhé se nic nepřidá');
+        self::assertTrue($party->hasGame($game));
+        self::assertSame([$link], $party->getGameLinks()->toArray());
+
+        $party->removeGame($game);
+        self::assertFalse($party->hasGame($game));
+        self::assertNull($party->findGameLink($game));
     }
 
     public function testShortNameIsGeneratedFromTheNameAndCanBeChanged(): void

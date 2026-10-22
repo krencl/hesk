@@ -6,6 +6,7 @@ namespace App\Service;
 
 use App\Entity\Game;
 use App\Entity\Party;
+use App\Entity\PartyGame;
 use App\Entity\Play;
 use App\Entity\PlayResult;
 use App\Entity\User;
@@ -20,7 +21,7 @@ final class Presenter
 
     public function me(User $user): array
     {
-        return $this->user($user) + ['hasNickname' => $user->hasNickname()];
+        return $this->user($user) + ['hasNickname' => $user->hasNickname(), 'roles' => $user->getRoles()];
     }
 
     public function party(Party $party, ?User $viewer = null): array
@@ -46,7 +47,8 @@ final class Presenter
         return ['id' => $player->getId(), 'name' => $player->getName(), 'hasAccount' => null !== $player->getUser(), 'visible' => $player->isVisible()];
     }
 
-    public function game(Game $game): array
+    /** Sdílená hra; `$link` (zařazení do party) přidá vlastní hráče hry v té partě. */
+    public function game(Game $game, ?PartyGame $link = null): array
     {
         return [
             'id' => $game->getId(),
@@ -67,7 +69,7 @@ final class Presenter
             )),
             'players' => array_values(array_map(
                 static fn ($p): array => ['id' => $p->getId(), 'name' => $p->getName()],
-                $game->getPlayers()->toArray(),
+                null === $link ? [] : $link->getPlayers()->toArray(),
             )),
         ];
     }
@@ -77,7 +79,7 @@ final class Presenter
      *
      * @return array<string, mixed>
      */
-    public function gameWithStats(Game $game, ?Play $lastPlay, int $playCount): array
+    public function gameWithStats(Game $game, ?PartyGame $link, ?Play $lastPlay, int $playCount): array
     {
         $winners = [];
         $winnerScore = null;
@@ -91,7 +93,7 @@ final class Presenter
             sort($winners);
         }
 
-        return $this->game($game) + [
+        return $this->game($game, $link) + [
             'playCount' => $playCount,
             'lastPlay' => null === $lastPlay ? null : [
                 'id' => $lastPlay->getId(),

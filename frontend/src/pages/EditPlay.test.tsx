@@ -12,7 +12,7 @@ const routes = {
   '/me': { body: ME },
   '/parties': { body: [PARTY] },
   '/plays/9': { body: PLAY_FULL },
-  '/games/1': { body: { ...GAME, addons: [{ id: 5, name: 'Řeka' }, { id: 6, name: 'Opat' }] } },
+  '/parties/3/games/1': { body: { ...GAME, addons: [{ id: 5, name: 'Řeka' }, { id: 6, name: 'Opat' }] } },
   '/parties/3/players': { body: PLAYERS },
   '/parties/3/tags': { body: ['liga', 'rodinná', 'víkend'] },
   '/parties/3/plays?limit=11&offset=0&gameId=1': { body: [PLAY_FULL] },

@@ -108,7 +108,7 @@ describe('game detail', () => {
     results: [{ playerId: 2, name: 'Petr', score: 80, rank: 1, winner: true }, { playerId: 1, name: 'Anna', score: 70, rank: 2, winner: false }] };
   const detailRoutes = (cheatSheet: string | null) => ({
     ...base,
-    '/games/1': { body: { ...GAME, playCount: 12, cheatSheet } },
+    '/parties/3/games/1': { body: { ...GAME, playCount: 12, cheatSheet } },
     '/parties/3/plays?limit=11&offset=0&gameId=1': { body: [PLAY, older, ...Array.from({ length: 9 }, (_, i) => ({ ...PLAY, id: 100 + i, sessionNumber: 50 - i }))] },
   });
 
@@ -148,7 +148,7 @@ describe('game detail', () => {
   });
 
   it('shows a friendly message for an unknown game', async () => {
-    mockApi({ ...base, '/games/1': { status: 404, body: { error: 'nf' } } });
+    mockApi({ ...base, '/parties/3/games/1': { status: 404, body: { error: 'nf' } } });
     renderApp('/games/1');
     expect(await screen.findByText(/neexistuje nebo k ní nemáš přístup/)).toBeInTheDocument();
   });
@@ -166,7 +166,7 @@ describe('new play', () => {
   const players = [{ id: 1, name: 'Anna', hasAccount: true, visible: true }, { id: 2, name: 'Petr', hasAccount: true, visible: true }, { id: 3, name: 'Host', hasAccount: false, visible: true }];
   const routes = {
     ...base,
-    '/games/1': { body: { ...GAME, addons: [{ id: 5, name: 'Řeka' }] } },
+    '/parties/3/games/1': { body: { ...GAME, addons: [{ id: 5, name: 'Řeka' }] } },
     '/parties/3/players': { body: players },
     '/parties/3/plays': { body: PLAY },
     '/parties/3/plays?limit=11&offset=0&gameId=1': { body: [PLAY] },
@@ -359,7 +359,7 @@ describe('new play', () => {
   });
 
   it('shows a friendly message for an unknown game', async () => {
-    mockApi({ ...base, '/parties/3/players': { body: players }, '/games/1': { status: 404, body: { error: 'nf' } } });
+    mockApi({ ...base, '/parties/3/players': { body: players }, '/parties/3/games/1': { status: 404, body: { error: 'nf' } } });
     renderApp('/games/1/new-play');
     expect(await screen.findByText(/neexistuje nebo k ní nemáš přístup/)).toBeInTheDocument();
   });
@@ -370,7 +370,7 @@ describe('game with characters and an own player', () => {
   const game = { ...GAME, id: 1, players: [{ id: 2, name: 'Boss' }], characters: [{ id: 21, name: 'Gigazaur' }, { id: 22, name: 'Kraken' }] };
   const routes = {
     ...base,
-    '/games/1': { body: game },
+    '/parties/3/games/1': { body: game },
     '/parties/3/players': { body: players },
     '/parties/3/plays': { body: PLAY },
     '/parties/3/plays?limit=11&offset=0&gameId=1': { body: [PLAY] },

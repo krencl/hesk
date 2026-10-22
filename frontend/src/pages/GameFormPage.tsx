@@ -1,9 +1,9 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { type FormEvent, useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { useActiveParty } from '../AppContext';
+import { useActiveParty, useApp } from '../AppContext';
 import { api, bggImageProxyUrl } from '../api';
-import type { BggPreparedGame, BggSearchResult, GameInput } from '../api/types';
+import type { BggPreparedGame, Game, GameInput } from '../api/types';
 import { Actions } from '../components/Actions';
 import { BggGameSearch } from '../components/BggGameSearch';
 import { ErrorMessage } from '../components/ErrorMessage';
@@ -15,7 +15,9 @@ import { SafeHtml } from '../components/SafeHtml';
 import { renderCheatSheet } from '../lib/cheatSheet';
 import { type CropArea, cropToBlob } from '../lib/cropImage';
 import { type EditItem, fromEditItems, toEditItems } from '../lib/namedItems';
+import { canManageGames } from '../lib/roles';
 import { SCORE_TYPE_LABELS, SCORE_TYPES } from '../lib/scoring';
+import { useGame } from '../lib/useGame';
 
 interface FormState {
   name: string;
@@ -32,14 +34,20 @@ interface FormState {
 
 const EMPTY: FormState = { name: '', shortName: '', scoreType: 'most_points', imageUrl: '', description: '', cheatSheet: '', addons: [], characters: [], players: [], bggId: null };
 
-/** Formulář hry (nová hra / úprava); vstupuje se do něj ze správy her. */
+/**
+ * Formulář hry (přidání / úprava); vstupuje se do něj ze správy her. Hra je sdílená mezi partami (ADR 0023): sdílené údaje
+ * smí měnit jen správce her, ostatní upravují jen vlastní hráče hry své party.
+ */
 export function GameFormPage() {
   const { id } = useParams();
   const gameId = id ? Number(id) : null;
   const party = useActiveParty();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const existing = useQuery({ queryKey: ['game', gameId], queryFn: () => api.game(gameId!), enabled: gameId !== null });
+  const { me } = useApp();
+  const existing = useGame(gameId);
+  // Jen správce her upravuje sdílené údaje; ostatním jsou pole zamčená (hráči hry patří partě a jdou měnit vždy).
+  const readOnly = gameId !== null && !canManageGames(me);
   const [form, setForm] = useState<FormState>(EMPTY);
   // Vybraný soubor čeká v editoru na oříznutí (object URL; po zavření se uvolní).
   const [cropSrc, setCropSrc] = useState<string | null>(null);
@@ -86,7 +94,9 @@ export function GameFormPage() {
         players: fromEditItems(form.players),
         bggId: form.bggId,
       };
-      return gameId ? api.updateGame(gameId, input) : api.createGame(party.id, input);
+      if (gameId === null) return api.createGame(party.id, input);
+      if (!readOnly) await api.updateGame(gameId, input);
+      return api.setGamePlayers(party.id, gameId, input.players);
     },
     onSuccess: () => done('/manage/games'),
   });
@@ -114,15 +124,16 @@ export function GameFormPage() {
     // uživatel obrázek potvrdí a ořízne hned (zrušením zůstane náhled a tlačítko níž)
     if (game.bggImageUrl) setCropSrc(bggImageProxyUrl(game.bggImageUrl));
   };
-  /** Hra z jiné party: převezme se název, zkratka, bodování a (už lokálně uložený) obrázek; ostatní se doplní ručně. */
-  const pickLocal = (r: BggSearchResult) => {
-    setForm({ ...EMPTY, name: r.name, bggId: r.bggId, shortName: r.prefill?.shortName ?? '', scoreType: r.prefill?.scoreType ?? EMPTY.scoreType, imageUrl: r.prefill?.imageUrl ?? '' });
-    setStarted(true);
+  /** Hra z katalogu je v partě: rovnou se otevře její detail, nic se nezakládá. */
+  const linked = async (game: Game) => {
+    await queryClient.invalidateQueries({ queryKey: ['games', party.id] });
+    navigate(`/games/${game.id}`);
   };
   const startCustom = (name: string) => {
     setForm({ ...EMPTY, name });
     setStarted(true);
   };
+  const unlink = useMutation({ mutationFn: () => api.unlinkGame(party.id, gameId!), onSuccess: () => done('/manage/games') });
   const remove = useMutation({ mutationFn: () => api.deleteGame(gameId!), onSuccess: () => done('/manage/games') });
 
   const submit = (e: FormEvent) => {
@@ -137,7 +148,7 @@ export function GameFormPage() {
     return (
       <section className="page">
         <PageTitle>Přidat hru</PageTitle>
-        <BggGameSearch partyId={party.id} onPick={pickBgg} onPickLocal={pickLocal} onCustom={startCustom} />
+        <BggGameSearch partyId={party.id} onPick={pickBgg} onLinked={linked} onCustom={startCustom} />
       </section>
     );
   }
@@ -147,6 +158,8 @@ export function GameFormPage() {
     <section className="page">
       <PageTitle>{gameId ? 'Upravit hru' : 'Přidat hru'}</PageTitle>
       <form className="pad form" onSubmit={submit}>
+        {readOnly && <p className="muted hint">Údaje hry jsou společné všem partám a upravuje je jen správce her. Tady můžeš změnit jen hráče hry své party.</p>}
+        <fieldset className="plain" disabled={readOnly}>
         <label>Název<input value={form.name} onChange={(e) => set({ name: e.target.value })} maxLength={150} required /></label>
         <label>
           Zkrácený název
@@ -190,6 +203,7 @@ export function GameFormPage() {
           onChange={(characters) => set({ characters })}
         />
 
+        </fieldset>
         <NamedListEditor
           label="Hráči hry"
           noun="hráč hry"
@@ -202,14 +216,16 @@ export function GameFormPage() {
           onChange={(players) => set({ players })}
         />
 
-        <label>Cheatsheet (Markdown nebo HTML)<textarea rows={6} value={form.cheatSheet} onChange={(e) => set({ cheatSheet: e.target.value })} /></label>
+        <fieldset className="plain" disabled={readOnly}>
+          <label>Cheatsheet (Markdown nebo HTML)<textarea rows={6} value={form.cheatSheet} onChange={(e) => set({ cheatSheet: e.target.value })} /></label>
+        </fieldset>
         {form.cheatSheet.trim() && (
           <details>
             <summary>Náhled cheatsheetu</summary>
             <SafeHtml html={renderCheatSheet(form.cheatSheet)} />
           </details>
         )}
-        <ErrorMessage error={save.error ?? remove.error} />
+        <ErrorMessage error={save.error ?? unlink.error ?? remove.error} />
         {cropSrc && (
           <ImageCropPopup
             src={cropSrc}
@@ -225,7 +241,8 @@ export function GameFormPage() {
         </Actions>
         {gameId && (
           <p className="subtle-action">
-            <button type="button" className="link subtle" onClick={() => window.confirm('Smazat hru?') && remove.mutate()}>Smazat hru</button>
+            <button type="button" className="link subtle" onClick={() => window.confirm('Odebrat hru z party? Hra zůstane v databázi her.') && unlink.mutate()}>Odebrat z party</button>
+            {!readOnly && <> · <button type="button" className="link subtle" onClick={() => window.confirm('Smazat hru z databáze všech part?') && remove.mutate()}>Smazat hru z databáze</button></>}
           </p>
         )}
       </form>

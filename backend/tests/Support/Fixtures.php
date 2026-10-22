@@ -66,7 +66,16 @@ final class Fixtures
 
     public static function game(Party $party, string $name = 'Azul', ScoreType $type = ScoreType::MostPoints): Game
     {
-        return self::id(new Game($party, $name, $type));
+        $game = self::id(new Game($name, $type));
+        self::id($party->addGame($game));
+
+        return $game;
+    }
+
+    /** Hra z katalogu, která v žádné partě (zatím) není. */
+    public static function catalogGame(string $name = 'Azul', ScoreType $type = ScoreType::MostPoints): Game
+    {
+        return self::id(new Game($name, $type));
     }
 
     /** Přidělí ID party, jejím členům, hráčům a nedotčeným vazbám. */

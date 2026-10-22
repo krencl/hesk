@@ -19,7 +19,10 @@ final class PresenterTest extends TestCase
     {
         $withoutNickname = Fixtures::id(new User('g', 'x@example.com'), 4);
 
-        self::assertSame(['id' => 4, 'nickname' => null, 'email' => 'x@example.com', 'hasNickname' => false], (new Presenter())->me($withoutNickname));
+        self::assertSame(['id' => 4, 'nickname' => null, 'email' => 'x@example.com', 'hasNickname' => false, 'roles' => ['ROLE_USER']], (new Presenter())->me($withoutNickname));
+        $admin = Fixtures::user('Admin');
+        $admin->addRole(User::ROLE_GAMES_ADMIN);
+        self::assertSame(['ROLE_USER', 'ROLE_GAMES_ADMIN'], (new Presenter())->me($admin)['roles']);
         self::assertTrue((new Presenter())->me(Fixtures::user('Anna'))['hasNickname']);
     }
 
@@ -50,13 +53,13 @@ final class PresenterTest extends TestCase
             new PlayResult($play, Fixtures::guest($party, 'Bob'), 3.0, 3, false),
         ]);
 
-        $data = (new Presenter())->gameWithStats($game, $play, 5);
+        $data = (new Presenter())->gameWithStats($game, $party->findGameLink($game), $play, 5);
 
         self::assertSame(5, $data['playCount']);
         self::assertSame(['Anna', 'Zora'], $data['lastPlay']['winners']);
         self::assertEquals(7, $data['lastPlay']['winnerScore']);
         self::assertSame(4, $data['lastPlay']['sessionNumber']);
-        self::assertNull((new Presenter())->gameWithStats($game, null, 0)['lastPlay']);
+        self::assertNull((new Presenter())->gameWithStats($game, null, null, 0)['lastPlay']);
     }
 
     public function testPlayResultsAreOrderedByRankAndCarryTheCharacter(): void

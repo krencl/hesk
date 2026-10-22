@@ -189,9 +189,10 @@ final class PlayServiceTest extends TestCase
     {
         $stranger = Fixtures::user('Eve');
         $foreignGame = Fixtures::game(Fixtures::party($stranger, 'Cizí'), 'Cizí hra');
-        $service = $this->service([$foreignGame]);
+        $unlinkedGame = Fixtures::catalogGame('Z katalogu'); // sdílená hra, kterou parta nemá
+        $service = $this->service([$foreignGame, $unlinkedGame]);
 
-        foreach ([$foreignGame->getId(), 999999] as $gameId) {
+        foreach ([$foreignGame->getId(), $unlinkedGame->getId(), 999999] as $gameId) {
             try {
                 $service->create($this->party, $this->request('2026-03-01', [[$this->anna, 1.0]], ['gameId' => $gameId]));
                 self::fail('Hra mimo partu se musí odmítnout.');

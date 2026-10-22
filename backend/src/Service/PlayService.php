@@ -90,7 +90,7 @@ final class PlayService
     private function resolveGame(Party $party, PlayRequest $req): Game
     {
         $game = $this->em->find(Game::class, $req->gameId);
-        if (!$game || $game->getParty() !== $party) {
+        if (!$game || !$party->hasGame($game)) {
             throw new DomainException('Hra neexistuje v této partě.');
         }
 

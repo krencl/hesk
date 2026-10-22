@@ -29,6 +29,10 @@ class Party
     #[ORM\OneToMany(targetEntity: Player::class, mappedBy: 'party', cascade: ['persist'])]
     private Collection $players;
 
+    /** @var Collection<int, PartyGame> hry zařazené do party (ADR 0023) */
+    #[ORM\OneToMany(targetEntity: PartyGame::class, mappedBy: 'party', cascade: ['persist', 'remove'], orphanRemoval: true)]
+    private Collection $gameLinks;
+
     private function __construct(
         #[ORM\Column(length: 100)]
         private string $name,
@@ -39,6 +43,7 @@ class Party
         $this->createdAt = new \DateTimeImmutable();
         $this->members = new ArrayCollection();
         $this->players = new ArrayCollection();
+        $this->gameLinks = new ArrayCollection();
     }
 
     /** Zakladatel se automaticky stává adminem. */
@@ -98,6 +103,47 @@ class Party
     public function getPlayers(): Collection
     {
         return $this->players;
+    }
+
+    /** @return Collection<int, PartyGame> */
+    public function getGameLinks(): Collection
+    {
+        return $this->gameLinks;
+    }
+
+    public function findGameLink(Game $game): ?PartyGame
+    {
+        foreach ($this->gameLinks as $link) {
+            if ($link->getGame() === $game) {
+                return $link;
+            }
+        }
+
+        return null;
+    }
+
+    public function hasGame(Game $game): bool
+    {
+        return null !== $this->findGameLink($game);
+    }
+
+    /** Zařadí hru do party; je-li už zařazená, vrátí stávající vazbu. */
+    public function addGame(Game $game): PartyGame
+    {
+        $link = $this->findGameLink($game);
+        if (null === $link) {
+            $this->gameLinks->add($link = new PartyGame($this, $game));
+        }
+
+        return $link;
+    }
+
+    public function removeGame(Game $game): void
+    {
+        $link = $this->findGameLink($game);
+        if (null !== $link) {
+            $this->gameLinks->removeElement($link);
+        }
     }
 
     public function findPlayerFor(User $user): ?Player

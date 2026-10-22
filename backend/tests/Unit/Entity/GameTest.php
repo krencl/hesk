@@ -5,8 +5,6 @@ declare(strict_types=1);
 namespace App\Tests\Unit\Entity;
 
 use App\Entity\Game;
-use App\Entity\Party;
-use App\Entity\User;
 use App\Enum\ScoreType;
 use PHPUnit\Framework\TestCase;
 
@@ -14,7 +12,7 @@ final class GameTest extends TestCase
 {
     private function game(): Game
     {
-        return new Game(Party::create('P', new User('g', 'a@example.com')), 'Catan', ScoreType::MostPoints);
+        return new Game('Catan', ScoreType::MostPoints);
     }
 
     /** @param list<string> $names @return list<array{id: ?int, name: string}> */
@@ -99,7 +97,6 @@ final class GameTest extends TestCase
         self::assertNull($game->getImageUrl());
         self::assertNull($game->getDescription());
         self::assertNull($game->getCheatSheet());
-        self::assertCount(0, $game->getPlayers());
         self::assertSame(ScoreType::WinnerOnly, $game->getScoreType());
     }
 }

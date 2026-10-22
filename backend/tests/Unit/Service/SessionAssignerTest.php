@@ -109,7 +109,7 @@ final class SessionAssignerTest extends TestCase
     public function testRecalculateUsesRemainingPlaysOrFlagsEmpty(): void
     {
         $session = new GameSession($this->party, 1, $this->d('2026-01-01 10:00'), $this->d('2026-01-03 10:00'));
-        $game = new Game($this->party, 'G', ScoreType::MostPoints);
+        $game = new Game('G', ScoreType::MostPoints);
         $play = new Play($this->party, $game, $this->d('2026-01-01 12:00'), $this->d('2026-01-01 13:00'), $session);
         $assigner = $this->assigner([]);
 

@@ -111,7 +111,7 @@ final class LegacyImportTest extends KernelTestCase
     private function snapshot(): array
     {
         $out = [];
-        foreach (['app_user', 'party', 'party_member', 'player', 'game', 'game_addon', 'game_character', 'tag', 'game_session', 'play', 'play_addon', 'play_tag', 'play_result', 'legacy_map'] as $t) {
+        foreach (['app_user', 'party', 'party_member', 'player', 'game', 'party_game', 'party_game_player', 'game_addon', 'game_character', 'tag', 'game_session', 'play', 'play_addon', 'play_tag', 'play_result', 'legacy_map'] as $t) {
             $out[$t] = $this->rowCount($t);
         }
 
@@ -133,19 +133,22 @@ final class LegacyImportTest extends KernelTestCase
         self::assertSame(1, (int) $players['Anna']);
         self::assertNull($players['Cyril']);
 
-        // hry: jen kde se hrálo; zkrácený název, typ bodování, vlastní hráč, rozšíření (bez „Základní“), postavy
+        // hry: jen kde se hrálo; zkrácený název, typ bodování, rozšíření (bez „Základní“), postavy; vlastní hráč patří do party
         $tokyo = $this->rows("SELECT * FROM game WHERE name = 'King of Tokyo'")[0];
         self::assertSame('Tokyo', $tokyo['short_name']);
         self::assertSame('winner_only', $tokyo['score_type']);
-        self::assertSame(['Boss'], $this->target->fetchFirstColumn('SELECT p.name FROM game_player gp JOIN player p ON p.id = gp.player_id WHERE gp.game_id = ?', [$tokyo['id']]));
+        self::assertSame(['Boss'], $this->target->fetchFirstColumn('SELECT p.name FROM party_game pg JOIN party_game_player gp ON gp.party_game_id = pg.id JOIN player p ON p.id = gp.player_id WHERE pg.game_id = ?', [$tokyo['id']]));
         self::assertSame(['Power Up'], $this->target->fetchFirstColumn('SELECT name FROM game_addon WHERE game_id = ?', [$tokyo['id']]));
         self::assertSame(['Gigazaur', 'Kraken'], $this->target->fetchFirstColumn('SELECT name FROM game_character WHERE game_id = ? ORDER BY id', [$tokyo['id']]));
-        $azul = $this->rows("SELECT * FROM game WHERE name = 'Azul' AND party_id = 1")[0];
+        $azul = $this->rows("SELECT * FROM game WHERE name = 'Azul'")[0];
         self::assertNull($azul['short_name'], 'short name equal to the name is not stored');
         self::assertSame('most_points', $azul['score_type']);
         self::assertNull($azul['cheat_sheet']);
         self::assertSame(['Nepoužité rozšíření'], $this->target->fetchFirstColumn('SELECT name FROM game_addon WHERE game_id = ?', [$azul['id']]), 'unused extensions are imported too');
-        self::assertSame(3, $this->rowCount('game'), 'Azul exists in party 1 and 2, Tokyo only in 1');
+        // sdílený katalog: Azul je jedna hra zařazená do obou part, Tokyo jen do první
+        self::assertSame(2, $this->rowCount('game'), 'Azul is one shared game, as in the old app');
+        self::assertSame(3, $this->rowCount('party_game'));
+        self::assertSame([[1, 'Azul'], [1, 'King of Tokyo'], [2, 'Azul']], array_map('array_values', $this->rows('SELECT pg.party_id, g.name FROM party_game pg JOIN game g ON g.id = pg.game_id ORDER BY pg.party_id, g.name')));
     }
 
     public function testPlaysKeepIdsConvertTimesToUtcAndComputeResults(): void
@@ -218,7 +221,7 @@ final class LegacyImportTest extends KernelTestCase
         self::assertSame([1000, 1001, 1003], array_map('intval', $this->target->fetchFirstColumn('SELECT id FROM play WHERE party_id = (SELECT id FROM party WHERE name = ?) ORDER BY id', ['Pátek'])));
         self::assertSame(0, $this->rowCount('play') - 3, 'the play of the second party is gone');
         self::assertEquals([['Anna', 40, 1], ['Bob', 25, 2]], array_map('array_values', $this->rows('SELECT p.name, r.score, r.placement FROM play_result r JOIN player p ON p.id = r.player_id WHERE r.play_id = 1000 ORDER BY r.id')));
-        $game = $this->rows("SELECT id, name, short_name FROM game WHERE party_id = 1 AND name LIKE 'King%'");
+        $game = $this->rows("SELECT id, name, short_name FROM game WHERE name LIKE 'King%'");
         self::assertSame([['id' => $game[0]['id'], 'name' => 'King of Tokyo 2', 'short_name' => 'KoT']], $game, 'renamed in place, not duplicated');
         self::assertSame(['Gigazaur', 'Kraken', 'Pandakai'], $this->target->fetchFirstColumn('SELECT name FROM game_character WHERE game_id = ? ORDER BY id', [$game[0]['id']]));
         self::assertSame([], $this->target->fetchFirstColumn('SELECT 1 FROM play_tag WHERE play_id = 1001'), 'tag removed from the play');
@@ -261,8 +264,9 @@ final class LegacyImportTest extends KernelTestCase
         $existingUser = (int) $this->target->lastInsertId();
         // zápis nové aplikace obsadil id, které má ve staré aplikaci jiný zápis
         $this->target->insert('party', ['id' => 50, 'name' => 'Cizí', 'short_name' => 'Ci', 'created_at' => '2025-01-01 00:00:00']);
-        $this->target->insert('game', ['party_id' => 50, 'name' => 'Cizí hra', 'score_type' => 'most_points']);
+        $this->target->insert('game', ['name' => 'Cizí hra', 'score_type' => 'most_points']);
         $gameId = (int) $this->target->lastInsertId();
+        $this->target->insert('party_game', ['party_id' => 50, 'game_id' => $gameId]);
         $this->target->insert('game_session', ['party_id' => 50, 'number' => 1, 'started_at' => '2025-01-01 00:00:00', 'ended_at' => '2025-01-01 00:00:00']);
         $sessionId = (int) $this->target->lastInsertId();
         $this->target->insert('play', ['id' => 1000, 'party_id' => 50, 'game_id' => $gameId, 'session_id' => $sessionId, 'started_at' => '2025-01-01 00:00:00', 'ended_at' => '2025-01-01 00:00:00']);

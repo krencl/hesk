@@ -33,11 +33,16 @@ class PlayRepository extends ServiceEntityRepository
         return $qb->getQuery()->getResult();
     }
 
-    public function countForGame(Game $game): int
+    /** Počet zápisů hry; s `$party` jen zápisy té party, jinak ze všech part. */
+    public function countForGame(Game $game, ?Party $party = null): int
     {
-        return (int) $this->createQueryBuilder('p')->select('COUNT(p.id)')
-            ->andWhere('p.game = :game')->setParameter('game', $game)
-            ->getQuery()->getSingleScalarResult();
+        $qb = $this->createQueryBuilder('p')->select('COUNT(p.id)')
+            ->andWhere('p.game = :game')->setParameter('game', $game);
+        if (null !== $party) {
+            $qb->andWhere('p.party = :party')->setParameter('party', $party);
+        }
+
+        return (int) $qb->getQuery()->getSingleScalarResult();
     }
 
     /** @return list<Play> */

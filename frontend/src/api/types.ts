@@ -7,6 +7,8 @@ export interface Me {
   nickname: string | null;
   email: string;
   hasNickname: boolean;
+  /** Role účtu: vždy `ROLE_USER`, správce sdíleného katalogu her má navíc `ROLE_GAMES_ADMIN`. */
+  roles: string[];
 }
 
 export interface Party {
@@ -178,7 +180,7 @@ export interface Stats {
   topGames: { gameId: number; name: string; shortName: string | null; plays: number }[];
 }
 
-/** Výsledek hledání při zakládání hry: `party` = hra už v partě (`gameId`), `catalog` = hra z jiné party (`prefill` předvyplní formulář), `cache` = lokální cache BGG, `bgg` = živé BGG API. */
+/** Výsledek hledání při přidávání hry: `party` = hra už v partě, `catalog` = hra z katalogu, kterou parta nemá (stačí ji zařadit podle `gameId`), `cache` = lokální cache BGG, `bgg` = živé BGG API. */
 export interface BggSearchResult {
   source: 'party' | 'catalog' | 'cache' | 'bgg';
   name: string;
@@ -187,7 +189,6 @@ export interface BggSearchResult {
   gameId: number | null;
   /** Obálka k zobrazení: lokální (`/uploads/…`) nebo z BGG CDN; null = žádná. */
   imageUrl: string | null;
-  prefill?: { shortName: string | null; scoreType: GameInput['scoreType']; imageUrl: string | null };
 }
 
 export interface BggSearch {

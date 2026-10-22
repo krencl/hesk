@@ -1,4 +1,4 @@
-import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
+import { useInfiniteQuery } from '@tanstack/react-query';
 import { useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { useActiveParty } from '../AppContext';
@@ -13,6 +13,7 @@ import { Icon } from '../components/Icon';
 import { ListSkeleton } from '../components/Skeleton';
 import { formatDateShort, formatDateTimeShort } from '../lib/datetime';
 import { canWrite } from '../lib/roles';
+import { useGame } from '../lib/useGame';
 import { formatScore, winners } from '../lib/scoring';
 
 const PAGE_SIZE = 10;
@@ -23,7 +24,7 @@ export function GameDetailPage() {
   // undefined = výchozí (první zápis rozbalený jako ve starém prototypu), null = vše sbaleno
   const [openId, setOpenId] = useState<number | null | undefined>(undefined);
 
-  const game = useQuery({ queryKey: ['game', id], queryFn: () => api.game(id), retry: false });
+  const game = useGame(id);
   const rounds = useInfiniteQuery({
     queryKey: ['games', party.id, 'plays', id],
     initialPageParam: 0,

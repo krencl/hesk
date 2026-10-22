@@ -1,5 +1,5 @@
 import { del, get, patch, post, put } from './client';
-import type { BggPreparedGame, BggSearch, Game, GameListQuery, GameWithStats, Player, GameInput, SessionInfo, Me, Party, PartyDetail, PartyRole, Play, PlayDefaults, PlayInput, Stats } from './types';
+import type { BggPreparedGame, BggSearch, Game, GameListQuery, GameWithStats, NamedItemInput, Player, GameInput, SessionInfo, Me, Party, PartyDetail, PartyRole, Play, PlayDefaults, PlayInput, Stats } from './types';
 
 /** Sestaví `?a=1&b=2`; prázdné hodnoty (undefined, null, '') vynechá. */
 export function queryString(params: object): string {
@@ -34,7 +34,8 @@ export const api = {
   createGuest: (partyId: number, name: string) => post<Player>(`/parties/${partyId}/players`, { name }),
 
   games: (partyId: number, query: GameListQuery = {}) => get<GameWithStats[]>(`/parties/${partyId}/games${queryString(query)}`),
-  game: (id: number) => get<GameWithStats>(`/games/${id}`),
+  /** Hra v partě (sdílená hra + statistiky a vlastní hráči hry té party). */
+  game: (partyId: number, id: number) => get<GameWithStats>(`/parties/${partyId}/games/${id}`),
   sessions: (partyId: number) => get<SessionInfo[]>(`/parties/${partyId}/sessions`),
   createGame: (partyId: number, input: GameInput) => post<Game>(`/parties/${partyId}/games`, input),
   /** Nahraje už oříznutý čtvercový obrázek hry; vrací adresu pro `imageUrl`. */
@@ -43,10 +44,18 @@ export const api = {
     form.append('file', image, image.type === 'image/webp' ? 'cover.webp' : 'cover.jpg');
     return post<{ url: string }>(`/parties/${partyId}/game-images`, form);
   },
-  /** Hledání hry pro založení: hry party, pak cache BGG, pak živé BGG. */
+  /** Hledání hry pro přidání: hry party a katalogu, pak cache BGG, pak živé BGG. */
   bggSearch: (partyId: number, q: string) => get<BggSearch>(`/parties/${partyId}/game-search${queryString({ q })}`),
   bggImport: (partyId: number, bggId: number) => post<BggPreparedGame>(`/parties/${partyId}/bgg/import`, { bggId }),
+  /** Zařadí hru z katalogu do party (bez zakládání nové hry). */
+  linkGame: (partyId: number, gameId: number) => post<Game>(`/parties/${partyId}/game-links`, { gameId }),
+  /** Odebere hru z party; hra zůstává v katalogu. */
+  unlinkGame: (partyId: number, gameId: number) => del(`/parties/${partyId}/games/${gameId}`),
+  /** Vlastní hráči hry v partě. */
+  setGamePlayers: (partyId: number, gameId: number, players: NamedItemInput[]) => put<Game>(`/parties/${partyId}/games/${gameId}/players`, { players }),
+  /** Úprava sdílených údajů hry; smí jen správce her. */
   updateGame: (id: number, input: GameInput) => put<Game>(`/games/${id}`, input),
+  /** Smazání hry z katalogu; smí jen správce her a jen hru bez zápisů. */
   deleteGame: (id: number) => del(`/games/${id}`),
 
   plays: (partyId: number, limit = 50, offset = 0, gameId?: number) =>

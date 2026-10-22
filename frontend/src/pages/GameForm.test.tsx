@@ -9,7 +9,7 @@ vi.mock('react-easy-crop', () => ({
 vi.mock('../lib/cropImage', () => ({ cropToBlob: vi.fn(async () => new Blob(['x'], { type: 'image/jpeg' })) }));
 
 import { cropToBlob } from '../lib/cropImage';
-import { GAME, mockApi, ME, PARTY, renderApp, requestedUrls } from '../test/helpers';
+import { GAME, GAMES_ADMIN, mockApi, ME, PARTY, renderApp, requestedUrls } from '../test/helpers';
 
 afterEach(() => { vi.unstubAllGlobals(); vi.clearAllMocks(); sessionStorage.clear(); });
 
@@ -25,9 +25,10 @@ const FULL_GAME = {
   players: [{ id: 2, name: 'Boss' }, { id: 3, name: 'Host' }],
 };
 const routes = {
-  '/me': { body: ME },
+  '/me': { body: GAMES_ADMIN },
   '/parties': { body: [PARTY] },
-  '/games/5': { body: FULL_GAME },
+  '/parties/3/games/5': { body: FULL_GAME },
+  'PUT /parties/3/games/5/players': { body: FULL_GAME },
   '/parties/3/players': { body: PLAYERS },
   '/parties/3/games?sort=name&limit=21&offset=0': { body: [FULL_GAME] },
 };
@@ -86,7 +87,7 @@ describe('game form (/games/:id/edit)', () => {
     renderApp('/games/5/edit');
     await waitFor(() => expect(screen.getByLabelText('Hráč hry 1')).toHaveValue('Boss'));
     fireEvent.click(screen.getByRole('button', { name: 'Uložit' }));
-    await waitFor(() => expect(sent(fetchMock, 'PUT', '/games/5')?.players).toEqual([{ id: 2, name: 'Boss' }, { id: 3, name: 'Host' }]));
+    await waitFor(() => expect(sent(fetchMock, 'PUT', '/parties/3/games/5/players')?.players).toEqual([{ id: 2, name: 'Boss' }, { id: 3, name: 'Host' }]));
   });
 
   it('renames an own player by id, drops a removed one and adds a new one by name', async () => {
@@ -98,7 +99,7 @@ describe('game form (/games/:id/edit)', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Přidat hráče hry' }));
     fireEvent.change(screen.getByLabelText('Hráč hry 2'), { target: { value: 'T.I.M.E' } });
     fireEvent.click(screen.getByRole('button', { name: 'Uložit' }));
-    await waitFor(() => expect(sent(fetchMock, 'PUT', '/games/5')?.players).toEqual([{ id: 2, name: 'Šéf' }, { name: 'T.I.M.E' }]));
+    await waitFor(() => expect(sent(fetchMock, 'PUT', '/parties/3/games/5/players')?.players).toEqual([{ id: 2, name: 'Šéf' }, { name: 'T.I.M.E' }]));
   });
 
   it('can remove all own players', async () => {
@@ -109,7 +110,51 @@ describe('game form (/games/:id/edit)', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Odebrat hráče hry 1' }));
     expect(screen.getByText('Hra nemá vlastní hráče.')).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'Uložit' }));
-    await waitFor(() => expect(sent(fetchMock, 'PUT', '/games/5')?.players).toEqual([]));
+    await waitFor(() => expect(sent(fetchMock, 'PUT', '/parties/3/games/5/players')?.players).toEqual([]));
+  });
+
+  describe('shared game and rights', () => {
+    const asMember = { ...routes, '/me': { body: ME } };
+
+    it('locks the shared fields for a non-admin, who can still change the own players of the party', async () => {
+      const fetchMock = mockApi({ ...asMember, 'PUT /games/5': { body: FULL_GAME } });
+      renderApp('/games/5/edit');
+      await waitFor(() => expect(screen.getByLabelText('Název')).toHaveValue('King of Tokyo'));
+
+      expect(screen.getByLabelText('Název')).toBeDisabled();
+      expect(screen.getByLabelText('Rozšíření 1')).toBeDisabled();
+      expect(screen.getByLabelText('Hráč hry 1')).toBeEnabled();
+      expect(screen.getByText(/upravuje je jen správce her/)).toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: 'Smazat hru z databáze' })).not.toBeInTheDocument();
+
+      fireEvent.change(screen.getByLabelText('Hráč hry 1'), { target: { value: 'Šéf' } });
+      fireEvent.click(screen.getByRole('button', { name: 'Uložit' }));
+      await waitFor(() => expect(sent(fetchMock, 'PUT', '/parties/3/games/5/players')?.players).toEqual([{ id: 2, name: 'Šéf' }, { id: 3, name: 'Host' }]));
+      expect(sent(fetchMock, 'PUT', '/games/5')).toBeUndefined();
+    });
+
+    it('lets the admin edit the shared data and delete the game from the catalog', async () => {
+      const fetchMock = mockApi({ ...routes, 'PUT /games/5': { body: FULL_GAME } });
+      renderApp('/games/5/edit');
+      await waitFor(() => expect(screen.getByLabelText('Název')).toBeEnabled());
+      expect(screen.getByRole('button', { name: 'Smazat hru z databáze' })).toBeInTheDocument();
+
+      fireEvent.click(screen.getByRole('button', { name: 'Uložit' }));
+      await waitFor(() => expect(sent(fetchMock, 'PUT', '/games/5')).toBeDefined());
+      await waitFor(() => expect(sent(fetchMock, 'PUT', '/parties/3/games/5/players')).toBeDefined());
+    });
+
+    it('removes the game from the party only, after confirmation', async () => {
+      vi.spyOn(window, 'confirm').mockReturnValue(true);
+      const fetchMock = mockApi({ ...asMember, 'DELETE /parties/3/games/5': { status: 204, body: null } });
+      renderApp('/games/5/edit');
+      await waitFor(() => expect(screen.getByLabelText('Název')).toHaveValue('King of Tokyo'));
+
+      fireEvent.click(screen.getByRole('button', { name: 'Odebrat z party' }));
+
+      await waitFor(() => expect(fetchMock.mock.calls.some(([u, init]) => init?.method === 'DELETE' && String(u) === '/api/parties/3/games/5')).toBe(true));
+      expect(fetchMock.mock.calls.some(([u, init]) => init?.method === 'DELETE' && String(u) === '/api/games/5')).toBe(false);
+    });
   });
 
   describe('new game: search first', () => {
@@ -149,6 +194,7 @@ describe('game form (/games/:id/edit)', () => {
           bgg: 'used',
           results: [
             { source: 'party', name: 'Catan vlastní', year: null, bggId: null, gameId: 8, imageUrl: '/uploads/covers/own.webp' },
+            { source: 'catalog', name: 'Catan Junior', year: null, bggId: 40, gameId: 9, imageUrl: '/uploads/covers/junior.webp' },
             { source: 'cache', name: 'Catan', year: 1995, bggId: 13, gameId: null, imageUrl: null },
             { source: 'bgg', name: 'Catan: Seafarers', year: 1997, bggId: 14, gameId: null, imageUrl: null },
           ],
@@ -158,50 +204,34 @@ describe('game form (/games/:id/edit)', () => {
       await type('catan');
       expect(await screen.findByRole('link', { name: /Catan vlastní/ })).toHaveAttribute('href', '/games/8');
       expect(screen.getByText('Už v partě')).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /Catan Junior/ })).toBeInTheDocument();
       expect(screen.getByRole('button', { name: 'Catan (1995)' })).toBeInTheDocument();
       expect(screen.getByRole('button', { name: 'Catan: Seafarers (1997)' })).toBeInTheDocument();
       const covers = Array.from(screen.getByRole('list', { name: 'Nalezené hry' }).querySelectorAll('img'));
-      expect(covers.map((img) => img.getAttribute('src'))).toEqual(['/uploads/covers/own.webp', expect.stringContaining('cover-placeholder'), expect.stringContaining('cover-placeholder')]);
+      expect(covers.map((img) => img.getAttribute('src'))).toEqual(['/uploads/covers/own.webp', '/uploads/covers/junior.webp', expect.stringContaining('cover-placeholder'), expect.stringContaining('cover-placeholder')]);
     });
 
-    it('prefills the form from a game of another party without asking the server', async () => {
+    it('puts a catalog game straight into the party and opens it, without a form or a new game', async () => {
       const fetchMock = mockApi({
         ...routes,
         ...search('tok', {
-          bgg: 'unavailable',
-          results: [{ source: 'catalog', name: 'Vládce Tokia', year: null, bggId: null, gameId: null, imageUrl: '/uploads/covers/abc.webp', prefill: { shortName: 'Tokio', scoreType: 'winner_only', imageUrl: '/uploads/covers/abc.webp' } }],
+          bgg: 'skipped',
+          results: [{ source: 'catalog', name: 'Vládce Tokia', year: null, bggId: 123, gameId: 77, imageUrl: '/uploads/covers/abc.webp' }],
         }),
-        'POST /parties/3/games': { status: 201, body: FULL_GAME },
+        'POST /parties/3/game-links': { status: 201, body: { ...FULL_GAME, id: 77, name: 'Vládce Tokia' } },
+        '/parties/3/games/77': { body: { ...FULL_GAME, id: 77, name: 'Vládce Tokia' } },
+        '/parties/3/plays?limit=11&offset=0&gameId=77': { body: [] },
       });
       renderApp('/games/new');
       await type('tok');
       expect(await screen.findByText('Z lokální databáze')).toBeInTheDocument();
       fireEvent.click(screen.getByRole('button', { name: /Vládce Tokia/ }));
 
-      expect(screen.getByLabelText('Název')).toHaveValue('Vládce Tokia');
-      expect(screen.getByLabelText('Zkrácený název')).toHaveValue('Tokio');
-      expect(screen.getByLabelText('Bodování')).toHaveValue('winner_only');
+      expect(await screen.findByRole('heading', { name: 'Vládce Tokia' })).toBeInTheDocument();
+      expect(sent(fetchMock, 'POST', '/parties/3/game-links')).toEqual({ gameId: 77 });
       expect(requestedUrls(fetchMock).some((u) => u.includes('/bgg/import'))).toBe(false);
-      fireEvent.click(screen.getByRole('button', { name: 'Uložit' }));
-      await waitFor(() => expect(sent(fetchMock, 'POST', '/parties/3/games')).toMatchObject({ name: 'Vládce Tokia', shortName: 'Tokio', scoreType: 'winner_only', bggId: null, imageUrl: '/uploads/covers/abc.webp' }));
-    });
-
-    it('credits BoardGameGeek only once its API was actually called', async () => {
-      mockApi({
-        ...routes,
-        ...search('catan', { bgg: 'used', results: [] }),
-        ...search('tok', { bgg: 'skipped', results: [{ source: 'catalog', name: 'Vládce Tokia', year: null, bggId: null, gameId: null, imageUrl: null, prefill: { shortName: null, scoreType: 'winner_only', imageUrl: null } }] }),
-      });
-      renderApp('/games/new');
-      expect(await screen.findByText('Napiš název hry, najdeme ji v databázi, nebo na BoardGameGeek.')).toBeInTheDocument();
-      expect(screen.queryByText(/Data her poskytuje/)).not.toBeInTheDocument();
-
-      await type('tok');
-      expect(await screen.findByText('Z lokální databáze')).toBeInTheDocument();
-      expect(screen.queryByText(/Data her poskytuje/)).not.toBeInTheDocument();
-
-      await type('catan');
-      expect(await screen.findByText(/Data her poskytuje/)).toBeInTheDocument();
+      expect(fetchMock.mock.calls.some(([u, init]) => init?.method === 'POST' && String(u) === '/api/parties/3/games')).toBe(false);
+      expect(screen.queryByLabelText('Zkrácený název')).not.toBeInTheDocument();
     });
 
     it('says so when BoardGameGeek is unavailable but still lets the user create a custom game', async () => {
@@ -296,7 +326,7 @@ describe('game form (/games/:id/edit)', () => {
 
     it('cancelling the editor changes nothing, and the picture can be removed', async () => {
       stubUrls();
-      const fetchMock = mockApi({ ...routes, '/games/5': { body: { ...FULL_GAME, imageUrl: '/uploads/covers/0123456789abcdef0123456789abcdef01234567.webp' } }, 'PUT /games/5': { body: FULL_GAME } });
+      const fetchMock = mockApi({ ...routes, '/parties/3/games/5': { body: { ...FULL_GAME, imageUrl: '/uploads/covers/0123456789abcdef0123456789abcdef01234567.webp' } }, 'PUT /games/5': { body: FULL_GAME } });
       renderApp('/games/5/edit');
       await waitFor(() => expect(screen.getByRole('button', { name: 'Změnit obrázek' })).toBeInTheDocument());
       expect(screen.queryByLabelText('URL obrázku')).not.toBeInTheDocument(); // adresa se ručně nezadává

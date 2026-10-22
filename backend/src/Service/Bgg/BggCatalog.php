@@ -14,9 +14,9 @@ use Doctrine\ORM\EntityManagerInterface;
 use Psr\Log\LoggerInterface;
 
 /**
- * Hledání hry pro založení (ADR 0021). Zdroje podle priority: 1) hry party (lokální databáze), 2) hry z ostatních part
- * (stejná databáze; zakládá se z nich nová hra v této partě), 3) lokální cache BGG, 4) živé BGG API – to se volá, jen když první dva zdroje dohromady nedají aspoň `LOCAL_ENOUGH` výsledků,
- * a co vrátí, se uloží do cache.
+ * Hledání hry pro přidání do party (ADR 0021, 0023). Zdroje podle priority: 1) hry party, 2) ostatní hry z katalogu
+ * (stejná databáze; zařadí se do party bez zakládání nové hry), 3) lokální cache BGG, 4) živé BGG API – to se volá, jen
+ * když první tři zdroje dohromady nedají aspoň `LOCAL_ENOUGH` výsledků, a co vrátí, se uloží do cache.
  */
 class BggCatalog
 {
@@ -38,36 +38,22 @@ class BggCatalog
     }
 
     /**
-     * @return array{results: list<array{source: string, name: string, year: int|null, bggId: int|null, gameId: int|null, imageUrl: string|null, prefill?: array{shortName: string|null, scoreType: string, imageUrl: string|null}}>, bgg: string}
-     *                                                                                                                                 `source` je `party` (hra už v partě, `gameId`), `catalog` (hra z jiné party, `prefill` předvyplní formulář), `cache` nebo `bgg`; `bgg` říká, jestli se živé API použilo
+     * @return array{results: list<array{source: string, name: string, year: int|null, bggId: int|null, gameId: int|null, imageUrl: string|null}>, bgg: string}
+     *                                                                                                                                 `source` je `party` (hra už v partě), `catalog` (hra z katalogu, kterou party nemá; stačí ji zařadit podle `gameId`), `cache` nebo `bgg`; `bgg` říká, jestli se živé API použilo
      */
     public function search(Party $party, string $query): array
     {
         $results = [];
         $seen = [];
-        $seenNames = [];
 
         foreach ($this->games->search($party, $query, GameRepository::SORT_NAME, null, self::PARTY_LIMIT, 0) as $game) {
             $results[] = ['source' => 'party', 'name' => $game->getName(), 'year' => null, 'bggId' => $game->getBggId(), 'gameId' => $game->getId(), 'imageUrl' => $game->getImageUrl()];
-            $seenNames[mb_strtolower($game->getName())] = true;
             if (null !== $game->getBggId()) {
                 $seen[$game->getBggId()] = true;
             }
         }
-        foreach ($this->games->searchInOtherParties($party, $query, self::CATALOG_LIMIT) as $game) {
-            if (isset($seenNames[mb_strtolower($game->getName())]) || (null !== $game->getBggId() && isset($seen[$game->getBggId()]))) {
-                continue;
-            }
-            $results[] = [
-                'source' => 'catalog',
-                'name' => $game->getName(),
-                'year' => null,
-                'bggId' => $game->getBggId(),
-                'gameId' => null, // hra patří jiné partě, odkaz na ni nesmí vzniknout
-                'imageUrl' => $game->getImageUrl(),
-                'prefill' => ['shortName' => $game->getShortName(), 'scoreType' => $game->getScoreType()->value, 'imageUrl' => $game->getImageUrl()],
-            ];
-            $seenNames[mb_strtolower($game->getName())] = true;
+        foreach ($this->games->searchOutsideParty($party, $query, self::CATALOG_LIMIT) as $game) {
+            $results[] = ['source' => 'catalog', 'name' => $game->getName(), 'year' => null, 'bggId' => $game->getBggId(), 'gameId' => $game->getId(), 'imageUrl' => $game->getImageUrl()];
             if (null !== $game->getBggId()) {
                 $seen[$game->getBggId()] = true;
             }

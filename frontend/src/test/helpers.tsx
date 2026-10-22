@@ -36,7 +36,9 @@ export function renderApp(path = '/') {
   );
 }
 
-export const ME = { id: 1, nickname: 'Anna', email: 'a@b.cz', hasNickname: true };
+export const ME = { id: 1, nickname: 'Anna', email: 'a@b.cz', hasNickname: true, roles: ['ROLE_USER'] };
+/** Správce sdíleného katalogu her: smí upravovat sdílené údaje her. */
+export const GAMES_ADMIN = { ...ME, roles: ['ROLE_USER', 'ROLE_GAMES_ADMIN'] };
 export const PARTY = { id: 3, name: 'Pátek', shortName: 'Pá', role: 'admin' };
 
 export const GAME = {
