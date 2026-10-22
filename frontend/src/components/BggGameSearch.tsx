@@ -6,7 +6,7 @@ import type { BggPreparedGame, BggSearchResult, Game } from '../api/types';
 import { useDebounced } from '../lib/useDebounced';
 import { Actions } from './Actions';
 import { ErrorMessage } from './ErrorMessage';
-import { GameImage } from './GameImage';
+import { GameListItem } from './GameListItem';
 
 interface Props {
   partyId: number;
@@ -41,7 +41,6 @@ export function BggGameSearch({ partyId, onPick, onLinked, onCustom }: Props) {
         </label>
         {!searching && <p className="muted hint">Napiš název hry, najdeme ji v databázi, nebo na BoardGameGeek.</p>}
         {searching && search.isFetching && <p className="muted hint">Hledám…</p>}
-        {settled && search.data?.bgg === 'unavailable' && <p className="muted hint">BoardGameGeek teď není dostupné, ukazuji jen hry, které už známe.</p>}
         <ErrorMessage error={search.error ?? pick.error ?? link.error} />
       </div>
       {searching && results.length > 0 && (
@@ -51,6 +50,7 @@ export function BggGameSearch({ partyId, onPick, onLinked, onCustom }: Props) {
       )}
       <div className="pad">
         {settled && results.length === 0 && !search.isError && <p className="muted">Nic jsme nenašli.</p>}
+        {settled && search.data?.bgg === 'unavailable' && <p className="muted hint">BoardGameGeek teď není dostupné, ukazuji jen hry, které už známe.</p>}
         {settled && (
           <p className="subtle-action">
             Hra tu není? <button type="button" className="link" onClick={() => onCustom(text.trim())}>Založit vlastní hru</button>
@@ -66,26 +66,16 @@ export function BggGameSearch({ partyId, onPick, onLinked, onCustom }: Props) {
 }
 
 function Result({ result, disabled, onPick }: { result: BggSearchResult; disabled: boolean; onPick: () => void }) {
-  const title = result.year ? `${result.name} (${result.year})` : result.name;
   if (result.source === 'party' && result.gameId) {
     return (
-      <li>
-        <Link className="list-item" to={`/games/${result.gameId}`}>
-          <GameImage url={result.imageUrl} />
-          <span className="list-item-body"><span className="h5">{result.name}</span><span className="secondary">Už v partě</span></span>
-        </Link>
-      </li>
+      <GameListItem to={`/games/${result.gameId}`} imageUrl={result.imageUrl} name={result.name}>
+        <span className="secondary">Už v partě</span>
+      </GameListItem>
     );
   }
   return (
-    <li>
-      <button type="button" className="list-item" disabled={disabled} onClick={onPick}>
-        <GameImage url={result.imageUrl} />
-        <span className="list-item-body">
-          <span className="h5">{title}</span>
-          {result.source === 'catalog' && <span className="secondary">Z lokální databáze</span>}
-        </span>
-      </button>
-    </li>
+    <GameListItem imageUrl={result.imageUrl} name={result.year ? `${result.name} (${result.year})` : result.name} disabled={disabled} onClick={onPick}>
+      {result.source === 'catalog' && <span className="secondary">Z lokální databáze</span>}
+    </GameListItem>
   );
 }

@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { useActiveParty } from '../AppContext';
 import type { GameWithStats } from '../api/types';
 import { ErrorMessage } from '../components/ErrorMessage';
-import { GameImage } from '../components/GameImage';
+import { GameListItem } from '../components/GameListItem';
 import { GameSearch } from '../components/GameSearch';
 import { LoadMore } from '../components/LoadMore';
 import { ListSkeleton } from '../components/Skeleton';
@@ -34,15 +34,9 @@ export function GameListPage() {
 
       <ul className={`list${games.isPlaceholderData ? ' stale' : ''}`}>
         {items.map((game) => (
-          <li key={game.id}>
-            <Link to={`/games/${game.id}`} className="list-item">
-              <GameImage url={game.imageUrl} />
-              <div className="list-item-body">
-                <strong className="h5">{game.name}</strong>
-                <LastPlay game={game} />
-              </div>
-            </Link>
-          </li>
+          <GameListItem key={game.id} to={`/games/${game.id}`} imageUrl={game.imageUrl} name={game.name}>
+            <LastPlay game={game} />
+          </GameListItem>
         ))}
       </ul>
 

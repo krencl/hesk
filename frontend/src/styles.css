@@ -190,7 +190,7 @@ legend { color: var(--secondary); font-size: 0.85rem; padding: 0 0.3rem; }
 .list-item {
   display: flex; color: inherit; text-decoration: none; transition: background-color 0.15s;
 }
-button.list-item { width: 100%; border: 0; background: none; font: inherit; text-align: left; cursor: pointer; }
+button.list-item { width: 100%; margin: 0; padding: 0; border: 0; background: none; font: inherit; text-align: left; cursor: pointer; }
 button.list-item:disabled { opacity: 0.6; cursor: default; }
 .list-item:hover { color: #fff; background: var(--main); }
 .list-item:hover .secondary { color: var(--light-blue); }
@@ -298,7 +298,7 @@ a.link:hover { text-decoration: underline; }
 .last-play { font-weight: 500; }
 /* Názvy her v seznamu: menší písmo a řádkování, aby se box u dvouřádkového názvu nezvětšoval */
 .list-item-body .h5 { font-size: 1.1rem; line-height: 1.15; }
-.list-item-body .secondary { line-height: 1.35; }
+.list-item-body .secondary { line-height: 1.35; font-weight: 500; }
 .more { margin: 0.5rem 0 0; border-radius: 0; }
 .load-more { min-height: 3rem; display: grid; place-items: center; }
 .list-top { margin-top: 1rem; }
