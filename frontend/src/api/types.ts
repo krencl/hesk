@@ -178,13 +178,14 @@ export interface Stats {
   topGames: { gameId: number; name: string; shortName: string | null; plays: number }[];
 }
 
-/** Výsledek hledání při zakládání hry: `party` = hra už v partě (`gameId`), `cache` = lokální cache BGG, `bgg` = živé BGG API. */
+/** Výsledek hledání při zakládání hry: `party` = hra už v partě (`gameId`), `catalog` = hra z jiné party (`prefill` předvyplní formulář), `cache` = lokální cache BGG, `bgg` = živé BGG API. */
 export interface BggSearchResult {
-  source: 'party' | 'cache' | 'bgg';
+  source: 'party' | 'catalog' | 'cache' | 'bgg';
   name: string;
   year: number | null;
   bggId: number | null;
   gameId: number | null;
+  prefill?: { shortName: string | null; scoreType: GameInput['scoreType']; imageUrl: string | null };
 }
 
 export interface BggSearch {

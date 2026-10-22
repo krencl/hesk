@@ -28,6 +28,8 @@ final class BggCatalogTest extends TestCase
     private \App\Entity\Party $party;
     /** @var list<Game> hry party, které by našel repozitář */
     private array $partyGames = [];
+    /** @var list<Game> hry z ostatních part, které by našel repozitář (už bez duplicit podle názvu) */
+    private array $otherGames = [];
     /** @var list<BggGame> cache BGG „v databázi“ */
     private array $cached = [];
     private \ArrayObject $calls;
@@ -37,6 +39,7 @@ final class BggCatalogTest extends TestCase
         FakeBggClient::reset();
         $this->party = Fixtures::party(Fixtures::user('Anna'));
         $this->partyGames = [];
+        $this->otherGames = [];
         $this->cached = [];
         $this->calls = new \ArrayObject();
     }
@@ -47,6 +50,11 @@ final class BggCatalogTest extends TestCase
         $games->method('search')->willReturnCallback(fn (mixed $party, ?string $q): array => array_values(array_filter(
             $this->partyGames,
             static fn (Game $g): bool => str_contains(mb_strtolower($g->getName()), mb_strtolower((string) $q)),
+        )));
+
+        $games->method('searchInOtherParties')->willReturnCallback(fn (mixed $party, string $q): array => array_values(array_filter(
+            $this->otherGames,
+            static fn (Game $g): bool => str_contains(mb_strtolower($g->getName()), mb_strtolower($q)),
         )));
 
         // cache = to, co je v „databázi“, plus to, co služba v průběhu testu uložila
@@ -99,6 +107,39 @@ final class BggCatalogTest extends TestCase
         $second = $this->catalog()->search($this->party, 'catan');
         self::assertSame([['party', 'Catan vlastní'], ['cache', 'Catan'], ['cache', 'Catan: Seafarers']], self::brief($second));
         self::assertSame('unavailable', $second['bgg']);
+    }
+
+    public function testGamesOfOtherPartiesAreOfferedBetweenThePartyAndTheCache(): void
+    {
+        $other = Fixtures::party(Fixtures::user('Eve'), 'Jiná');
+        $tokaido = Fixtures::game($other, 'Tokaido', ScoreType::MostPoints);
+        $tokaido->update('Tokaido', 'Toka', ScoreType::FewestPoints, '/uploads/covers/abc.webp', null, null, [], bggId: 123);
+        $this->partyGames = [Fixtures::game($this->party, 'Tokyo Highway')];
+        $this->otherGames = [$tokaido];
+        $this->cached = [new BggGame(500, 'Tokyo Metro', 2020)];
+
+        $result = $this->catalog()->search($this->party, 'tok');
+
+        self::assertSame([['party', 'Tokyo Highway'], ['catalog', 'Tokaido'], ['cache', 'Tokyo Metro']], self::brief($result));
+        self::assertNull($result['results'][1]['gameId'], 'hra jiné party se neodkazuje');
+        self::assertSame(123, $result['results'][1]['bggId']);
+        self::assertSame(['shortName' => 'Toka', 'scoreType' => 'fewest_points', 'imageUrl' => '/uploads/covers/abc.webp'], $result['results'][1]['prefill']);
+    }
+
+    public function testOtherPartyGameAlreadyInThePartyOrInTheCacheIsNotOfferedTwice(): void
+    {
+        $other = Fixtures::party(Fixtures::user('Eve'), 'Jiná');
+        $same = Fixtures::game($other, 'tokaido'); // stejný název jako hra v partě (bez ohledu na velikost písmen)
+        $withBgg = Fixtures::game($other, 'Vládce Tokia');
+        $withBgg->update('Vládce Tokia', null, ScoreType::MostPoints, null, null, null, [], bggId: 77);
+        $this->partyGames = [Fixtures::game($this->party, 'Tokaido')];
+        $this->otherGames = [$same, $withBgg];
+        $this->cached = [new BggGame(77, 'Lord of Tokyo', 2011), new BggGame(78, 'Tokyo Highway', 2015)];
+
+        self::assertSame(
+            [['party', 'Tokaido'], ['catalog', 'Vládce Tokia'], ['cache', 'Tokyo Highway']],
+            self::brief($this->catalog()->search($this->party, 'tok')),
+        );
     }
 
     public function testBggIsNotCalledWhenLocalSourcesAreEnough(): void

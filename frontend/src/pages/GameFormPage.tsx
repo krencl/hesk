@@ -3,7 +3,7 @@ import { type FormEvent, useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useActiveParty } from '../AppContext';
 import { api, bggImageProxyUrl } from '../api';
-import type { BggPreparedGame, GameInput } from '../api/types';
+import type { BggPreparedGame, BggSearchResult, GameInput } from '../api/types';
 import { Actions } from '../components/Actions';
 import { BggGameSearch } from '../components/BggGameSearch';
 import { ErrorMessage } from '../components/ErrorMessage';
@@ -114,6 +114,11 @@ export function GameFormPage() {
     // uživatel obrázek potvrdí a ořízne hned (zrušením zůstane náhled a tlačítko níž)
     if (game.bggImageUrl) setCropSrc(bggImageProxyUrl(game.bggImageUrl));
   };
+  /** Hra z jiné party: převezme se název, zkratka, bodování a (už lokálně uložený) obrázek; ostatní se doplní ručně. */
+  const pickLocal = (r: BggSearchResult) => {
+    setForm({ ...EMPTY, name: r.name, bggId: r.bggId, shortName: r.prefill?.shortName ?? '', scoreType: r.prefill?.scoreType ?? EMPTY.scoreType, imageUrl: r.prefill?.imageUrl ?? '' });
+    setStarted(true);
+  };
   const startCustom = (name: string) => {
     setForm({ ...EMPTY, name });
     setStarted(true);
@@ -132,7 +137,7 @@ export function GameFormPage() {
     return (
       <section className="page">
         <PageTitle>Nová hra</PageTitle>
-        <BggGameSearch partyId={party.id} onPick={pickBgg} onCustom={startCustom} />
+        <BggGameSearch partyId={party.id} onPick={pickBgg} onPickLocal={pickLocal} onCustom={startCustom} />
       </section>
     );
   }

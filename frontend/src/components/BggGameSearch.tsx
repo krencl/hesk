@@ -11,14 +11,16 @@ interface Props {
   partyId: number;
   /** Hra vybraná z výsledků je připravená pro formulář. */
   onPick: (game: BggPreparedGame) => void;
+  /** Hra z jiné party: formulář se předvyplní rovnou, bez dotazu na server. */
+  onPickLocal: (result: BggSearchResult) => void;
   /** Hra se nenašla: založit vlastní s názvem, který uživatel zadal. */
   onCustom: (name: string) => void;
 }
 
 export const MIN_QUERY_LENGTH = 2;
 
-/** První krok nové hry: jen pole Název, které hledá hru v partě, v cache BGG a na BGG; vlastní hru nabídne až když se nic nehodí. */
-export function BggGameSearch({ partyId, onPick, onCustom }: Props) {
+/** První krok nové hry: jen pole Název, které hledá hru v partě, v ostatních partách, v cache BGG a na BGG; vlastní hru nabídne až když se nic nehodí. */
+export function BggGameSearch({ partyId, onPick, onPickLocal, onCustom }: Props) {
   const [text, setText] = useState('');
   const query = useDebounced(text.trim());
   const searching = query.length >= MIN_QUERY_LENGTH;
@@ -42,7 +44,7 @@ export function BggGameSearch({ partyId, onPick, onCustom }: Props) {
       </div>
       {searching && results.length > 0 && (
         <ul className="list" aria-label="Nalezené hry">
-          {results.map((r) => <Result key={`${r.source}-${r.bggId ?? r.gameId}`} result={r} disabled={pick.isPending} onPick={() => r.bggId && pick.mutate(r.bggId)} />)}
+          {results.map((r) => <Result key={`${r.source}-${r.bggId ?? r.gameId ?? r.name}`} result={r} disabled={pick.isPending} onPick={() => (r.source === 'catalog' ? onPickLocal(r) : r.bggId && pick.mutate(r.bggId))} />)}
         </ul>
       )}
       <div className="pad">
@@ -75,7 +77,10 @@ function Result({ result, disabled, onPick }: { result: BggSearchResult; disable
   return (
     <li>
       <button type="button" className="list-item" disabled={disabled} onClick={onPick}>
-        <span className="list-item-body"><span className="h5">{title}</span></span>
+        <span className="list-item-body">
+          <span className="h5">{title}</span>
+          {result.source === 'catalog' && <span className="secondary">Z jiné party</span>}
+        </span>
       </button>
     </li>
   );

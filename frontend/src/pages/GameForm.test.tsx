@@ -9,7 +9,7 @@ vi.mock('react-easy-crop', () => ({
 vi.mock('../lib/cropImage', () => ({ cropToBlob: vi.fn(async () => new Blob(['x'], { type: 'image/jpeg' })) }));
 
 import { cropToBlob } from '../lib/cropImage';
-import { GAME, mockApi, ME, PARTY, renderApp } from '../test/helpers';
+import { GAME, mockApi, ME, PARTY, renderApp, requestedUrls } from '../test/helpers';
 
 afterEach(() => { vi.unstubAllGlobals(); vi.clearAllMocks(); sessionStorage.clear(); });
 
@@ -160,6 +160,28 @@ describe('game form (/games/:id/edit)', () => {
       expect(screen.getByText('Už v partě')).toBeInTheDocument();
       expect(screen.getByRole('button', { name: 'Catan (1995)' })).toBeInTheDocument();
       expect(screen.getByRole('button', { name: 'Catan: Seafarers (1997)' })).toBeInTheDocument();
+    });
+
+    it('prefills the form from a game of another party without asking the server', async () => {
+      const fetchMock = mockApi({
+        ...routes,
+        ...search('tok', {
+          bgg: 'unavailable',
+          results: [{ source: 'catalog', name: 'Vládce Tokia', year: null, bggId: null, gameId: null, prefill: { shortName: 'Tokio', scoreType: 'winner_only', imageUrl: '/uploads/covers/abc.webp' } }],
+        }),
+        'POST /parties/3/games': { status: 201, body: FULL_GAME },
+      });
+      renderApp('/games/new');
+      await type('tok');
+      expect(await screen.findByText('Z jiné party')).toBeInTheDocument();
+      fireEvent.click(screen.getByRole('button', { name: /Vládce Tokia/ }));
+
+      expect(screen.getByLabelText('Název')).toHaveValue('Vládce Tokia');
+      expect(screen.getByLabelText('Zkrácený název')).toHaveValue('Tokio');
+      expect(screen.getByLabelText('Bodování')).toHaveValue('winner_only');
+      expect(requestedUrls(fetchMock).some((u) => u.includes('/bgg/import'))).toBe(false);
+      fireEvent.click(screen.getByRole('button', { name: 'Uložit' }));
+      await waitFor(() => expect(sent(fetchMock, 'POST', '/parties/3/games')).toMatchObject({ name: 'Vládce Tokia', shortName: 'Tokio', scoreType: 'winner_only', bggId: null, imageUrl: '/uploads/covers/abc.webp' }));
     });
 
     it('says so when BoardGameGeek is unavailable but still lets the user create a custom game', async () => {

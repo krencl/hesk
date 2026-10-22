@@ -56,6 +56,34 @@ class GameRepository extends ServiceEntityRepository
     }
 
     /**
+     * Hry z ostatních part pro nabídku při zakládání hry (ADR 0021): co se jmenuje stejně, se vrací jednou, a to ta
+     * „nejúplnější“ (s `bgg_id`, s obrázkem). Nejdřív názvy začínající hledaným textem.
+     *
+     * @return list<Game>
+     */
+    public function searchInOtherParties(Party $party, string $query, int $limit): array
+    {
+        $escaped = strtr(mb_strtolower(trim($query)), ['!' => '!!', '%' => '!%', '_' => '!_']);
+
+        $rows = $this->createQueryBuilder('g')
+            ->andWhere('g.party != :party')->setParameter('party', $party)
+            ->andWhere('LOWER(g.name) LIKE :q ESCAPE \'!\'')->setParameter('q', "%$escaped%")
+            ->addSelect('CASE WHEN LOWER(g.name) LIKE :prefix ESCAPE \'!\' THEN 0 ELSE 1 END AS HIDDEN matchRank')->setParameter('prefix', "$escaped%")
+            ->addSelect('CASE WHEN g.bggId IS NULL THEN 1 ELSE 0 END AS HIDDEN noBgg')
+            ->addSelect('CASE WHEN g.imageUrl IS NULL THEN 1 ELSE 0 END AS HIDDEN noImage')
+            ->orderBy('matchRank', 'ASC')->addOrderBy('g.name', 'ASC')->addOrderBy('noBgg', 'ASC')->addOrderBy('noImage', 'ASC')->addOrderBy('g.id', 'ASC')
+            ->setMaxResults(100)
+            ->getQuery()->getResult();
+
+        $unique = [];
+        foreach ($rows as $game) {
+            $unique[mb_strtolower($game->getName())] ??= $game;
+        }
+
+        return \array_slice(array_values($unique), 0, $limit);
+    }
+
+    /**
      * Poslední zápis a počet zápisů pro dané hry (klíč = id hry).
      *
      * @param list<Game> $games
