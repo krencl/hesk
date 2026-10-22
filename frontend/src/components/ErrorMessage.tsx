@@ -11,7 +11,7 @@ const FALLBACK = 'Něco se pokazilo. Zkus to prosím znovu.';
 export function ErrorMessage({ error, inline = false }: { error: unknown; inline?: boolean }) {
   const { showError } = useToasts();
   const e = error instanceof ApiError ? error : null;
-  const message = e ? e.message : FALLBACK;
+  const message = e?.message || FALLBACK;
   const details = e ? e.violations.map((v) => v.message) : [];
 
   useEffect(() => {

@@ -27,7 +27,7 @@ export function GameListPage() {
 
       {games.data && items.length === 0 && (
         <p className="empty">
-          {query ? <>Hledání „<b className="primary">{query}</b>“ nic nenašlo.</> : sessionNumber ? 'V tomhle sezení se nehrála žádná hra.' : 'Zatím tu nejsou žádné hry.'}
+          {query ? <>Hledání „<b className="primary">{query}</b>“ nic nenašlo.</> : sessionNumber ? 'V tomhle sezení se nehrála žádná hra.' : 'Ještě jste nic nehráli, je čas to napravit!'}
           {!query && !sessionNumber && <Link className="btn" to="/games/new">Přidat hru</Link>}
         </p>
       )}

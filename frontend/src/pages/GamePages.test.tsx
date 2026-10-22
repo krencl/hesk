@@ -11,7 +11,7 @@ describe('game list', () => {
   it('redirects the root to the game list', async () => {
     mockApi({ ...base, '/parties/3/games?sort=activity&limit=21&offset=0': { body: [] } });
     renderApp('/');
-    expect(await screen.findByText('Zatím tu nejsou žádné hry.')).toBeInTheDocument();
+    expect(await screen.findByText('Ještě jste nic nehráli, je čas to napravit!')).toBeInTheDocument();
   });
 
   it('shows games without plays and loads further pages on demand', async () => {

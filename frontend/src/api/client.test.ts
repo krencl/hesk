@@ -37,4 +37,11 @@ describe('api client', () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response('<html>Bad gateway</html>', { status: 502, statusText: 'Bad Gateway' })));
     await expect(get('/x')).rejects.toMatchObject({ status: 502, message: 'Bad Gateway' });
   });
+
+  it('gives errors without any text (e.g. HTTP/2 500 with an HTML body) a readable message', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response('<html>Oops</html>', { status: 500, statusText: '' })));
+    await expect(get('/x')).rejects.toMatchObject({ status: 500, message: 'Na serveru nastala chyba (500). Zkus to prosím později.' });
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response('{"error":""}', { status: 500 })));
+    await expect(get('/x')).rejects.toMatchObject({ message: 'Na serveru nastala chyba (500). Zkus to prosím později.' });
+  });
 });

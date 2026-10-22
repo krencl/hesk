@@ -31,7 +31,7 @@ export function GamesPage() {
       {games.error && <div className="pad"><ErrorMessage error={games.error} /></div>}
       {games.isPending && <ListSkeleton />}
       {games.data && items.length === 0 && (
-        <p className="empty">{query ? <>Hledání „<b className="primary">{query}</b>“ nic nenašlo.</> : 'Zatím tu nejsou žádné hry.'}</p>
+        <p className="empty">{query ? <>Hledání „<b className="primary">{query}</b>“ nic nenašlo.</> : 'Ještě jste nic nehráli, je čas to napravit!'}</p>
       )}
 
       <ul className={`list${games.isPlaceholderData ? ' stale' : ''}`}>

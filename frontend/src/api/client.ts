@@ -9,6 +9,10 @@ export class ApiError extends Error {
   }
 }
 
+/** Zpráva pro chybu bez textu (neJSON odpověď; HTTP/2 navíc nemá `statusText`), aby chyba nikdy nebyla bez vysvětlení. */
+const fallbackMessage = (status: number): string =>
+  status >= 500 ? `Na serveru nastala chyba (${status}). Zkus to prosím později.` : `Požadavek se nezdařil (${status}).`;
+
 /** Tenká obálka nad fetch: session cookie, JSON v obou směrech, chyby jako ApiError. */
 export async function request<T>(method: string, path: string, body?: unknown): Promise<T> {
   const res = await fetch(`/api${path}`, {
@@ -30,7 +34,7 @@ export async function request<T>(method: string, path: string, body?: unknown): 
   }
   if (!res.ok) {
     const err = (data ?? {}) as { error?: string; violations?: { field: string; message: string }[] };
-    throw new ApiError(res.status, err.error ?? res.statusText, err.violations);
+    throw new ApiError(res.status, err.error || res.statusText || fallbackMessage(res.status), err.violations);
   }
   return data as T;
 }
