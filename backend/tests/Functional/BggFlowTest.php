@@ -6,8 +6,7 @@ namespace App\Tests\Functional;
 
 use App\Service\Bgg\BggItem;
 use App\Tests\Support\FakeBggClient;
-use Doctrine\ORM\EntityManagerInterface;
-use Doctrine\ORM\Tools\SchemaTool;
+use App\Tests\Support\TestDatabase;
 use Symfony\Bundle\FrameworkBundle\KernelBrowser;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 
@@ -20,10 +19,7 @@ final class BggFlowTest extends WebTestCase
     {
         FakeBggClient::reset();
         $this->client = static::createClient();
-        $em = static::getContainer()->get(EntityManagerInterface::class);
-        $tool = new SchemaTool($em);
-        $tool->dropSchema($em->getMetadataFactory()->getAllMetadata());
-        $tool->createSchema($em->getMetadataFactory()->getAllMetadata());
+        TestDatabase::clear(static::getContainer());
     }
 
     /** @return array<mixed> */

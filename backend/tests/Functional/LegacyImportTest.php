@@ -6,10 +6,10 @@ namespace App\Tests\Functional;
 
 use App\Legacy\ImportReport;
 use App\Legacy\LegacyImporter;
+use App\Tests\Support\TestDatabase;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\DriverManager;
 use Doctrine\ORM\EntityManagerInterface;
-use Doctrine\ORM\Tools\SchemaTool;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 
 /** Import ze staré aplikace: cíl = SQLite se schématem aplikace, zdroj = druhá SQLite se starým schématem. */
@@ -21,12 +21,9 @@ final class LegacyImportTest extends KernelTestCase
     protected function setUp(): void
     {
         self::bootKernel();
+        TestDatabase::clear(static::getContainer());
         $em = static::getContainer()->get(EntityManagerInterface::class);
-        $tool = new SchemaTool($em);
-        $tool->dropSchema($em->getMetadataFactory()->getAllMetadata());
-        $tool->createSchema($em->getMetadataFactory()->getAllMetadata());
         $this->target = $em->getConnection();
-        $this->target->executeStatement('DROP TABLE IF EXISTS legacy_map');
 
         $this->legacy = DriverManager::getConnection(['driver' => 'pdo_sqlite', 'memory' => true]);
         foreach ([

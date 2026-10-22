@@ -4,8 +4,7 @@ declare(strict_types=1);
 
 namespace App\Tests\Functional;
 
-use Doctrine\ORM\EntityManagerInterface;
-use Doctrine\ORM\Tools\SchemaTool;
+use App\Tests\Support\TestDatabase;
 use Symfony\Bundle\FrameworkBundle\KernelBrowser;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
@@ -18,10 +17,7 @@ final class ApiFlowTest extends WebTestCase
     protected function setUp(): void
     {
         $this->client = static::createClient();
-        $em = static::getContainer()->get(EntityManagerInterface::class);
-        $tool = new SchemaTool($em);
-        $tool->dropSchema($em->getMetadataFactory()->getAllMetadata());
-        $tool->createSchema($em->getMetadataFactory()->getAllMetadata());
+        TestDatabase::clear(static::getContainer());
     }
 
     /** @return array<mixed> */
