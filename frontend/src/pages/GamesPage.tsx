@@ -23,7 +23,6 @@ export function GamesPage() {
   return (
     <section className="page">
       <PageTitle>Správa her</PageTitle>
-      <Actions><Link className="btn" to="/games/new">Přidat hru</Link></Actions>
       <div className="list-top">
         <GameSearch partyId={party.id} settings={settings} onChange={patch} />
       </div>
@@ -43,6 +42,8 @@ export function GamesPage() {
       </ul>
 
       <LoadMore hasMore={games.hasNextPage} loading={games.isFetchingNextPage} failed={games.isFetchNextPageError} onLoad={() => games.fetchNextPage()} />
+
+      <Actions><Link className="btn" to="/games/new">Přidat hru</Link></Actions>
     </section>
   );
 }
