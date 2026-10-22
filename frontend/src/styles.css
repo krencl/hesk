@@ -193,6 +193,10 @@ legend { color: var(--secondary); font-size: 0.85rem; padding: 0 0.3rem; }
 button.list-item { width: 100%; margin: 0; padding: 0; border: 0; background: none; font: inherit; text-align: left; cursor: pointer; }
 button.list-item:disabled { opacity: 0.6; cursor: default; }
 .list-item:hover { color: #fff; background: var(--main); }
+/* Řádek, který nejde vybrat (hra už v partě): šedý náhled a lehce šedé pozadí, bez najetí */
+.list-item.inactive, .list-item.inactive:hover { background: rgba(0, 0, 0, 0.04); color: var(--secondary); cursor: default; }
+.list-item.inactive .game-image { filter: grayscale(1); opacity: 0.55; }
+.list-item.inactive:hover .secondary { color: var(--secondary); }
 .list-item:hover .secondary { color: var(--light-blue); }
 .list-item-body { flex: 1; min-width: 0; display: flex; flex-direction: column; padding: 0.5rem 1rem; }
 .game-image { width: var(--image-size); height: var(--image-size); object-fit: cover; flex: none; background: var(--light-gray); }
@@ -302,6 +306,7 @@ a.link:hover { text-decoration: underline; }
 .more { margin: 0.5rem 0 0; border-radius: 0; }
 .load-more { min-height: 3rem; display: grid; place-items: center; }
 .list-top { margin-top: 1rem; }
+.search-field { padding-bottom: 1.5rem; }
 
 /* Detail hry: rozbalovací zápisy */
 .round { border-left: 0.2rem solid transparent; border-bottom: 1px solid transparent; }

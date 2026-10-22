@@ -7,7 +7,7 @@ interface Props {
   name: string;
   /** Řádky pod názvem (`secondary`). */
   children?: ReactNode;
-  /** Odkaz, nebo (bez něj) tlačítko s `onClick`. */
+  /** Odkaz, nebo tlačítko s `onClick`; bez obojího je řádek neaktivní (šedý, nereaguje). */
   to?: string;
   onClick?: () => void;
   disabled?: boolean;
@@ -28,8 +28,10 @@ export function GameListItem({ imageUrl, name, children, to, onClick, disabled }
     <li>
       {to ? (
         <Link to={to} className="list-item">{content}</Link>
-      ) : (
+      ) : onClick ? (
         <button type="button" className="list-item" disabled={disabled} onClick={onClick}>{content}</button>
+      ) : (
+        <div className="list-item inactive">{content}</div>
       )}
     </li>
   );

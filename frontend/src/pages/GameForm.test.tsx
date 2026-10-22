@@ -202,8 +202,11 @@ describe('game form (/games/:id/edit)', () => {
       });
       renderApp('/games/new');
       await type('catan');
-      expect(await screen.findByRole('link', { name: /Catan vlastní/ })).toHaveAttribute('href', '/games/8');
-      expect(screen.getByText('Už v partě')).toBeInTheDocument();
+      expect(await screen.findByText('Už ji máš přidanou v partě')).toBeInTheDocument();
+      // hra, kterou parta už má, je neaktivní: nejde ji vybrat ani otevřít
+      const own = screen.getByText('Catan vlastní').closest('.list-item');
+      expect(own).toHaveClass('inactive');
+      expect(own?.tagName).toBe('DIV');
       expect(screen.getByRole('button', { name: /Catan Junior/ })).toBeInTheDocument();
       expect(screen.getByRole('button', { name: 'Catan (1995)' })).toBeInTheDocument();
       expect(screen.getByRole('button', { name: 'Catan: Seafarers (1997)' })).toBeInTheDocument();

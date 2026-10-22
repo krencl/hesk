@@ -34,7 +34,7 @@ export function BggGameSearch({ partyId, onPick, onLinked, onCustom }: Props) {
 
   return (
     <>
-      <div className="pad form">
+      <div className="pad form search-field">
         <label>
           Název
           <input value={text} onChange={(e) => setText(e.target.value)} maxLength={150} autoComplete="off" enterKeyHint="search" autoFocus />
@@ -66,10 +66,10 @@ export function BggGameSearch({ partyId, onPick, onLinked, onCustom }: Props) {
 }
 
 function Result({ result, disabled, onPick }: { result: BggSearchResult; disabled: boolean; onPick: () => void }) {
-  if (result.source === 'party' && result.gameId) {
+  if (result.source === 'party') {
     return (
-      <GameListItem to={`/games/${result.gameId}`} imageUrl={result.imageUrl} name={result.name}>
-        <span className="secondary">Už v partě</span>
+      <GameListItem imageUrl={result.imageUrl} name={result.name}>
+        <span className="secondary">Už ji máš přidanou v partě</span>
       </GameListItem>
     );
   }
