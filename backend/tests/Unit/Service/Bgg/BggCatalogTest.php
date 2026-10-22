@@ -123,6 +123,8 @@ final class BggCatalogTest extends TestCase
         self::assertSame([['party', 'Tokyo Highway'], ['catalog', 'Tokaido'], ['cache', 'Tokyo Metro']], self::brief($result));
         self::assertNull($result['results'][1]['gameId'], 'hra jiné party se neodkazuje');
         self::assertSame(123, $result['results'][1]['bggId']);
+        self::assertSame('/uploads/covers/abc.webp', $result['results'][1]['imageUrl']);
+        self::assertNull($result['results'][0]['imageUrl']);
         self::assertSame(['shortName' => 'Toka', 'scoreType' => 'fewest_points', 'imageUrl' => '/uploads/covers/abc.webp'], $result['results'][1]['prefill']);
     }
 

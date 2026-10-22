@@ -38,7 +38,7 @@ class BggCatalog
     }
 
     /**
-     * @return array{results: list<array{source: string, name: string, year: int|null, bggId: int|null, gameId: int|null, prefill?: array{shortName: string|null, scoreType: string, imageUrl: string|null}}>, bgg: string}
+     * @return array{results: list<array{source: string, name: string, year: int|null, bggId: int|null, gameId: int|null, imageUrl: string|null, prefill?: array{shortName: string|null, scoreType: string, imageUrl: string|null}}>, bgg: string}
      *                                                                                                                                 `source` je `party` (hra už v partě, `gameId`), `catalog` (hra z jiné party, `prefill` předvyplní formulář), `cache` nebo `bgg`; `bgg` říká, jestli se živé API použilo
      */
     public function search(Party $party, string $query): array
@@ -48,7 +48,7 @@ class BggCatalog
         $seenNames = [];
 
         foreach ($this->games->search($party, $query, GameRepository::SORT_NAME, null, self::PARTY_LIMIT, 0) as $game) {
-            $results[] = ['source' => 'party', 'name' => $game->getName(), 'year' => null, 'bggId' => $game->getBggId(), 'gameId' => $game->getId()];
+            $results[] = ['source' => 'party', 'name' => $game->getName(), 'year' => null, 'bggId' => $game->getBggId(), 'gameId' => $game->getId(), 'imageUrl' => $game->getImageUrl()];
             $seenNames[mb_strtolower($game->getName())] = true;
             if (null !== $game->getBggId()) {
                 $seen[$game->getBggId()] = true;
@@ -64,6 +64,7 @@ class BggCatalog
                 'year' => null,
                 'bggId' => $game->getBggId(),
                 'gameId' => null, // hra patří jiné partě, odkaz na ni nesmí vzniknout
+                'imageUrl' => $game->getImageUrl(),
                 'prefill' => ['shortName' => $game->getShortName(), 'scoreType' => $game->getScoreType()->value, 'imageUrl' => $game->getImageUrl()],
             ];
             $seenNames[mb_strtolower($game->getName())] = true;
@@ -73,7 +74,7 @@ class BggCatalog
         }
         foreach ($this->cache->searchByName($query, BggClient::MAX_RESULTS) as $cached) {
             if (!isset($seen[$cached->getBggId()])) {
-                $results[] = ['source' => 'cache', 'name' => $cached->getName(), 'year' => $cached->getYear(), 'bggId' => $cached->getBggId(), 'gameId' => null];
+                $results[] = ['source' => 'cache', 'name' => $cached->getName(), 'year' => $cached->getYear(), 'bggId' => $cached->getBggId(), 'gameId' => null, 'imageUrl' => $cached->getImageUrl()];
                 $seen[$cached->getBggId()] = true;
             }
         }
@@ -92,7 +93,7 @@ class BggCatalog
         foreach ($items as $item) {
             $this->remember($item);
             if (!isset($seen[$item->id])) {
-                $results[] = ['source' => 'bgg', 'name' => $item->name, 'year' => $item->year, 'bggId' => $item->id, 'gameId' => null];
+                $results[] = ['source' => 'bgg', 'name' => $item->name, 'year' => $item->year, 'bggId' => $item->id, 'gameId' => null, 'imageUrl' => $item->imageUrl];
                 $seen[$item->id] = true;
             }
         }

@@ -185,6 +185,8 @@ export interface BggSearchResult {
   year: number | null;
   bggId: number | null;
   gameId: number | null;
+  /** Obálka k zobrazení: lokální (`/uploads/…`) nebo z BGG CDN; null = žádná. */
+  imageUrl: string | null;
   prefill?: { shortName: string | null; scoreType: GameInput['scoreType']; imageUrl: string | null };
 }
 

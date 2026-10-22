@@ -6,6 +6,7 @@ import type { BggPreparedGame, BggSearchResult } from '../api/types';
 import { useDebounced } from '../lib/useDebounced';
 import { Actions } from './Actions';
 import { ErrorMessage } from './ErrorMessage';
+import { GameImage } from './GameImage';
 
 interface Props {
   partyId: number;
@@ -69,6 +70,7 @@ function Result({ result, disabled, onPick }: { result: BggSearchResult; disable
     return (
       <li>
         <Link className="list-item" to={`/games/${result.gameId}`}>
+          <GameImage url={result.imageUrl} />
           <span className="list-item-body"><span className="h5">{result.name}</span><span className="secondary">Už v partě</span></span>
         </Link>
       </li>
@@ -77,9 +79,10 @@ function Result({ result, disabled, onPick }: { result: BggSearchResult; disable
   return (
     <li>
       <button type="button" className="list-item" disabled={disabled} onClick={onPick}>
+        <GameImage url={result.imageUrl} />
         <span className="list-item-body">
           <span className="h5">{title}</span>
-          {result.source === 'catalog' && <span className="secondary">Z jiné party</span>}
+          {result.source === 'catalog' && <span className="secondary">Z lokální databáze</span>}
         </span>
       </button>
     </li>

@@ -148,9 +148,9 @@ describe('game form (/games/:id/edit)', () => {
         ...search('catan', {
           bgg: 'used',
           results: [
-            { source: 'party', name: 'Catan vlastní', year: null, bggId: null, gameId: 8 },
-            { source: 'cache', name: 'Catan', year: 1995, bggId: 13, gameId: null },
-            { source: 'bgg', name: 'Catan: Seafarers', year: 1997, bggId: 14, gameId: null },
+            { source: 'party', name: 'Catan vlastní', year: null, bggId: null, gameId: 8, imageUrl: '/uploads/covers/own.webp' },
+            { source: 'cache', name: 'Catan', year: 1995, bggId: 13, gameId: null, imageUrl: null },
+            { source: 'bgg', name: 'Catan: Seafarers', year: 1997, bggId: 14, gameId: null, imageUrl: null },
           ],
         }),
       });
@@ -160,6 +160,8 @@ describe('game form (/games/:id/edit)', () => {
       expect(screen.getByText('Už v partě')).toBeInTheDocument();
       expect(screen.getByRole('button', { name: 'Catan (1995)' })).toBeInTheDocument();
       expect(screen.getByRole('button', { name: 'Catan: Seafarers (1997)' })).toBeInTheDocument();
+      const covers = Array.from(screen.getByRole('list', { name: 'Nalezené hry' }).querySelectorAll('img'));
+      expect(covers.map((img) => img.getAttribute('src'))).toEqual(['/uploads/covers/own.webp', expect.stringContaining('cover-placeholder'), expect.stringContaining('cover-placeholder')]);
     });
 
     it('prefills the form from a game of another party without asking the server', async () => {
@@ -167,13 +169,13 @@ describe('game form (/games/:id/edit)', () => {
         ...routes,
         ...search('tok', {
           bgg: 'unavailable',
-          results: [{ source: 'catalog', name: 'Vládce Tokia', year: null, bggId: null, gameId: null, prefill: { shortName: 'Tokio', scoreType: 'winner_only', imageUrl: '/uploads/covers/abc.webp' } }],
+          results: [{ source: 'catalog', name: 'Vládce Tokia', year: null, bggId: null, gameId: null, imageUrl: '/uploads/covers/abc.webp', prefill: { shortName: 'Tokio', scoreType: 'winner_only', imageUrl: '/uploads/covers/abc.webp' } }],
         }),
         'POST /parties/3/games': { status: 201, body: FULL_GAME },
       });
       renderApp('/games/new');
       await type('tok');
-      expect(await screen.findByText('Z jiné party')).toBeInTheDocument();
+      expect(await screen.findByText('Z lokální databáze')).toBeInTheDocument();
       fireEvent.click(screen.getByRole('button', { name: /Vládce Tokia/ }));
 
       expect(screen.getByLabelText('Název')).toHaveValue('Vládce Tokia');
@@ -188,14 +190,14 @@ describe('game form (/games/:id/edit)', () => {
       mockApi({
         ...routes,
         ...search('catan', { bgg: 'used', results: [] }),
-        ...search('tok', { bgg: 'skipped', results: [{ source: 'catalog', name: 'Vládce Tokia', year: null, bggId: null, gameId: null, prefill: { shortName: null, scoreType: 'winner_only', imageUrl: null } }] }),
+        ...search('tok', { bgg: 'skipped', results: [{ source: 'catalog', name: 'Vládce Tokia', year: null, bggId: null, gameId: null, imageUrl: null, prefill: { shortName: null, scoreType: 'winner_only', imageUrl: null } }] }),
       });
       renderApp('/games/new');
       expect(await screen.findByText('Napiš název hry, najdeme ji v databázi, nebo na BoardGameGeek.')).toBeInTheDocument();
       expect(screen.queryByText(/Data her poskytuje/)).not.toBeInTheDocument();
 
       await type('tok');
-      expect(await screen.findByText('Z jiné party')).toBeInTheDocument();
+      expect(await screen.findByText('Z lokální databáze')).toBeInTheDocument();
       expect(screen.queryByText(/Data her poskytuje/)).not.toBeInTheDocument();
 
       await type('catan');
@@ -215,7 +217,7 @@ describe('game form (/games/:id/edit)', () => {
       const cdn = 'https://cf.geekdo-images.com/catan.jpg';
       const fetchMock = mockApi({
         ...routes,
-        ...search('catan', { bgg: 'used', results: [{ source: 'bgg', name: 'Catan', year: 1995, bggId: 13, gameId: null }] }),
+        ...search('catan', { bgg: 'used', results: [{ source: 'bgg', name: 'Catan', year: 1995, bggId: 13, gameId: null, imageUrl: null }] }),
         'POST /parties/3/bgg/import': { body: { bggId: 13, name: 'Catan', bggImageUrl: cdn } },
         'POST /parties/3/game-images': { status: 201, body: { url: '/uploads/covers/abc.webp' } },
         'POST /parties/3/games': { status: 201, body: FULL_GAME },
@@ -252,7 +254,7 @@ describe('game form (/games/:id/edit)', () => {
       stubUrls();
       const fetchMock = mockApi({
         ...routes,
-        ...search('catan', { bgg: 'used', results: [{ source: 'bgg', name: 'Catan', year: 1995, bggId: 13, gameId: null }] }),
+        ...search('catan', { bgg: 'used', results: [{ source: 'bgg', name: 'Catan', year: 1995, bggId: 13, gameId: null, imageUrl: null }] }),
         'POST /parties/3/bgg/import': { body: { bggId: 13, name: 'Catan', bggImageUrl: 'https://cf.geekdo-images.com/catan.jpg' } },
         'POST /parties/3/games': { status: 201, body: FULL_GAME },
       });
