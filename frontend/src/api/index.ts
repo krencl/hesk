@@ -44,7 +44,7 @@ export const api = {
     return post<{ url: string }>(`/parties/${partyId}/game-images`, form);
   },
   /** Hledání hry pro založení: hry party, pak cache BGG, pak živé BGG. */
-  bggSearch: (partyId: number, q: string) => get<BggSearch>(`/parties/${partyId}/bgg/search${queryString({ q })}`),
+  bggSearch: (partyId: number, q: string) => get<BggSearch>(`/parties/${partyId}/game-search${queryString({ q })}`),
   bggImport: (partyId: number, bggId: number) => post<BggPreparedGame>(`/parties/${partyId}/bgg/import`, { bggId }),
   updateGame: (id: number, input: GameInput) => put<Game>(`/games/${id}`, input),
   deleteGame: (id: number) => del(`/games/${id}`),

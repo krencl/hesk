@@ -114,7 +114,7 @@ describe('game form (/games/:id/edit)', () => {
 
   describe('new game: search first', () => {
     const NOTHING = { results: [], bgg: 'used' };
-    const search = (q: string, body: unknown) => ({ [`/parties/3/bgg/search?q=${encodeURIComponent(q)}`]: { body } });
+    const search = (q: string, body: unknown) => ({ [`/parties/3/game-search?q=${encodeURIComponent(q)}`]: { body } });
     const type = async (value: string) => fireEvent.change(await screen.findByLabelText('Název'), { target: { value } });
 
     it('shows only the Name field at first, with no way to create a custom game yet', async () => {

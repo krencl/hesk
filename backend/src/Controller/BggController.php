@@ -19,7 +19,7 @@ use Symfony\Component\HttpKernel\Exception\ServiceUnavailableHttpException;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 
-/** Hledání a převzetí hry z BoardGameGeek při zakládání hry (ADR 0021). */
+/** Hledání hry při zakládání (nejdřív lokální data, potom BoardGameGeek) a převzetí hry z BGG (ADR 0021). */
 final class BggController extends ApiController
 {
     public const MIN_QUERY_LENGTH = 2;
@@ -29,7 +29,7 @@ final class BggController extends ApiController
         parent::__construct($presenter);
     }
 
-    #[Route('/api/parties/{id}/bgg/search', requirements: ['id' => '\d+'], methods: ['GET'])]
+    #[Route('/api/parties/{id}/game-search', requirements: ['id' => '\d+'], methods: ['GET'])]
     #[IsGranted(PartyVoter::VIEW, 'party')]
     public function search(Party $party, Request $request): JsonResponse
     {
