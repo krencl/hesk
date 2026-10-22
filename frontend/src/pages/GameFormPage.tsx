@@ -136,7 +136,7 @@ export function GameFormPage() {
   if (!started) {
     return (
       <section className="page">
-        <PageTitle>Nová hra</PageTitle>
+        <PageTitle>Přidat hru</PageTitle>
         <BggGameSearch partyId={party.id} onPick={pickBgg} onPickLocal={pickLocal} onCustom={startCustom} />
       </section>
     );
@@ -145,7 +145,7 @@ export function GameFormPage() {
 
   return (
     <section className="page">
-      <PageTitle>{gameId ? 'Upravit hru' : 'Nová hra'}</PageTitle>
+      <PageTitle>{gameId ? 'Upravit hru' : 'Přidat hru'}</PageTitle>
       <form className="pad form" onSubmit={submit}>
         <label>Název<input value={form.name} onChange={(e) => set({ name: e.target.value })} maxLength={150} required /></label>
         <label>

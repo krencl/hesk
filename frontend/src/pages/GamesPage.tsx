@@ -23,7 +23,7 @@ export function GamesPage() {
   return (
     <section className="page">
       <PageTitle>Správa her</PageTitle>
-      <Actions><Link className="btn" to="/games/new">Nová hra</Link></Actions>
+      <Actions><Link className="btn" to="/games/new">Přidat hru</Link></Actions>
       <div className="list-top">
         <GameSearch partyId={party.id} settings={settings} onChange={patch} />
       </div>

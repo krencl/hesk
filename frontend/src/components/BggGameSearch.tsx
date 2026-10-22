@@ -37,7 +37,7 @@ export function BggGameSearch({ partyId, onPick, onPickLocal, onCustom }: Props)
           Název
           <input value={text} onChange={(e) => setText(e.target.value)} maxLength={150} autoComplete="off" enterKeyHint="search" autoFocus />
         </label>
-        {!searching && <p className="muted hint">Napiš název hry, najdeme ji na BoardGameGeek.</p>}
+        {!searching && <p className="muted hint">Napiš název hry, najdeme ji v databázi, nebo na BoardGameGeek.</p>}
         {searching && search.isFetching && <p className="muted hint">Hledám…</p>}
         {settled && search.data?.bgg === 'unavailable' && <p className="muted hint">BoardGameGeek teď není dostupné, ukazuji jen hry, které už známe.</p>}
         <ErrorMessage error={search.error ?? pick.error} />
@@ -54,7 +54,7 @@ export function BggGameSearch({ partyId, onPick, onPickLocal, onCustom }: Props)
             Hra tu není? <button type="button" className="link" onClick={() => onCustom(text.trim())}>Založit vlastní hru</button>
           </p>
         )}
-        <p className="muted hint">Data her poskytuje <a href="https://boardgamegeek.com" target="_blank" rel="noreferrer">BoardGameGeek</a>.</p>
+        {settled && search.data?.bgg === 'used' && <p className="muted hint">Data her poskytuje <a href="https://boardgamegeek.com" target="_blank" rel="noreferrer">BoardGameGeek</a>.</p>}
       </div>
       <Actions>
         <Link className="btn outline-secondary" to="/manage/games">Zpět</Link>

@@ -14,7 +14,7 @@ describe('game management (/manage/games)', () => {
     expect(await screen.findByRole('heading', { name: 'Správa her' })).toBeInTheDocument();
     expect(await screen.findByRole('link', { name: /Carcassonne/ })).toHaveAttribute('href', '/games/1/edit');
     expect(screen.getByText('Nejvíc bodů vyhrává')).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Nová hra' })).toHaveAttribute('href', '/games/new');
+    expect(screen.getByRole('link', { name: 'Přidat hru' })).toHaveAttribute('href', '/games/new');
     expect(requestedUrls(fetchMock)).toContain('/parties/3/games?sort=name&limit=21&offset=0');
   });
 

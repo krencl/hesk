@@ -120,7 +120,7 @@ describe('game form (/games/:id/edit)', () => {
     it('shows only the Name field at first, with no way to create a custom game yet', async () => {
       mockApi(routes);
       renderApp('/games/new');
-      expect(await screen.findByRole('heading', { name: 'Nová hra' })).toBeInTheDocument();
+      expect(await screen.findByRole('heading', { name: 'Přidat hru' })).toBeInTheDocument();
       expect(screen.getByLabelText('Název')).toBeInTheDocument();
       expect(screen.queryByLabelText('Zkrácený název')).not.toBeInTheDocument();
       expect(screen.queryByRole('button', { name: 'Uložit' })).not.toBeInTheDocument();
@@ -182,6 +182,24 @@ describe('game form (/games/:id/edit)', () => {
       expect(requestedUrls(fetchMock).some((u) => u.includes('/bgg/import'))).toBe(false);
       fireEvent.click(screen.getByRole('button', { name: 'Uložit' }));
       await waitFor(() => expect(sent(fetchMock, 'POST', '/parties/3/games')).toMatchObject({ name: 'Vládce Tokia', shortName: 'Tokio', scoreType: 'winner_only', bggId: null, imageUrl: '/uploads/covers/abc.webp' }));
+    });
+
+    it('credits BoardGameGeek only once its API was actually called', async () => {
+      mockApi({
+        ...routes,
+        ...search('catan', { bgg: 'used', results: [] }),
+        ...search('tok', { bgg: 'skipped', results: [{ source: 'catalog', name: 'Vládce Tokia', year: null, bggId: null, gameId: null, prefill: { shortName: null, scoreType: 'winner_only', imageUrl: null } }] }),
+      });
+      renderApp('/games/new');
+      expect(await screen.findByText('Napiš název hry, najdeme ji v databázi, nebo na BoardGameGeek.')).toBeInTheDocument();
+      expect(screen.queryByText(/Data her poskytuje/)).not.toBeInTheDocument();
+
+      await type('tok');
+      expect(await screen.findByText('Z jiné party')).toBeInTheDocument();
+      expect(screen.queryByText(/Data her poskytuje/)).not.toBeInTheDocument();
+
+      await type('catan');
+      expect(await screen.findByText(/Data her poskytuje/)).toBeInTheDocument();
     });
 
     it('says so when BoardGameGeek is unavailable but still lets the user create a custom game', async () => {
