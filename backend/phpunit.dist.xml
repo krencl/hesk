@@ -40,5 +40,7 @@
     </source>
 
     <extensions>
+        <!-- umožní mockovat final třídy -->
+        <bootstrap class="DG\BypassFinals\PHPUnitExtension"/>
     </extensions>
 </phpunit>

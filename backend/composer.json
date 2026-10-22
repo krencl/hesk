@@ -79,6 +79,7 @@
         }
     },
     "require-dev": {
+        "dg/bypass-finals": "^1.11",
         "phpunit/phpunit": "^13.4",
         "symfony/browser-kit": "7.4.*",
         "symfony/css-selector": "7.4.*"

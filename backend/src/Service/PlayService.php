@@ -18,7 +18,7 @@ use App\Repository\PlayRepository;
 use Doctrine\ORM\EntityManagerInterface;
 
 /** Vytváření, úprava a mazání zápisů včetně přiřazení do seancí. */
-class PlayService
+final class PlayService
 {
     public function __construct(
         private readonly EntityManagerInterface $em,
