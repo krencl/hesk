@@ -7,6 +7,7 @@ namespace App\Controller;
 use App\Domain\Exception\DomainException;
 use App\Dto\ChangeRoleRequest;
 use App\Dto\CreatePartyRequest;
+use App\Dto\InviteRequest;
 use App\Dto\UpdatePartyRequest;
 use App\Entity\Party;
 use App\Entity\PartyInvitation;
@@ -16,7 +17,6 @@ use App\Security\PartyVoter;
 use App\Service\GuestMerger;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\HttpFoundation\JsonResponse;
-use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Attribute\MapRequestPayload;
 use Symfony\Component\Routing\Attribute\Route;
@@ -69,13 +69,12 @@ final class PartyController extends ApiController
     /** Admin vygeneruje odkaz (token), kterým se může kdokoli přihlášený do party připojit. */
     #[Route('/api/parties/{id}/invitations', requirements: ['id' => '\d+'], methods: ['POST'])]
     #[IsGranted(PartyVoter::ADMIN, 'party')]
-    public function invite(Party $party, Request $request): JsonResponse
+    public function invite(Party $party, #[MapRequestPayload] InviteRequest $req = new InviteRequest()): JsonResponse
     {
         // volitelné {"guestId": …}: pozvánka pro hosta, jehož zápisy se po přijetí převedou na účet pozvaného
         $guest = null;
-        $data = json_decode($request->getContent() ?: 'null', true);
-        if (\is_array($data) && isset($data['guestId'])) {
-            $guest = \is_int($data['guestId']) ? $this->em->find(Player::class, $data['guestId']) : null;
+        if (null !== $req->guestId) {
+            $guest = $this->em->find(Player::class, $req->guestId);
             if (!$guest || $guest->getParty() !== $party || null !== $guest->getUser()) {
                 throw new DomainException('Pozvat jako člena jde jen hosta z této party.');
             }

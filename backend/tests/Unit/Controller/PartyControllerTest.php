@@ -8,6 +8,7 @@ use App\Controller\PartyController;
 use App\Domain\Exception\DomainException;
 use App\Dto\ChangeRoleRequest;
 use App\Dto\CreatePartyRequest;
+use App\Dto\InviteRequest;
 use App\Dto\UpdatePartyRequest;
 use App\Entity\Party;
 use App\Entity\PartyInvitation;
@@ -21,7 +22,6 @@ use App\Tests\Support\DoctrineMocks;
 use App\Tests\Support\Fixtures;
 use Doctrine\ORM\EntityRepository;
 use PHPUnit\Framework\TestCase;
-use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Symfony\Component\Security\Core\Exception\AccessDeniedException;
 
@@ -110,7 +110,7 @@ final class PartyControllerTest extends TestCase
 
     public function testOnlyAdminCreatesInvitations(): void
     {
-        $response = ControllerHarness::as($this->anna)->call($this->controller(), 'invite', ['party' => $this->party, 'request' => new Request()]);
+        $response = ControllerHarness::as($this->anna)->call($this->controller(), 'invite', ['party' => $this->party, 'req' => new InviteRequest()]);
         $invitation = ControllerHarness::json($response);
 
         self::assertSame(201, $response->getStatusCode());
@@ -120,7 +120,7 @@ final class PartyControllerTest extends TestCase
 
         Fixtures::member($this->party, $this->bob, PartyRole::Writer);
         $this->expectException(AccessDeniedException::class);
-        ControllerHarness::as($this->bob)->call($this->controller(), 'invite', ['party' => $this->party, 'request' => new Request()]);
+        ControllerHarness::as($this->bob)->call($this->controller(), 'invite', ['party' => $this->party, 'req' => new InviteRequest()]);
     }
 
     public function testInvitationForAGuestNeedsAGuestOfThisParty(): void
@@ -131,18 +131,17 @@ final class PartyControllerTest extends TestCase
         $foreignGuest = Fixtures::guest(Fixtures::party($foreignOwner, 'Cizí'), 'Host');
         $controller = $this->controller(known: [$host, $annaPlayer, $foreignGuest]);
         $harness = ControllerHarness::as($this->anna);
-        $invite = static fn (mixed $guestId): Request => new Request(content: json_encode(['guestId' => $guestId], \JSON_THROW_ON_ERROR));
 
-        foreach ([$annaPlayer->getId(), 999999, $foreignGuest->getId(), 'abc'] as $bad) {
+        foreach ([$annaPlayer->getId(), 999999, $foreignGuest->getId()] as $bad) {
             try {
-                $harness->call($controller, 'invite', ['party' => $this->party, 'request' => $invite($bad)]);
+                $harness->call($controller, 'invite', ['party' => $this->party, 'req' => new InviteRequest($bad)]);
                 self::fail('Pozvat jde jen hosta z této party.');
             } catch (DomainException) {
                 $this->addToAssertionCount(1);
             }
         }
 
-        self::assertSame(201, $harness->call($controller, 'invite', ['party' => $this->party, 'request' => $invite($host->getId())])->getStatusCode());
+        self::assertSame(201, $harness->call($controller, 'invite', ['party' => $this->party, 'req' => new InviteRequest($host->getId())])->getStatusCode());
         $stored = $this->calls['persist'][0];
         self::assertSame($host, $stored->getGuest());
     }

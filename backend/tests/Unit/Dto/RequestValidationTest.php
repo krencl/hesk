@@ -8,6 +8,7 @@ use App\Dto\BggImportRequest;
 use App\Dto\CreatePartyRequest;
 use App\Dto\DevLoginRequest;
 use App\Dto\GameRequest;
+use App\Dto\InviteRequest;
 use App\Dto\LinkMemberRequest;
 use App\Dto\NamedItemRequest;
 use App\Dto\NicknameRequest;
@@ -50,6 +51,14 @@ final class RequestValidationTest extends TestCase
         }
         self::assertFalse($this->invalid(new CreatePartyRequest('Pátek')));
         self::assertTrue($this->invalid(new CreatePartyRequest('   ')));
+    }
+
+    public function testInvitationGuestIdIsOptionalButPositive(): void
+    {
+        self::assertFalse($this->invalid(new InviteRequest()));
+        self::assertFalse($this->invalid(new InviteRequest(5)));
+        self::assertTrue($this->invalid(new InviteRequest(0)));
+        self::assertTrue($this->invalid(new InviteRequest(-3)));
     }
 
     public function testPlayNeedsPlayersAndEndAfterStart(): void
