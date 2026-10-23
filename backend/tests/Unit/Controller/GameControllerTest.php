@@ -100,6 +100,7 @@ final class GameControllerTest extends TestCase
         $last = $this->lastPlay($dixit);
         $games = $this->createMock(GameRepository::class);
         $games->expects(self::once())->method('search')->with($this->party, 'dix', GameRepository::SORT_NAME, 2, 10, 4)->willReturn([$dixit, $azul]);
+        $games->expects(self::once())->method('preloadDetails')->with($this->party, [$dixit, $azul]);
         $games->method('statsFor')->willReturn([
             $dixit->getId() => ['lastPlay' => $last, 'playCount' => 2],
             $azul->getId() => ['lastPlay' => null, 'playCount' => 0],

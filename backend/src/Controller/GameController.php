@@ -48,6 +48,7 @@ final class GameController extends ApiController
         $limit = $request->query->has('limit') ? max(1, min(100, $request->query->getInt('limit'))) : null;
         $sessionNumber = $request->query->has('sessionNumber') && '' !== $request->query->get('sessionNumber') ? $request->query->getInt('sessionNumber') : null;
         $games = $this->games->search($party, $request->query->get('q'), $sort, $sessionNumber, $limit, max(0, $request->query->getInt('offset')));
+        $this->games->preloadDetails($party, $games);
         $stats = $this->games->statsFor($party, $games);
 
         return new JsonResponse(array_map(

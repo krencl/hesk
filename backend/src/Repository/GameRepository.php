@@ -95,6 +95,26 @@ class GameRepository extends ServiceEntityRepository
     }
 
     /**
+     * Načte najednou to, co výstup seznamu her čte z kolekcí (rozšíření, postavy, tagy a vlastní hráči hry v partě), aby se
+     * kolekce nenačítaly po jedné hře. Každá kolekce má vlastní dotaz (fetch join), takže se nenásobí řádky.
+     *
+     * @param list<Game> $games
+     */
+    public function preloadDetails(Party $party, array $games): void
+    {
+        if ([] === $games) {
+            return;
+        }
+        $em = $this->getEntityManager();
+        foreach (['addons', 'characters', 'tags'] as $collection) {
+            $em->createQuery('SELECT g, x FROM '.Game::class.' g LEFT JOIN g.'.$collection.' x WHERE g IN (:games)')
+                ->setParameter('games', $games)->getResult();
+        }
+        $em->createQuery('SELECT pg, pl FROM '.PartyGame::class.' pg LEFT JOIN pg.players pl WHERE pg.party = :party AND pg.game IN (:games)')
+            ->setParameter('party', $party)->setParameter('games', $games)->getResult();
+    }
+
+    /**
      * Poslední zápis a počet zápisů party pro dané hry (klíč = id hry).
      *
      * @param list<Game> $games

@@ -22,7 +22,7 @@ class PlayRepository extends ServiceEntityRepository
     /** @return list<Play> */
     public function findPage(Party $party, int $limit, int $offset, ?int $gameId = null): array
     {
-        $qb = $this->createQueryBuilder('p')->addSelect('s')->join('p.session', 's')
+        $qb = $this->createQueryBuilder('p')->addSelect('s', 'g')->join('p.session', 's')->join('p.game', 'g')
             ->andWhere('p.party = :party')->setParameter('party', $party)
             ->orderBy('p.startedAt', 'DESC')->addOrderBy('p.id', 'DESC')
             ->setMaxResults($limit)->setFirstResult($offset);
@@ -30,7 +30,32 @@ class PlayRepository extends ServiceEntityRepository
             $qb->andWhere('IDENTITY(p.game) = :game')->setParameter('game', $gameId);
         }
 
-        return $qb->getQuery()->getResult();
+        /** @var list<Play> $plays */
+        $plays = $qb->getQuery()->getResult();
+        $this->preloadDetails($plays);
+
+        return $plays;
+    }
+
+    /**
+     * Načte najednou kolekce, které výstup zápisu čte (výsledky s hráči a postavami, rozšíření, tagy), aby se nenačítaly
+     * po jednom zápisu. Každá kolekce má vlastní dotaz (fetch join), takže se nenásobí řádky. Výsledky se řadí podle
+     * hráče (id), aby pořadí při shodě umístění bylo stálé a stejné, jaké dával dřívější lazy load (unikát play_id + player_id).
+     *
+     * @param list<Play> $plays
+     */
+    public function preloadDetails(array $plays): void
+    {
+        if ([] === $plays) {
+            return;
+        }
+        $em = $this->getEntityManager();
+        $em->createQuery('SELECT p, r, pl, c FROM '.Play::class.' p LEFT JOIN p.results r LEFT JOIN r.player pl LEFT JOIN r.character c WHERE p IN (:plays) ORDER BY pl.id ASC')
+            ->setParameter('plays', $plays)->getResult();
+        foreach (['addons', 'tags'] as $collection) {
+            $em->createQuery('SELECT p, x FROM '.Play::class.' p LEFT JOIN p.'.$collection.' x WHERE p IN (:plays)')
+                ->setParameter('plays', $plays)->getResult();
+        }
     }
 
     /** Počet zápisů hry; s `$party` jen zápisy té party, jinak ze všech part. */
