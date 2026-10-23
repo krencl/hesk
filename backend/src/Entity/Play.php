@@ -13,6 +13,7 @@ use Doctrine\ORM\Mapping as ORM;
 /** Zápis jedné odehrané hry. */
 #[ORM\Entity(repositoryClass: PlayRepository::class)]
 #[ORM\Index(columns: ['party_id', 'started_at'])]
+#[ORM\Index(columns: ['party_id', 'game_id', 'started_at'])]
 class Play
 {
     #[ORM\Id, ORM\GeneratedValue, ORM\Column]
