@@ -12,6 +12,9 @@ interface Props {
   onChange: (items: FilterItem[]) => void;
   query: string;
   onQueryChange: (query: string) => void;
+  /** Pole je zaostřené: prázdné pole nabízí všechny tagy; stránka v tu chvíli skryje grafy. */
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
 }
 
 const RESULT_LIMIT = 20;
@@ -19,9 +22,9 @@ const RESULT_LIMIT = 20;
 /**
  * Filtr statistik: hledání ve hrách party a v tagách her (stejný vzhled jako hledání v seznamu her). Vybraná hra nebo tag
  * se přidá jako „+“ (jen takové hry), klepnutím na štítek se změní na „−“ (bez nich); křížek ho odebere.
- * Výsledky hledání (pod polem) nahrazují grafy, dokud se píše.
+ * Výsledky hledání (pod polem) nahrazují grafy, dokud se píše; zaostřené prázdné pole rovnou nabídne všechny tagy.
  */
-export function StatsFilter({ partyId, items, onChange, query, onQueryChange }: Props) {
+export function StatsFilter({ partyId, items, onChange, query, onQueryChange, open, onOpenChange }: Props) {
   const text = query.trim();
   const debounced = useDebounced(text);
   const tags = useQuery({ queryKey: ['partyGameTags', partyId], queryFn: () => api.partyGameTags(partyId) });
@@ -36,7 +39,7 @@ export function StatsFilter({ partyId, items, onChange, query, onQueryChange }: 
     onQueryChange('');
   };
   const needle = normalize(text);
-  const foundTags = text === '' ? [] : (tags.data ?? []).filter((t) => normalize(t).includes(needle) && !items.some((i) => itemKey(i) === `tag:${t}`));
+  const foundTags = (tags.data ?? []).filter((t) => normalize(t).includes(needle) && !items.some((i) => itemKey(i) === `tag:${t}`));
   const foundGames = text === '' || debounced !== text ? [] : (games.data ?? []).filter((g) => !items.some((i) => itemKey(i) === `game:${g.id}`));
   const searching = text !== '';
   const settled = debounced === text && !games.isFetching;
@@ -56,6 +59,9 @@ export function StatsFilter({ partyId, items, onChange, query, onQueryChange }: 
             placeholder="Hra nebo tag"
             autoComplete="off"
             enterKeyHint="search"
+            onFocus={() => onOpenChange(true)}
+            onBlur={() => onOpenChange(false)}
+            onKeyDown={(e) => e.key === 'Escape' && e.currentTarget.blur()}
           />
         </div>
       </div>
@@ -78,9 +84,10 @@ export function StatsFilter({ partyId, items, onChange, query, onQueryChange }: 
         </div>
       )}
 
-      {searching && (
+      {(searching || open) && (
         <>
-          <ul className="list">
+          {/* mouseDown nesmí vzít zaostření inputu, ať nabídka při výběru nezmizí a jde vybírat dál */}
+          <ul className="list" onMouseDown={(e) => e.preventDefault()}>
             {foundTags.map((tag) => (
               <li key={`tag:${tag}`}>
                 <button type="button" className="list-item" onClick={() => pick({ kind: 'tag', name: tag, mode: 'include' })}>
@@ -97,7 +104,7 @@ export function StatsFilter({ partyId, items, onChange, query, onQueryChange }: 
               </GameListItem>
             ))}
           </ul>
-          {settled && foundTags.length === 0 && foundGames.length === 0 && (
+          {searching && settled && foundTags.length === 0 && foundGames.length === 0 && (
             <p className="empty"><span>Hledání „<b className="primary">{text}</b>“ nic nenašlo.</span></p>
           )}
         </>

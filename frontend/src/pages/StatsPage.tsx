@@ -12,6 +12,7 @@ export function StatsPage() {
   const party = useActiveParty();
   const [items, setItems] = useState<FilterItem[]>([]);
   const [query, setQuery] = useState('');
+  const [searchOpen, setSearchOpen] = useState(false);
   const filter = toStatsQuery(items);
   const { data, isPending, error } = useQuery({
     queryKey: ['stats', party.id, filter],
@@ -23,12 +24,12 @@ export function StatsPage() {
   return (
     <section className="page">
       <PageTitle label="Statistiky">{party.name}</PageTitle>
-      {data && !nothingPlayed && <StatsFilter partyId={party.id} items={items} onChange={setItems} query={query} onQueryChange={setQuery} />}
+      {data && !nothingPlayed && <StatsFilter partyId={party.id} items={items} onChange={setItems} query={query} onQueryChange={setQuery} open={searchOpen} onOpenChange={setSearchOpen} />}
       <div className="pad">
         <ErrorMessage error={error} />
         {isPending && <p className="muted">Načítám…</p>}
         {nothingPlayed && <p className="muted">Ještě jste nic neodehráli, je čas to napravit.</p>}
-        {data && !nothingPlayed && query.trim() === '' && (
+        {data && !nothingPlayed && query.trim() === '' && !searchOpen && (
           data.topGames.length === 0 ? (
             <p className="muted">Žádná odehraná hra neodpovídá filtru.</p>
           ) : (

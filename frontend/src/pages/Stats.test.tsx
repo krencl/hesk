@@ -72,4 +72,33 @@ describe('statistics', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Odebrat Azul z filtru' }));
     expect(screen.queryByRole('button', { name: 'Azul: jen s ním' })).not.toBeInTheDocument();
   });
+
+  it('offers all the tags right away when the empty search field gets the focus', async () => {
+    const fetchMock = mockApi({
+      '/me': { body: ME },
+      '/parties': { body: [PARTY] },
+      '/parties/3/game-tags': { body: ['Rychlovka', 'Strategie'] },
+      '/parties/3/stats': { body: { wins: [{ playerId: 1, name: 'Anna', wins: 3, plays: 5 }], topGames: [{ gameId: 2, name: 'Azul', shortName: null, plays: 4 }] } },
+      '/parties/3/stats?tags%5B%5D=Rychlovka': { body: { wins: [], topGames: [{ gameId: 3, name: 'Caverna', shortName: null, plays: 2 }] } },
+    });
+    renderApp('/stats');
+    expect(await screen.findByText('Azul')).toBeInTheDocument();
+    const search = screen.getByLabelText('Hledat hru nebo tag');
+    expect(screen.queryByRole('button', { name: /Rychlovka/ })).not.toBeInTheDocument();
+
+    fireEvent.focus(search);
+    expect(await screen.findByRole('button', { name: /Rychlovka/ })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Strategie/ })).toBeInTheDocument();
+    expect(screen.queryByText('Azul')).not.toBeInTheDocument();
+
+    // výběr nechá nabídku otevřenou, jen už bez vybraného tagu
+    fireEvent.click(screen.getByRole('button', { name: /Rychlovka/ }));
+    expect(await screen.findByRole('button', { name: 'Rychlovka: jen s ním' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Strategie/ })).toBeInTheDocument();
+    await waitFor(() => expect(requestedUrls(fetchMock)).toContain('/parties/3/stats?tags%5B%5D=Rychlovka'));
+
+    // po opuštění pole se vrátí grafy
+    fireEvent.blur(search);
+    expect(await screen.findByText('Caverna')).toBeInTheDocument();
+  });
 });
