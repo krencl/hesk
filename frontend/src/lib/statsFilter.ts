@@ -1,3 +1,5 @@
+import type { StatsQuery } from '../api/types';
+
 /** Položka filtru statistik: hra nebo tag hry; `include` = jen takové hry (zobrazeno „+“), `exclude` = bez nich („−“). */
 export type FilterItem =
   | { kind: 'game'; id: number; name: string; mode: 'include' | 'exclude' }
@@ -17,7 +19,7 @@ export const toggleItem = (items: FilterItem[], item: FilterItem): FilterItem[] 
   items.map((i) => (itemKey(i) === itemKey(item) ? { ...i, mode: i.mode === 'include' ? 'exclude' : 'include' } : i));
 
 /** Parametry pro `GET /stats`; seřazené, ať je klíč dotazu stabilní. */
-export function toStatsQuery(items: FilterItem[]) {
+export function toStatsQuery(items: FilterItem[]): Required<StatsQuery> {
   const names = (kind: 'tag', mode: FilterItem['mode']) => items.flatMap((i) => (i.kind === kind && i.mode === mode ? [i.name] : [])).sort();
   const ids = (mode: FilterItem['mode']) => items.flatMap((i) => (i.kind === 'game' && i.mode === mode ? [i.id] : [])).sort((a, b) => a - b);
   return { tags: names('tag', 'include'), excludeTags: names('tag', 'exclude'), games: ids('include'), excludeGames: ids('exclude') };

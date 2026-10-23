@@ -1,10 +1,11 @@
-import { useIsFetching, useIsMutating, useQueryClient } from '@tanstack/react-query';
+import { useIsFetching, useIsMutating, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Suspense, useState } from 'react';
 import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useApp } from '../AppContext';
 import { api } from '../api';
 import { pathForSwitchedParty } from '../lib/partyPath';
 import { canWrite } from '../lib/roles';
+import { ErrorMessage } from './ErrorMessage';
 import { Icon } from './Icon';
 import { ListSkeleton } from './Skeleton';
 
@@ -23,11 +24,14 @@ export function Layout() {
     setChangingParty(false);
   }
 
-  const logout = async () => {
-    await api.logout();
-    queryClient.clear();
-    window.location.assign('/');
-  };
+  // Při chybě (server nedostupný) se uživatel neodhlásí, takže se ukáže hláška místo tichého nic.
+  const logout = useMutation({
+    mutationFn: api.logout,
+    onSuccess: () => {
+      queryClient.clear();
+      window.location.assign('/');
+    },
+  });
 
   const shortcut = activeParty ? activeParty.shortName : '?';
   const toggleMenu = () => {
@@ -122,7 +126,8 @@ export function Layout() {
 
           <hr />
           <p className="menu-logout">
-            <button type="button" onClick={logout}>Odhlásit se</button>
+            <button type="button" disabled={logout.isPending} onClick={() => logout.mutate()}>Odhlásit se</button>
+            <ErrorMessage error={logout.error} />
           </p>
         </div>
       </nav>

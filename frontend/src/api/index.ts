@@ -1,5 +1,5 @@
 import { del, get, patch, post, put } from './client';
-import type { BggPreparedGame, BggSearch, Game, GameListQuery, GameWithStats, NamedItemInput, Player, GameInput, SessionInfo, Me, Party, PartyDetail, PartyRole, Play, PlayDefaults, PlayInput, Stats } from './types';
+import type { BggPreparedGame, BggSearch, Game, GameListQuery, GameWithStats, NamedItemInput, Player, GameInput, SessionInfo, Me, Party, PartyDetail, PartyRole, Play, PlayDefaults, PlayInput, Stats, StatsQuery } from './types';
 
 /** Sestaví `?a=1&b=2`; prázdné hodnoty (undefined, null, '') vynechá, pole jde jako `a[]=1&a[]=2`. */
 export function queryString(params: object): string {
@@ -74,7 +74,7 @@ export const api = {
   deletePlay: (id: number) => del(`/plays/${id}`),
 
   /** Statistiky; `tags`/`games` = jen vybrané hry nebo hry s aspoň jedním z tagů, `excludeTags`/`excludeGames` = bez nich. */
-  stats: (partyId: number, filter: { tags?: string[]; excludeTags?: string[]; games?: number[]; excludeGames?: number[] } = {}) => get<Stats>(`/parties/${partyId}/stats${queryString(filter)}`),
+  stats: (partyId: number, filter: StatsQuery = {}) => get<Stats>(`/parties/${partyId}/stats${queryString(filter)}`),
 };
 
 /** Obrázek z BGG CDN přes náš server (stejný origin, takže ho jde načíst do canvasu při ořezu). */

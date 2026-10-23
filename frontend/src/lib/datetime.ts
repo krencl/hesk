@@ -10,10 +10,6 @@ export function fromLocalInput(value: string): string {
   return new Date(value).toISOString();
 }
 
-export function formatDateTime(iso: string): string {
-  return new Date(iso).toLocaleString('cs-CZ', { day: 'numeric', month: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' });
-}
-
 /** Kompaktní tvar jako ve starém prototypu: „6.2.2022 21:06“. */
 export function formatDateTimeShort(iso: string): string {
   const d = new Date(iso);
@@ -26,19 +22,3 @@ export function formatDateShort(iso: string): string {
   return `${d.getDate()}.${d.getMonth() + 1}.${d.getFullYear()}`;
 }
 
-export function formatDate(iso: string): string {
-  return new Date(iso).toLocaleDateString('cs-CZ', { day: 'numeric', month: 'long', year: 'numeric' });
-}
-
-/** Délka mezi dvěma ISO časy, např. „1 h 30 min“; pod minutu vrací prázdný řetězec. */
-export function formatDuration(startIso: string, endIso: string): string {
-  const minutes = Math.round((new Date(endIso).getTime() - new Date(startIso).getTime()) / 60000);
-  if (!Number.isFinite(minutes) || minutes <= 0) return '';
-  const h = Math.floor(minutes / 60);
-  const m = minutes % 60;
-  return [h > 0 ? `${h} h` : '', m > 0 ? `${m} min` : ''].filter(Boolean).join(' ');
-}
-
-export function formatTime(iso: string): string {
-  return new Date(iso).toLocaleTimeString('cs-CZ', { hour: '2-digit', minute: '2-digit' });
-}

@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react';
-import { normalize } from './Autocomplete';
+import { normalize } from '../lib/text';
 import { Icon } from './Icon';
 import { Popup } from './Popup';
 

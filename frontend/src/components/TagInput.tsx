@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { Autocomplete, normalize } from './Autocomplete';
+import { normalize } from '../lib/text';
+import { Autocomplete } from './Autocomplete';
 import { Icon } from './Icon';
 
 interface Props {

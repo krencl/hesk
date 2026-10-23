@@ -3,7 +3,7 @@ import { useRef } from 'react';
 import { api } from '../api';
 import { type FilterItem, addItem, itemKey, removeItem, toggleItem } from '../lib/statsFilter';
 import { useDebounced } from '../lib/useDebounced';
-import { normalize } from './Autocomplete';
+import { normalize } from '../lib/text';
 import { GameListItem } from './GameListItem';
 import { Icon } from './Icon';
 import { qk } from '../api/queryKeys';

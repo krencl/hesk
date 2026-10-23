@@ -70,6 +70,15 @@ describe('App gating', () => {
     expect(screen.getByRole('link', { name: /Carcassonne/ })).toHaveAttribute('href', '/games/1');
   });
 
+  it('keeps the user signed in and shows an error when logging out fails', async () => {
+    mockApi({ '/me': { body: ME }, '/parties': { body: [PARTY] }, 'POST /auth/logout': { status: 500, body: { error: 'Odhlášení selhalo.' } }, '/parties/3/games?sort=activity&limit=21&offset=0': { body: [] } });
+    renderApp();
+    fireEvent.click(await screen.findByRole('button', { name: /Menu – Pátek/ }));
+    fireEvent.click(screen.getByRole('button', { name: 'Odhlásit se' }));
+    expect(await screen.findByText('Odhlášení selhalo.')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Odhlásit se' })).toBeEnabled();
+  });
+
   it('closes the menu when the item of the current page is clicked (the address does not change)', async () => {
     mockApi({ '/me': { body: ME }, '/parties': { body: [PARTY] }, '/parties/3/games?sort=activity&limit=21&offset=0': { body: [] } });
     renderApp();

@@ -1,7 +1,5 @@
 import { type KeyboardEvent, type ReactNode, useId, useRef, useState } from 'react';
-
-/** Porovnání bez ohledu na velikost písmen a diakritiku („kuba“ najde „U Kuby“, „cesky“ najde „český“). */
-export const normalize = (text: string): string => text.normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase().trim();
+import { normalize } from '../lib/text';
 
 interface Props {
   id: string;

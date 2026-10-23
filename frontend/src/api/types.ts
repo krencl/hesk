@@ -178,6 +178,14 @@ export interface PlayDefaults {
   tags: string[];
 }
 
+/** Filtr statistik (hry a tagy zahrnuté / vyloučené); posílá se jako opakované parametry dotazu. */
+export interface StatsQuery {
+  tags?: string[];
+  excludeTags?: string[];
+  games?: number[];
+  excludeGames?: number[];
+}
+
 export interface Stats {
   wins: { playerId: number; name: string; wins: number; plays: number }[];
   topGames: { gameId: number; name: string; shortName: string | null; plays: number }[];

@@ -123,7 +123,7 @@ export function PartyDetailPage() {
         </ConfirmPopup>
       )}
       <Actions>
-        {isAdmin && <button type="button" className="btn" onClick={() => invite.mutate()}>Pozvat hráče</button>}
+        {isAdmin && <button type="button" className="btn" disabled={invite.isPending} onClick={() => invite.mutate()}>Pozvat hráče</button>}
         <Link className="btn outline-secondary" to={LEAVE_PARTY_MANAGEMENT_PATH}>Zrušit</Link>
       </Actions>
     </section>

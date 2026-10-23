@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useActiveParty } from '../AppContext';
 import { api } from '../api';
+import type { PlayInput } from '../api/types';
 import { EmptyState, isNotFound } from '../components/PageState';
 import { PlayForm } from '../components/PlayForm';
 import { ListSkeleton } from '../components/Skeleton';
@@ -36,7 +37,7 @@ export function NewPlayPage() {
   });
 
   const save = useMutation({
-    mutationFn: (input: Parameters<typeof api.createPlay>[1]) => api.createPlay(party.id, input),
+    mutationFn: (input: PlayInput) => api.createPlay(party.id, input),
     onSuccess: async (saved) => {
       await refreshAfterPlayChange(queryClient, party.id, saved.game.id, { leaving: true });
       navigate(`/games/${saved.game.id}`);

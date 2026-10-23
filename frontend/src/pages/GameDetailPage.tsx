@@ -14,6 +14,7 @@ import { ListSkeleton } from '../components/Skeleton';
 import { formatDateShort, formatDateTimeShort } from '../lib/datetime';
 import { canWrite } from '../lib/roles';
 import { useGame } from '../lib/useGame';
+import { isScored } from '../lib/playForm';
 import { formatScore, winners } from '../lib/scoring';
 import { qk } from '../api/queryKeys';
 
@@ -81,7 +82,7 @@ export function GameDetailPage() {
 }
 
 function Round({ play, canEdit, open, onToggle }: { play: Play; canEdit: boolean; open: boolean; onToggle: () => void }) {
-  const scored = play.game.scoreType === 'most_points' || play.game.scoreType === 'fewest_points';
+  const scored = isScored(play.game.scoreType);
   const won = winners(play);
   const winnerScore = scored && won[0]?.score != null ? formatScore(won[0].score) : '';
 

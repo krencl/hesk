@@ -176,7 +176,6 @@ fieldset { border: 1px solid var(--gray); border-radius: var(--radius); padding:
 legend { color: var(--secondary); font-size: 0.85rem; padding: 0 0.3rem; }
 .row { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 0.6rem; }
 .row.stack { grid-template-columns: minmax(0, 1fr); }
-.player-row { display: grid; grid-template-columns: minmax(0, 1fr) 6.5rem; gap: 0.5rem; align-items: center; padding: 0.25rem 0; }
 
 .error { background: #fdecee; color: var(--error); border-radius: var(--radius); padding: 0.6rem 0.8rem; margin: 0.5rem 0; }
 .error ul { margin: 0.3rem 0 0; padding-left: 1.2rem; }
