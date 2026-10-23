@@ -8,6 +8,8 @@ use App\Entity\Game;
 use App\Entity\GameSession;
 use App\Entity\Party;
 use App\Entity\Play;
+use App\Entity\PlayResult;
+use App\Entity\Player;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
@@ -68,6 +70,13 @@ class PlayRepository extends ServiceEntityRepository
         }
 
         return (int) $qb->getQuery()->getSingleScalarResult();
+    }
+
+    /** V kolika zápisech hráč hrál. */
+    public function countForPlayer(Player $player): int
+    {
+        return (int) $this->getEntityManager()->createQuery('SELECT COUNT(r.id) FROM '.PlayResult::class.' r WHERE r.player = :player')
+            ->setParameter('player', $player)->getSingleScalarResult();
     }
 
     /** @return list<Play> */

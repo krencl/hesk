@@ -11,6 +11,7 @@ use App\Entity\PartyInvitation;
 use App\Entity\Player;
 use App\Entity\User;
 use App\Enum\ScoreType;
+use App\Repository\PartyGameRepository;
 use App\Service\GuestMerger;
 use App\Tests\Support\DoctrineMocks;
 use App\Tests\Support\Fixtures;
@@ -57,10 +58,12 @@ final class GuestMergerTest extends TestCase
         $em->method('createQuery')->willReturnCallback(function (string $dql) {
             return str_starts_with($dql, 'SELECT COUNT')
                 ? $this->mockQuery(['getSingleScalarResult' => $this->sharedPlays])
-                : $this->mockQuery(['getResult' => $this->gamesOfHost, 'execute' => 2]);
+                : $this->mockQuery(['execute' => 2]);
         });
+        $partyGames = $this->createStub(PartyGameRepository::class);
+        $partyGames->method('findByPlayer')->willReturnCallback(fn (): array => $this->gamesOfHost);
 
-        return new GuestMerger($em);
+        return new GuestMerger($em, $partyGames);
     }
 
     private function coop(): PartyGame

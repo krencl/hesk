@@ -7,12 +7,13 @@ namespace App\Entity;
 use App\Domain\Exception\DomainException;
 use App\Domain\NameKey;
 use App\Domain\NamedItems;
+use App\Repository\PartyGameRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
 
 /** Hra zařazená do party (ADR 0023): vazba na sdílenou hru z katalogu + údaje, které patří jen partě (vlastní hráči hry). */
-#[ORM\Entity]
+#[ORM\Entity(repositoryClass: PartyGameRepository::class)]
 #[ORM\UniqueConstraint(name: 'uniq_party_game', columns: ['party_id', 'game_id'])]
 class PartyGame
 {

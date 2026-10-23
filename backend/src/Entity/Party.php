@@ -227,6 +227,25 @@ class Party
         $player->rename($name);
     }
 
+    /**
+     * Úprava hosta: jméno a/nebo viditelnost ve výběru hráčů (zadané se změní, `null` zůstane). Člena s účtem upravit nejde.
+     */
+    public function updateGuest(Player $player, ?string $name, ?bool $visible): void
+    {
+        if (null !== $player->getUser()) {
+            throw new DomainException('Člena s účtem tu upravit nejde, jeho jméno se mění přezdívkou.');
+        }
+        if (null === $name && null === $visible) {
+            throw new DomainException('Není co měnit.');
+        }
+        if (null !== $name) {
+            $this->renamePlayer($player, $name);
+        }
+        if (null !== $visible) {
+            $player->setVisible($visible);
+        }
+    }
+
     /** Přejmenuje hráče navázaného na účet podle nové přezdívky, pokud je jméno v partě volné. */
     public function syncPlayerName(User $user): void
     {

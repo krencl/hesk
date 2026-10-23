@@ -5,10 +5,10 @@ declare(strict_types=1);
 namespace App\Service;
 
 use App\Domain\Exception\DomainException;
-use App\Entity\PartyGame;
 use App\Entity\PartyInvitation;
 use App\Entity\Player;
 use App\Entity\PlayResult;
+use App\Repository\PartyGameRepository;
 use Doctrine\ORM\EntityManagerInterface;
 
 /**
@@ -17,7 +17,7 @@ use Doctrine\ORM\EntityManagerInterface;
  */
 final class GuestMerger
 {
-    public function __construct(private readonly EntityManagerInterface $em)
+    public function __construct(private readonly EntityManagerInterface $em, private readonly PartyGameRepository $partyGames)
     {
     }
 
@@ -54,7 +54,7 @@ final class GuestMerger
 
         $this->em->wrapInTransaction(function () use ($guest, $member, $party): void {
             $this->em->createQuery('UPDATE '.PlayResult::class.' r SET r.player = :to WHERE r.player = :from')->setParameters(['to' => $member, 'from' => $guest])->execute();
-            foreach ($this->em->createQuery('SELECT pg FROM '.PartyGame::class.' pg WHERE :guest MEMBER OF pg.players')->setParameter('guest', $guest)->getResult() as $link) {
+            foreach ($this->partyGames->findByPlayer($guest) as $link) {
                 $link->getPlayers()->removeElement($guest);
                 if (!$link->getPlayers()->contains($member)) {
                     $link->getPlayers()->add($member);

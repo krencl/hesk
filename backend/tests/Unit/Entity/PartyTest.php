@@ -212,6 +212,69 @@ final class PartyTest extends TestCase
         self::assertSame('a', $party->findPlayerFor($user)?->getName(), 'jméno je obsazené, hráč zůstává');
     }
 
+    public function testUpdateGuestRenamesAndTogglesVisibilityIndependently(): void
+    {
+        $party = Party::create('Hrajeme', new User('g1', 'a@example.com'));
+        $guest = $party->addGuest('Bob');
+
+        $party->updateGuest($guest, ' Bobík ', null);
+        self::assertSame(['Bobík', true], [$guest->getName(), $guest->isVisible()]);
+
+        $party->updateGuest($guest, null, false);
+        self::assertSame(['Bobík', false], [$guest->getName(), $guest->isVisible()], 'jméno zůstane');
+
+        $party->updateGuest($guest, 'Bobík', true);
+        self::assertSame(['Bobík', true], [$guest->getName(), $guest->isVisible()]);
+    }
+
+    /** @return iterable<string, array{?string, ?bool, string}> */
+    public static function invalidGuestUpdates(): iterable
+    {
+        yield 'není co měnit' => [null, null, 'Není co měnit.'];
+        yield 'prázdné jméno' => ['  ', null, 'Jméno nesmí být prázdné.'];
+        yield 'obsazené jméno' => ['cyril', true, 'Hráč s tímto jménem už v partě existuje.'];
+    }
+
+    #[\PHPUnit\Framework\Attributes\DataProvider('invalidGuestUpdates')]
+    public function testInvalidGuestUpdatesAreRejectedWithoutChanges(?string $name, ?bool $visible, string $message): void
+    {
+        $party = Party::create('Hrajeme', new User('g1', 'a@example.com'));
+        $guest = $party->addGuest('Bob');
+        $party->addGuest('Cyril');
+
+        try {
+            $party->updateGuest($guest, $name, $visible);
+            self::fail('Úprava se musí odmítnout.');
+        } catch (DomainException $e) {
+            self::assertSame($message, $e->getMessage());
+        }
+        self::assertSame(['Bob', true], [$guest->getName(), $guest->isVisible()]);
+    }
+
+    public function testMemberWithAccountCannotBeUpdatedAsGuest(): void
+    {
+        $creator = new User('g1', 'a@example.com');
+        $party = Party::create('Hrajeme', $creator);
+
+        $this->expectException(DomainException::class);
+        $this->expectExceptionMessage('Člena s účtem tu upravit nejde');
+        $party->updateGuest($party->findPlayerFor($creator), null, false);
+    }
+
+    public function testMemberCanBeFoundByUserId(): void
+    {
+        $creator = new User('g1', 'a@example.com');
+        $other = new User('g2', 'b@example.com');
+        (new \ReflectionProperty($creator, 'id'))->setValue($creator, 11);
+        (new \ReflectionProperty($other, 'id'))->setValue($other, 22);
+        $party = Party::create('Hrajeme', $creator);
+        $party->addMember($other);
+
+        self::assertSame($other, $party->findMemberByUserId(22)?->getUser());
+        self::assertSame($creator, $party->findMemberByUserId(11)?->getUser());
+        self::assertNull($party->findMemberByUserId(33));
+    }
+
     public function testSyncPlayerNameFollowsNicknameUnlessTaken(): void
     {
         $user = new User('g1', 'a@example.com');

@@ -9,8 +9,8 @@ use App\Dto\LinkMemberRequest;
 use App\Dto\PlayerNameRequest;
 use App\Dto\UpdatePlayerRequest;
 use App\Entity\Party;
-use App\Entity\PartyGame;
 use App\Entity\Player;
+use App\Repository\PartyGameRepository;
 use App\Repository\PlayRepository;
 use App\Security\PartyVoter;
 use App\Service\GuestMerger;
@@ -25,7 +25,7 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 /** Hráči party: členové s účtem i hosté, které do her zapisujeme. */
 final class PlayerController extends ApiController
 {
-    public function __construct(Presenter $presenter, private readonly EntityManagerInterface $em, private readonly PlayRepository $plays, private readonly GuestMerger $merger)
+    public function __construct(Presenter $presenter, private readonly EntityManagerInterface $em, private readonly PlayRepository $plays, private readonly PartyGameRepository $partyGames, private readonly GuestMerger $merger)
     {
         parent::__construct($presenter);
     }
@@ -56,18 +56,7 @@ final class PlayerController extends ApiController
     public function update(Player $player, #[MapRequestPayload] UpdatePlayerRequest $req): JsonResponse
     {
         $this->denyAccessUnlessGranted(PartyVoter::WRITE, $player->getParty());
-        if (null !== $player->getUser()) {
-            throw new DomainException('Člena s účtem tu upravit nejde, jeho jméno se mění přezdívkou.');
-        }
-        if (null === $req->name && null === $req->visible) {
-            throw new DomainException('Není co měnit.');
-        }
-        if (null !== $req->name) {
-            $player->getParty()->renamePlayer($player, $req->name);
-        }
-        if (null !== $req->visible) {
-            $player->setVisible($req->visible);
-        }
+        $player->getParty()->updateGuest($player, $req->name, $req->visible);
         $this->em->flush();
 
         return new JsonResponse($this->presenter->player($player));
@@ -81,11 +70,11 @@ final class PlayerController extends ApiController
         if (null !== $player->getUser()) {
             throw new DomainException('Člena s účtem nelze smazat, nejdřív ho odeber z party.');
         }
-        $played = $this->plays->playCountsByPlayer($player->getParty())[$player->getId()] ?? 0;
+        $played = $this->plays->countForPlayer($player);
         if ($played > 0) {
             throw new DomainException(sprintf('Host už hrál v %d zápisech, smazat ho nejde.', $played));
         }
-        if ($link = $this->em->createQuery('SELECT pg FROM '.PartyGame::class.' pg WHERE :player MEMBER OF pg.players')->setParameter('player', $player)->setMaxResults(1)->getOneOrNullResult()) {
+        if ($link = $this->partyGames->findByPlayer($player, 1)[0] ?? null) {
             throw new DomainException(sprintf('Host je hráčem hry %s, smazat ho nejde.', $link->getGame()->getName()));
         }
         $this->merger->forgetInvitations($player);
@@ -101,12 +90,7 @@ final class PlayerController extends ApiController
     {
         $party = $player->getParty();
         $this->denyAccessUnlessGranted(PartyVoter::ADMIN, $party);
-        $user = null;
-        foreach ($party->getMembers() as $member) {
-            if ($member->getUser()->getId() === $req->userId) {
-                $user = $member->getUser();
-            }
-        }
+        $user = $party->findMemberByUserId($req->userId)?->getUser();
         $target = $user ? $party->findPlayerFor($user) : null;
         if (!$user || !$target) {
             throw new DomainException('Uživatel není členem této party.');

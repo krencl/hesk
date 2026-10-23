@@ -10,8 +10,11 @@ use App\Dto\LinkMemberRequest;
 use App\Dto\PlayerNameRequest;
 use App\Dto\UpdatePlayerRequest;
 use App\Entity\Party;
+use App\Entity\PartyGame;
+use App\Entity\Player;
 use App\Entity\User;
 use App\Enum\PartyRole;
+use App\Repository\PartyGameRepository;
 use App\Repository\PlayRepository;
 use App\Service\GuestMerger;
 use App\Service\Presenter;
@@ -33,7 +36,7 @@ final class PlayerControllerTest extends TestCase
     private \ArrayObject $calls;
     /** @var array<int, int> hráč => počet zápisů (to, co by vrátil repozitář) */
     private array $counts = [];
-    private ?object $playedGame = null;
+    private ?PartyGame $playedGame = null;
 
     protected function setUp(): void
     {
@@ -50,10 +53,11 @@ final class PlayerControllerTest extends TestCase
     {
         $plays = $this->createStub(PlayRepository::class);
         $plays->method('playCountsByPlayer')->willReturnCallback(fn (): array => $this->counts);
-        $em = $this->mockEm([], $this->calls);
-        $em->method('createQuery')->willReturnCallback(fn () => $this->mockQuery(['getOneOrNullResult' => $this->playedGame]));
+        $plays->method('countForPlayer')->willReturnCallback(fn (Player $p): int => $this->counts[$p->getId()] ?? 0);
+        $partyGames = $this->createStub(PartyGameRepository::class);
+        $partyGames->method('findByPlayer')->willReturnCallback(fn (): array => null === $this->playedGame ? [] : [$this->playedGame]);
 
-        return new PlayerController(new Presenter(), $em, $plays, $merger ?? $this->createStub(GuestMerger::class));
+        return new PlayerController(new Presenter(), $this->mockEm([], $this->calls), $plays, $partyGames, $merger ?? $this->createStub(GuestMerger::class));
     }
 
     public function testListIsSortedByNameAndHasPlayCountsAndVisibility(): void
