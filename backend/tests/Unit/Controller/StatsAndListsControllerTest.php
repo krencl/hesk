@@ -13,6 +13,7 @@ use App\Entity\Tag;
 use App\Entity\User;
 use App\Repository\GameSessionRepository;
 use App\Repository\PlayRepository;
+use App\Repository\StatsFilter;
 use App\Service\Presenter;
 use App\Tests\Support\ControllerHarness;
 use App\Tests\Support\DoctrineMocks;
@@ -44,8 +45,8 @@ final class StatsAndListsControllerTest extends TestCase
         $wins = [['playerId' => 1, 'name' => 'Anna', 'wins' => 2, 'plays' => 3], ['playerId' => 2, 'name' => 'Bob', 'wins' => 1, 'plays' => 3]];
         $top = [['gameId' => 5, 'name' => 'King of Tokyo', 'shortName' => 'Tokyo', 'plays' => 3]];
         $plays = $this->createMock(PlayRepository::class);
-        $plays->expects(self::once())->method('winsPerPlayer')->with($this->party, [], [])->willReturn($wins);
-        $plays->expects(self::once())->method('topGames')->with($this->party, 10, [], [])->willReturn($top);
+        $plays->expects(self::once())->method('winsPerPlayer')->with($this->party, new StatsFilter())->willReturn($wins);
+        $plays->expects(self::once())->method('topGames')->with($this->party, 10, new StatsFilter())->willReturn($top);
 
         $response = ControllerHarness::as($this->anna)->call(new StatsController(new Presenter(), $plays), '__invoke', ['party' => $this->party, 'request' => new Request()]);
 
@@ -58,12 +59,13 @@ final class StatsAndListsControllerTest extends TestCase
         ControllerHarness::as($this->eve)->call(new StatsController(new Presenter(), $this->createStub(PlayRepository::class)), '__invoke', ['party' => $this->party, 'request' => new Request()]);
     }
 
-    public function testStatsCanBeFilteredByGameTags(): void
+    public function testStatsCanBeFilteredByGamesAndGameTags(): void
     {
+        $filter = new StatsFilter(['Strategie'], ['Rychlovka', 'Párty'], [4, 7], [9]);
         $plays = $this->createMock(PlayRepository::class);
-        $plays->expects(self::once())->method('winsPerPlayer')->with($this->party, ['Strategie'], ['Rychlovka', 'Párty'])->willReturn([]);
-        $plays->expects(self::once())->method('topGames')->with($this->party, 10, ['Strategie'], ['Rychlovka', 'Párty'])->willReturn([]);
-        $request = new Request(['tags' => ['Strategie', ' ', 'Strategie'], 'excludeTags' => ['Rychlovka', 'Párty']]);
+        $plays->expects(self::once())->method('winsPerPlayer')->with($this->party, $filter)->willReturn([]);
+        $plays->expects(self::once())->method('topGames')->with($this->party, 10, $filter)->willReturn([]);
+        $request = new Request(['tags' => ['Strategie', ' ', 'Strategie'], 'excludeTags' => ['Rychlovka', 'Párty'], 'games' => ['4', '7', 'x', '4'], 'excludeGames' => ['9']]);
 
         ControllerHarness::as($this->anna)->call(new StatsController(new Presenter(), $plays), '__invoke', ['party' => $this->party, 'request' => $request]);
     }

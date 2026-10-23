@@ -73,8 +73,8 @@ export const api = {
   updatePlay: (id: number, input: PlayInput) => put<Play>(`/plays/${id}`, input),
   deletePlay: (id: number) => del(`/plays/${id}`),
 
-  /** Statistiky; `tags` = jen hry s aspoň jedním z tagů, `excludeTags` = bez her s kterýmkoli z nich. */
-  stats: (partyId: number, filter: { tags?: string[]; excludeTags?: string[] } = {}) => get<Stats>(`/parties/${partyId}/stats${queryString(filter)}`),
+  /** Statistiky; `tags`/`games` = jen vybrané hry nebo hry s aspoň jedním z tagů, `excludeTags`/`excludeGames` = bez nich. */
+  stats: (partyId: number, filter: { tags?: string[]; excludeTags?: string[]; games?: number[]; excludeGames?: number[] } = {}) => get<Stats>(`/parties/${partyId}/stats${queryString(filter)}`),
 };
 
 /** Obrázek z BGG CDN přes náš server (stejný origin, takže ho jde načíst do canvasu při ořezu). */

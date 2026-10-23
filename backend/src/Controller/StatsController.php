@@ -6,6 +6,7 @@ namespace App\Controller;
 
 use App\Entity\Party;
 use App\Repository\PlayRepository;
+use App\Repository\StatsFilter;
 use App\Security\PartyVoter;
 use App\Service\Presenter;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -24,24 +25,34 @@ final class StatsController extends ApiController
     #[IsGranted(PartyVoter::VIEW, 'party')]
     public function __invoke(Party $party, Request $request): JsonResponse
     {
-        $include = $this->tagNames($request, 'tags');
-        $exclude = $this->tagNames($request, 'excludeTags');
+        $filter = new StatsFilter(
+            $this->names($request, 'tags'),
+            $this->names($request, 'excludeTags'),
+            $this->ids($request, 'games'),
+            $this->ids($request, 'excludeGames'),
+        );
 
         return new JsonResponse([
-            'wins' => $this->plays->winsPerPlayer($party, $include, $exclude),
-            'topGames' => $this->plays->topGames($party, 10, $include, $exclude),
+            'wins' => $this->plays->winsPerPlayer($party, $filter),
+            'topGames' => $this->plays->topGames($party, 10, $filter),
         ]);
     }
 
     /**
-     * Filtr podle tagů her: `tags[]` = jen hry s aspoň jedním z nich, `excludeTags[]` = bez her s kterýmkoli z nich.
+     * Filtr podle her a tagů her (`tags[]`, `excludeTags[]`, `games[]`, `excludeGames[]`), viz `StatsFilter`.
      *
      * @return list<string>
      */
-    private function tagNames(Request $request, string $key): array
+    private function names(Request $request, string $key): array
     {
         $names = array_filter(array_map(static fn (mixed $n): string => trim((string) $n), (array) $request->query->all($key)), static fn (string $n): bool => '' !== $n);
 
         return array_values(array_unique($names));
+    }
+
+    /** @return list<int> */
+    private function ids(Request $request, string $key): array
+    {
+        return array_values(array_unique(array_map('intval', array_filter((array) $request->query->all($key), static fn (mixed $v): bool => is_numeric($v)))));
     }
 }

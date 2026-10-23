@@ -72,69 +72,73 @@ class PlayRepository extends ServiceEntityRepository
     }
 
     /**
-     * Výhry hráčů; `$includeTags` nechá jen zápisy her s aspoň jedním z tagů, `$excludeTags` vyřadí hry s kterýmkoli z nich.
-     *
-     * @param list<string> $includeTags
-     * @param list<string> $excludeTags
+     * Výhry hráčů v partě (volitelně jen zápisy odpovídající filtru her a tagů).
      *
      * @return list<array{playerId: int, name: string, wins: int, plays: int}>
      */
-    public function winsPerPlayer(Party $party, array $includeTags = [], array $excludeTags = []): array
+    public function winsPerPlayer(Party $party, StatsFilter $filter = new StatsFilter()): array
     {
         $query = $this->getEntityManager()->createQuery(
             'SELECT pl.id AS playerId, pl.name AS name, COUNT(r.id) AS plays, SUM(CASE WHEN r.winner = true THEN 1 ELSE 0 END) AS wins
              FROM App\Entity\PlayResult r JOIN r.play p JOIN r.player pl
-             WHERE p.party = :party'.$this->tagFilterDql($includeTags, $excludeTags).' GROUP BY pl.id, pl.name ORDER BY wins DESC, plays DESC',
+             WHERE p.party = :party'.$this->filterDql($filter).' GROUP BY pl.id, pl.name ORDER BY wins DESC, plays DESC',
         )->setParameter('party', $party);
-        $rows = $this->bindTagFilter($query, $includeTags, $excludeTags)->getArrayResult();
+        $rows = $this->bindFilter($query, $filter)->getArrayResult();
 
         return array_map(static fn (array $r): array => [
             'playerId' => (int) $r['playerId'], 'name' => $r['name'], 'wins' => (int) $r['wins'], 'plays' => (int) $r['plays'],
         ], $rows);
     }
 
-    /**
-     * @param list<string> $includeTags
-     * @param list<string> $excludeTags
-     *
-     * @return list<array{gameId: int, name: string, shortName: ?string, plays: int}>
-     */
-    public function topGames(Party $party, int $limit = 10, array $includeTags = [], array $excludeTags = []): array
+    /** @return list<array{gameId: int, name: string, shortName: ?string, plays: int}> */
+    public function topGames(Party $party, int $limit = 10, StatsFilter $filter = new StatsFilter()): array
     {
         $query = $this->getEntityManager()->createQuery(
             'SELECT g.id AS gameId, g.name AS name, g.shortName AS shortName, COUNT(p.id) AS plays
-             FROM App\Entity\Play p JOIN p.game g WHERE p.party = :party'.$this->tagFilterDql($includeTags, $excludeTags).'
+             FROM App\Entity\Play p JOIN p.game g WHERE p.party = :party'.$this->filterDql($filter).'
              GROUP BY g.id, g.name, g.shortName ORDER BY plays DESC, g.name ASC',
         )->setParameter('party', $party)->setMaxResults($limit);
-        $rows = $this->bindTagFilter($query, $includeTags, $excludeTags)->getArrayResult();
+        $rows = $this->bindFilter($query, $filter)->getArrayResult();
 
         return array_map(static fn (array $r): array => [
             'gameId' => (int) $r['gameId'], 'name' => $r['name'], 'shortName' => $r['shortName'], 'plays' => (int) $r['plays'],
         ], $rows);
     }
 
-    /** Podmínky na tagy hry zápisu (alias zápisu je `p`). */
-    private function tagFilterDql(array $includeTags, array $excludeTags): string
+    /** Podmínky filtru na hru zápisu (alias zápisu je `p`); poddotazy mají unikátní aliasy, ať jdou použít vedle sebe. */
+    private function filterDql(StatsFilter $filter): string
     {
-        $exists = static fn (string $param): string => ' AND %sEXISTS (SELECT 1 FROM App\Entity\Game g_'.$param.' JOIN g_'.$param.'.tags t_'.$param.' WHERE g_'.$param.' = p.game AND t_'.$param.'.name IN (:'.$param.'))';
+        $match = static function (array $games, array $tags, string $suffix): string {
+            $parts = [];
+            if ([] !== $games) {
+                $parts[] = 'IDENTITY(p.game) IN (:'.$suffix.'Games)';
+            }
+            if ([] !== $tags) {
+                $parts[] = 'EXISTS (SELECT 1 FROM App\Entity\Game g_'.$suffix.' JOIN g_'.$suffix.'.tags t_'.$suffix.' WHERE g_'.$suffix.' = p.game AND t_'.$suffix.'.name IN (:'.$suffix.'Tags))';
+            }
+
+            return implode(' OR ', $parts);
+        };
         $dql = '';
-        if ([] !== $includeTags) {
-            $dql .= sprintf($exists('includeTags'), '');
+        if ([] !== $filter->includeGames || [] !== $filter->includeTags) {
+            $dql .= ' AND ('.$match($filter->includeGames, $filter->includeTags, 'include').')';
         }
-        if ([] !== $excludeTags) {
-            $dql .= sprintf($exists('excludeTags'), 'NOT ');
+        if ([] !== $filter->excludeGames || [] !== $filter->excludeTags) {
+            $dql .= ' AND NOT ('.$match($filter->excludeGames, $filter->excludeTags, 'exclude').')';
         }
 
         return $dql;
     }
 
-    private function bindTagFilter(\Doctrine\ORM\Query $query, array $includeTags, array $excludeTags): \Doctrine\ORM\Query
+    private function bindFilter(\Doctrine\ORM\Query $query, StatsFilter $filter): \Doctrine\ORM\Query
     {
-        if ([] !== $includeTags) {
-            $query->setParameter('includeTags', $includeTags);
-        }
-        if ([] !== $excludeTags) {
-            $query->setParameter('excludeTags', $excludeTags);
+        foreach (['include' => [$filter->includeGames, $filter->includeTags], 'exclude' => [$filter->excludeGames, $filter->excludeTags]] as $suffix => [$games, $tags]) {
+            if ([] !== $games) {
+                $query->setParameter($suffix.'Games', $games);
+            }
+            if ([] !== $tags) {
+                $query->setParameter($suffix.'Tags', $tags);
+            }
         }
 
         return $query;

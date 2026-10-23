@@ -1,0 +1,107 @@
+import { useQuery } from '@tanstack/react-query';
+import { api } from '../api';
+import { type FilterItem, addItem, itemKey, removeItem, toggleItem } from '../lib/statsFilter';
+import { useDebounced } from '../lib/useDebounced';
+import { normalize } from './Autocomplete';
+import { GameListItem } from './GameListItem';
+import { Icon } from './Icon';
+
+interface Props {
+  partyId: number;
+  items: FilterItem[];
+  onChange: (items: FilterItem[]) => void;
+  query: string;
+  onQueryChange: (query: string) => void;
+}
+
+const RESULT_LIMIT = 20;
+
+/**
+ * Filtr statistik: hledání ve hrách party a v tagách her (stejný vzhled jako hledání v seznamu her). Vybraná hra nebo tag
+ * se přidá jako „+“ (jen takové hry), klepnutím na štítek se změní na „−“ (bez nich); křížek ho odebere.
+ * Výsledky hledání (pod polem) nahrazují grafy, dokud se píše.
+ */
+export function StatsFilter({ partyId, items, onChange, query, onQueryChange }: Props) {
+  const text = query.trim();
+  const debounced = useDebounced(text);
+  const tags = useQuery({ queryKey: ['partyGameTags', partyId], queryFn: () => api.partyGameTags(partyId) });
+  const games = useQuery({
+    queryKey: ['games', partyId, 'statsFilter', debounced],
+    queryFn: () => api.games(partyId, { q: debounced, sort: 'name', limit: RESULT_LIMIT }),
+    enabled: debounced !== '',
+  });
+
+  const pick = (item: FilterItem) => {
+    onChange(addItem(items, item));
+    onQueryChange('');
+  };
+  const needle = normalize(text);
+  const foundTags = text === '' ? [] : (tags.data ?? []).filter((t) => normalize(t).includes(needle) && !items.some((i) => itemKey(i) === `tag:${t}`));
+  const foundGames = text === '' || debounced !== text ? [] : (games.data ?? []).filter((g) => !items.some((i) => itemKey(i) === `game:${g.id}`));
+  const searching = text !== '';
+  const settled = debounced === text && !games.isFetching;
+
+  return (
+    <>
+      <div className="search">
+        <div className="search-row">
+          <button type="button" className="search-icon" aria-label={text ? 'Smazat hledání' : 'Hledání'} onClick={() => onQueryChange('')}>
+            <Icon name={text ? 'close' : 'search'} />
+          </button>
+          <input
+            type="search"
+            value={query}
+            onChange={(e) => onQueryChange(e.target.value)}
+            aria-label="Hledat hru nebo tag"
+            placeholder="Hra nebo tag"
+            autoComplete="off"
+            enterKeyHint="search"
+          />
+        </div>
+      </div>
+
+      {items.length > 0 && (
+        <div className="chips filter-chips" role="group" aria-label="Filtr statistik">
+          {items.map((item) => {
+            const sign = item.mode === 'include' ? '+' : '−';
+            return (
+              <span key={itemKey(item)} className={`filter-chip ${item.mode}`}>
+                <button type="button" className="filter-chip-toggle" aria-label={`${item.name}: ${item.mode === 'include' ? 'jen s ním' : 'bez něj'}`} onClick={() => onChange(toggleItem(items, item))}>
+                  {sign} {item.name}
+                </button>
+                <button type="button" className="filter-chip-remove" aria-label={`Odebrat ${item.name} z filtru`} onClick={() => onChange(removeItem(items, item))}>
+                  <Icon name="close" />
+                </button>
+              </span>
+            );
+          })}
+        </div>
+      )}
+
+      {searching && (
+        <>
+          <ul className="list">
+            {foundTags.map((tag) => (
+              <li key={`tag:${tag}`}>
+                <button type="button" className="list-item" onClick={() => pick({ kind: 'tag', name: tag, mode: 'include' })}>
+                  <span className="list-item-body">
+                    <strong className="h5">{tag}</strong>
+                    <span className="secondary">Tag her</span>
+                  </span>
+                </button>
+              </li>
+            ))}
+            {foundGames.map((game) => (
+              <GameListItem key={game.id} imageUrl={game.imageUrl} name={game.name} onClick={() => pick({ kind: 'game', id: game.id, name: game.name, mode: 'include' })}>
+                <span className="secondary">Hra</span>
+              </GameListItem>
+            ))}
+          </ul>
+          {settled && foundTags.length === 0 && foundGames.length === 0 && (
+            <p className="empty"><span>Hledání „<b className="primary">{text}</b>“ nic nenašlo.</span></p>
+          )}
+        </>
+      )}
+    </>
+  );
+}
