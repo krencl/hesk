@@ -114,7 +114,7 @@ final class LegacyImportTest extends KernelTestCase
     private function snapshot(): array
     {
         $out = [];
-        foreach (['app_user', 'party', 'party_member', 'player', 'game', 'party_game', 'party_game_player', 'game_tag', 'game_game_tag', 'game_addon', 'game_character', 'tag', 'game_session', 'play', 'play_addon', 'play_tag', 'play_result', 'legacy_map'] as $t) {
+        foreach (['app_user', 'party', 'party_member', 'player', 'game', 'party_game', 'party_game_player', 'game_tag', 'game_game_tag', 'game_addon', 'game_character', 'play_tag', 'game_session', 'play', 'play_addon', 'play_play_tag', 'play_result', 'legacy_map'] as $t) {
             $out[$t] = $this->rowCount($t);
         }
 
@@ -180,7 +180,7 @@ final class LegacyImportTest extends KernelTestCase
         // rozšíření a tag zápisu
         self::assertSame(['Power Up'], $this->target->fetchFirstColumn('SELECT a.name FROM play_addon pa JOIN game_addon a ON a.id = pa.game_addon_id WHERE pa.play_id = 1001'));
         self::assertSame([], $this->target->fetchFirstColumn('SELECT 1 FROM play_addon WHERE play_id = 1000'), 'base version is not an extension');
-        self::assertSame(['víkend'], $this->target->fetchFirstColumn('SELECT t.name FROM play_tag pt JOIN tag t ON t.id = pt.tag_id WHERE pt.play_id = 1001'));
+        self::assertSame(['víkend'], $this->target->fetchFirstColumn('SELECT t.name FROM play_play_tag pt JOIN play_tag t ON t.id = pt.tag_id WHERE pt.play_id = 1001'));
     }
 
     public function testRepeatedImportChangesNothing(): void
@@ -229,7 +229,7 @@ final class LegacyImportTest extends KernelTestCase
         $game = $this->rows("SELECT id, name, short_name FROM game WHERE name LIKE 'King%'");
         self::assertSame([['id' => $game[0]['id'], 'name' => 'King of Tokyo 2', 'short_name' => 'KoT']], $game, 'renamed in place, not duplicated');
         self::assertSame(['Gigazaur', 'Kraken', 'Pandakai'], $this->target->fetchFirstColumn('SELECT name FROM game_character WHERE game_id = ? ORDER BY id', [$game[0]['id']]));
-        self::assertSame([], $this->target->fetchFirstColumn('SELECT 1 FROM play_tag WHERE play_id = 1001'), 'tag removed from the play');
+        self::assertSame([], $this->target->fetchFirstColumn('SELECT 1 FROM play_play_tag WHERE play_id = 1001'), 'tag removed from the play');
         self::assertSame([['number' => 2]], $this->rows('SELECT number FROM game_session WHERE party_id = 1 AND number = 2'));
 
         // co vzniklo jen v nové aplikaci, zůstalo

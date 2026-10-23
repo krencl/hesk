@@ -32,7 +32,7 @@ class Play
 
     /** @var Collection<int, Tag> */
     #[ORM\ManyToMany(targetEntity: Tag::class)]
-    #[ORM\JoinTable(name: 'play_tag')]
+    #[ORM\JoinTable(name: 'play_play_tag')]
     private Collection $tags;
 
     /** @var Collection<int, PlayResult> */

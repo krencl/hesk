@@ -118,7 +118,7 @@ final class LegacyImporter
                 if (!\in_array((string) $key, $alive, true)) {
                     if ('play' === $entity) {
                         // závislé řádky mažeme sami, ať nezáleží na kaskádě v databázi
-                        foreach (['play_result', 'play_tag', 'play_addon'] as $child) {
+                        foreach (['play_result', 'play_play_tag', 'play_addon'] as $child) {
                             $this->target->delete($child, ['play_id' => $id]);
                         }
                     }
@@ -414,7 +414,7 @@ final class LegacyImporter
             if (null === $partyId || '' === $tName) {
                 continue;
             }
-            $this->upsert('tag', "$tagId:$legacyPartyId", 'tag', fn () => $this->findId('SELECT id FROM tag WHERE party_id = ? AND LOWER(name) = LOWER(?)', [$partyId, $tName]), ['party_id' => $partyId, 'name' => $tName]);
+            $this->upsert('tag', "$tagId:$legacyPartyId", 'play_tag', fn () => $this->findId('SELECT id FROM play_tag WHERE party_id = ? AND LOWER(name) = LOWER(?)', [$partyId, $tName]), ['party_id' => $partyId, 'name' => $tName]);
         }
     }
 
@@ -480,7 +480,7 @@ final class LegacyImporter
             }
             $this->syncLinks('play_addon', 'game_addon_id', $playId, null === $addon ? [] : [$addon]);
             $tagIds = array_values(array_filter(array_map(fn (int $t) => $this->map('tag', "$t:$legacyParty"), $tagsByRound[$roundId] ?? [])));
-            $this->syncLinks('play_tag', 'tag_id', $playId, $tagIds);
+            $this->syncLinks('play_play_tag', 'tag_id', $playId, $tagIds);
 
             $this->importResults($d, $r, $playId, $partyId, $gameId);
         }

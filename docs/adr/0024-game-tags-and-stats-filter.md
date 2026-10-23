@@ -3,7 +3,7 @@
 Stav: přijato (2026-10-23)
 
 ## Kontext
-Stará aplikace měla dva druhy tagů: tagy zápisů (`tag.type = round`, např. místo a příležitost; v nové aplikaci `Tag`, ADR 0004) a tagy her (`type = game`, tabulka `tag_game`: „Rychlovka“, „Strategie“, „Karetní“, …). Import tagy her zahazoval a statistiky se nedaly omezit. Stará aplikace uměla statistiky filtrovat podle tagů her (`gameTag`, `gameTagNot`).
+Stará aplikace měla dva druhy tagů: tagy zápisů (`tag.type = round`, např. místo a příležitost; v nové aplikaci `Tag`, ADR 0004; tabulka `play_tag`, spojení se zápisem `play_play_tag` – shodně s `game_tag`/`game_game_tag`) a tagy her (`type = game`, tabulka `tag_game`: „Rychlovka“, „Strategie“, „Karetní“, …). Import tagy her zahazoval a statistiky se nedaly omezit. Stará aplikace uměla statistiky filtrovat podle tagů her (`gameTag`, `gameTagNot`).
 
 ## Rozhodnutí
 - **Tagy her patří hře v katalogu** (ADR 0023), ne partě: entita `GameTag` (`name` unikátní bez ohledu na velikost písmen), vazba `Game::tags` (M:N, tabulka `game_game_tag`). Jsou oddělené od tagů zápisů (`Tag`, per parta), aby se nepletlo „Rychlovka“ s „Skalka“.

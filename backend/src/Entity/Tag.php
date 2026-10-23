@@ -7,6 +7,7 @@ namespace App\Entity;
 use Doctrine\ORM\Mapping as ORM;
 
 #[ORM\Entity]
+#[ORM\Table(name: 'play_tag')]
 #[ORM\UniqueConstraint(columns: ['party_id', 'name'])]
 class Tag
 {
