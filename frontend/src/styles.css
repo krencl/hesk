@@ -534,6 +534,10 @@ input[type='datetime-local'] { font-size: 0.9rem; padding-left: 0.4rem; padding-
 .crop-zoom input { width: 100%; }
 .cover-field { display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; }
 .cover-field .btn { margin: 0; }
+.list > li.with-actions { display: flex; align-items: center; }
+.with-actions > .list-item { flex: 1; min-width: 0; }
+.list-item-actions { display: flex; gap: 0.5rem; padding: 0 1rem 0 0.5rem; }
+.list-item-actions .btn { min-width: 2rem; }
 .filter-chips { flex-wrap: wrap; padding: 0.5rem 1rem; }
 .filter-chip { display: inline-flex; align-items: center; font-size: 0.875rem; border: 1px solid var(--gray); border-radius: 1rem; overflow: hidden; background: #fff; color: var(--secondary); }
 .filter-chip button { display: inline-flex; align-items: center; font: inherit; color: inherit; background: none; border: 0; cursor: pointer; }

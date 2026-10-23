@@ -11,10 +11,12 @@ interface Props {
   to?: string;
   onClick?: () => void;
   disabled?: boolean;
+  /** Tlačítka vpravo od řádku (vedle něj, ne uvnitř, ať nejsou tlačítka v tlačítku). */
+  actions?: ReactNode;
 }
 
 /** Řádek se hrou (obálka, název, podtitul): společný seznamu her, správě her i hledání při přidání hry. */
-export function GameListItem({ imageUrl, name, children, to, onClick, disabled }: Props) {
+export function GameListItem({ imageUrl, name, children, to, onClick, disabled, actions }: Props) {
   const content = (
     <>
       <GameImage url={imageUrl} />
@@ -25,7 +27,7 @@ export function GameListItem({ imageUrl, name, children, to, onClick, disabled }
     </>
   );
   return (
-    <li>
+    <li className={actions ? 'with-actions' : undefined}>
       {to ? (
         <Link to={to} className="list-item">{content}</Link>
       ) : onClick ? (
@@ -33,6 +35,7 @@ export function GameListItem({ imageUrl, name, children, to, onClick, disabled }
       ) : (
         <div className="list-item inactive">{content}</div>
       )}
+      {actions && <span className="list-item-actions">{actions}</span>}
     </li>
   );
 }

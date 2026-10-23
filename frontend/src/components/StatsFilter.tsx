@@ -21,7 +21,7 @@ const RESULT_LIMIT = 20;
 
 /**
  * Filtr statistik: hledání ve hrách party a v tagách her (stejný vzhled jako hledání v seznamu her). Vybraná hra nebo tag
- * se přidá jako „+“ (jen takové hry), klepnutím na štítek se změní na „−“ (bez nich); křížek ho odebere.
+ * se přidá jako „+“ (klepnutí na řádek, nebo tlačítko +) či rovnou jako „−“ (tlačítko −); klepnutím na štítek se „+“ a „−“ přepíná, křížek ho odebere.
  * Výsledky hledání (pod polem) nahrazují grafy, dokud se píše; zaostřené prázdné pole rovnou nabídne všechny tagy.
  */
 export function StatsFilter({ partyId, items, onChange, query, onQueryChange, open, onOpenChange }: Props) {
@@ -34,10 +34,17 @@ export function StatsFilter({ partyId, items, onChange, query, onQueryChange, op
     enabled: debounced !== '',
   });
 
-  const pick = (item: FilterItem) => {
-    onChange(addItem(items, item));
+  const pick = (item: FilterItem, mode: FilterItem['mode'] = 'include') => {
+    onChange(addItem(items, { ...item, mode }));
     onQueryChange('');
   };
+  /** Tlačítka „+“ (jen takové hry) a „−“ (bez nich); klepnutí na celý řádek je jako „+“. */
+  const modeButtons = (item: FilterItem) => (
+    <>
+      <button type="button" className="btn small" aria-label={`Přidat ${item.name} (jen s ním)`} onClick={() => pick(item, 'include')}>+</button>
+      <button type="button" className="btn small secondary" aria-label={`Přidat ${item.name} (vyřadit)`} onClick={() => pick(item, 'exclude')}>−</button>
+    </>
+  );
   const needle = normalize(text);
   const foundTags = (tags.data ?? []).filter((t) => normalize(t).includes(needle) && !items.some((i) => itemKey(i) === `tag:${t}`));
   const foundGames = text === '' || debounced !== text ? [] : (games.data ?? []).filter((g) => !items.some((i) => itemKey(i) === `game:${g.id}`));
@@ -88,21 +95,28 @@ export function StatsFilter({ partyId, items, onChange, query, onQueryChange, op
         <>
           {/* mouseDown nesmí vzít zaostření inputu, ať nabídka při výběru nezmizí a jde vybírat dál */}
           <ul className="list" onMouseDown={(e) => e.preventDefault()}>
-            {foundTags.map((tag) => (
-              <li key={`tag:${tag}`}>
-                <button type="button" className="list-item" onClick={() => pick({ kind: 'tag', name: tag, mode: 'include' })}>
-                  <span className="list-item-body">
-                    <strong className="h5">{tag}</strong>
-                    <span className="secondary">Tag her</span>
-                  </span>
-                </button>
-              </li>
-            ))}
-            {foundGames.map((game) => (
-              <GameListItem key={game.id} imageUrl={game.imageUrl} name={game.name} onClick={() => pick({ kind: 'game', id: game.id, name: game.name, mode: 'include' })}>
-                <span className="secondary">Hra</span>
-              </GameListItem>
-            ))}
+            {foundTags.map((tag) => {
+              const item: FilterItem = { kind: 'tag', name: tag, mode: 'include' };
+              return (
+                <li key={`tag:${tag}`} className="with-actions">
+                  <button type="button" className="list-item" onClick={() => pick(item)}>
+                    <span className="list-item-body">
+                      <strong className="h5">{tag}</strong>
+                      <span className="secondary">Tag her</span>
+                    </span>
+                  </button>
+                  <span className="list-item-actions">{modeButtons(item)}</span>
+                </li>
+              );
+            })}
+            {foundGames.map((game) => {
+              const item: FilterItem = { kind: 'game', id: game.id, name: game.name, mode: 'include' };
+              return (
+                <GameListItem key={game.id} imageUrl={game.imageUrl} name={game.name} onClick={() => pick(item)} actions={modeButtons(item)}>
+                  <span className="secondary">Hra</span>
+                </GameListItem>
+              );
+            })}
           </ul>
           {searching && settled && foundTags.length === 0 && foundGames.length === 0 && (
             <p className="empty"><span>Hledání „<b className="primary">{text}</b>“ nic nenašlo.</span></p>

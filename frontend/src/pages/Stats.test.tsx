@@ -52,7 +52,7 @@ describe('statistics', () => {
 
     // tag: najde se bez ohledu na diakritiku a velikost písmen, vybere se jako „+“
     fireEvent.change(search, { target: { value: 'STRAT' } });
-    fireEvent.click(await screen.findByRole('button', { name: /Strategie/ }));
+    fireEvent.click(await screen.findByRole('button', { name: /^Strategie/ }));
     expect(await screen.findByRole('button', { name: 'Strategie: jen s ním' })).toHaveTextContent('+ Strategie');
     expect(search).toHaveValue('');
     expect(await screen.findByText('Caverna')).toBeInTheDocument();
@@ -64,7 +64,7 @@ describe('statistics', () => {
 
     // hra se hledá ve hrách party (výsledky nahradí grafy) a přidá se k tagu
     fireEvent.change(search, { target: { value: 'azu' } });
-    fireEvent.click(await screen.findByRole('button', { name: /Azul/ }));
+    fireEvent.click(await screen.findByRole('button', { name: /^Azul/ }));
     expect(await screen.findByRole('button', { name: 'Azul: jen s ním' })).toHaveTextContent('+ Azul');
     await waitFor(() => expect(requestedUrls(fetchMock)).toContain('/parties/3/stats?excludeTags%5B%5D=Strategie&games%5B%5D=2'));
 
@@ -84,21 +84,44 @@ describe('statistics', () => {
     renderApp('/stats');
     expect(await screen.findByText('Azul')).toBeInTheDocument();
     const search = screen.getByLabelText('Hledat hru nebo tag');
-    expect(screen.queryByRole('button', { name: /Rychlovka/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /^Rychlovka/ })).not.toBeInTheDocument();
 
     fireEvent.focus(search);
-    expect(await screen.findByRole('button', { name: /Rychlovka/ })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /Strategie/ })).toBeInTheDocument();
+    expect(await screen.findByRole('button', { name: /^Rychlovka/ })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /^Strategie/ })).toBeInTheDocument();
     expect(screen.queryByText('Azul')).not.toBeInTheDocument();
 
     // výběr nechá nabídku otevřenou, jen už bez vybraného tagu
-    fireEvent.click(screen.getByRole('button', { name: /Rychlovka/ }));
+    fireEvent.click(screen.getByRole('button', { name: /^Rychlovka/ }));
     expect(await screen.findByRole('button', { name: 'Rychlovka: jen s ním' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /Strategie/ })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /^Strategie/ })).toBeInTheDocument();
     await waitFor(() => expect(requestedUrls(fetchMock)).toContain('/parties/3/stats?tags%5B%5D=Rychlovka'));
 
     // po opuštění pole se vrátí grafy
     fireEvent.blur(search);
     expect(await screen.findByText('Caverna')).toBeInTheDocument();
+  });
+
+  it('has + and − buttons on the rows of the search results; the whole row works as "+"', async () => {
+    mockApi({
+      '/me': { body: ME },
+      '/parties': { body: [PARTY] },
+      '/parties/3/game-tags': { body: ['Rychlovka', 'Strategie'] },
+      '/parties/3/games?q=azu&sort=name&limit=20': { body: [{ ...GAME, id: 2, name: 'Azul' }] },
+      '/parties/3/stats': { body: { wins: [], topGames: [{ gameId: 2, name: 'Azul', shortName: null, plays: 4 }] } },
+      '/parties/3/stats?excludeTags%5B%5D=Rychlovka': { body: { wins: [], topGames: [{ gameId: 2, name: 'Azul', shortName: null, plays: 4 }] } },
+      '/parties/3/stats?excludeTags%5B%5D=Rychlovka&games%5B%5D=2': { body: { wins: [], topGames: [{ gameId: 2, name: 'Azul', shortName: null, plays: 4 }] } },
+    });
+    renderApp('/stats');
+    expect(await screen.findByText('Azul')).toBeInTheDocument();
+    const search = screen.getByLabelText('Hledat hru nebo tag');
+
+    fireEvent.focus(search);
+    fireEvent.click(await screen.findByRole('button', { name: 'Přidat Rychlovka (vyřadit)' }));
+    expect(await screen.findByRole('button', { name: 'Rychlovka: bez něj' })).toHaveTextContent('− Rychlovka');
+
+    fireEvent.change(search, { target: { value: 'azu' } });
+    fireEvent.click(await screen.findByRole('button', { name: 'Přidat Azul (jen s ním)' }));
+    expect(await screen.findByRole('button', { name: 'Azul: jen s ním' })).toHaveTextContent('+ Azul');
   });
 });
