@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
+import { useRef } from 'react';
 import { api } from '../api';
 import { type FilterItem, addItem, itemKey, removeItem, toggleItem } from '../lib/statsFilter';
 import { useDebounced } from '../lib/useDebounced';
@@ -26,6 +27,7 @@ const RESULT_LIMIT = 20;
  */
 export function StatsFilter({ partyId, items, onChange, query, onQueryChange, open, onOpenChange }: Props) {
   const text = query.trim();
+  const input = useRef<HTMLInputElement>(null);
   const debounced = useDebounced(text);
   const tags = useQuery({ queryKey: ['partyGameTags', partyId], queryFn: () => api.partyGameTags(partyId) });
   const games = useQuery({
@@ -59,6 +61,7 @@ export function StatsFilter({ partyId, items, onChange, query, onQueryChange, op
             <Icon name={text ? 'close' : 'search'} />
           </button>
           <input
+            ref={input}
             type="search"
             value={query}
             onChange={(e) => onQueryChange(e.target.value)}
@@ -125,6 +128,9 @@ export function StatsFilter({ partyId, items, onChange, query, onQueryChange, op
           {searching && settled && foundTags.length === 0 && foundGames.length === 0 && (
             <p className="empty"><span>Hledání „<b className="primary">{text}</b>“ nic nenašlo.</span></p>
           )}
+          <div className="pad">
+            <button type="button" className="btn outline block" onMouseDown={(e) => e.preventDefault()} onClick={() => { onQueryChange(''); input.current?.blur(); }}>Zavřít</button>
+          </div>
         </>
       )}
     </>

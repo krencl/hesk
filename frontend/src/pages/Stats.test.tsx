@@ -164,4 +164,27 @@ describe('statistics', () => {
     renderApp('/parties/99/stats');
     expect(await screen.findByText('Tuhle partu nevidíš, nebo neexistuje.')).toBeInTheDocument();
   });
+
+  it('closes the search results with the Zavřít button under them', async () => {
+    mockApi({
+      '/me': { body: ME },
+      '/parties': { body: [PARTY] },
+      '/parties/3/game-tags': { body: ['Rychlovka'] },
+      '/parties/3/stats': { body: { wins: [], topGames: [{ gameId: 2, name: 'Azul', shortName: null, plays: 4 }] } },
+    });
+    renderApp('/parties/3/stats');
+    expect(await screen.findByText('Azul')).toBeInTheDocument();
+    const search = screen.getByLabelText('Hledat hru nebo tag');
+    expect(screen.queryByRole('button', { name: 'Zavřít' })).not.toBeInTheDocument();
+
+    search.focus();
+    fireEvent.change(search, { target: { value: 'ryc' } });
+    expect(await screen.findByRole('button', { name: /^Rychlovka/ })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Zavřít' }));
+
+    expect(search).toHaveValue('');
+    expect(search).not.toHaveFocus();
+    expect(screen.queryByRole('button', { name: /^Rychlovka/ })).not.toBeInTheDocument();
+    expect(await screen.findByText('Azul')).toBeInTheDocument();
+  });
 });
