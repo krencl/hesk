@@ -1,5 +1,5 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { type FormEvent, type ReactNode, useEffect, useState } from 'react';
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { type FormEvent, type ReactNode, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useActiveParty } from '../AppContext';
 import { api } from '../api';
@@ -9,7 +9,7 @@ import { isScored, isWinner, newPlayerDraft, type PlayDraft, toPlayInput, valida
 import { Actions } from './Actions';
 import { ErrorMessage } from './ErrorMessage';
 import { GameHeader } from './GameHeader';
-import { Icon } from './Icon';
+import { PlayerRow } from './PlayerRow';
 import { ListSkeleton } from './Skeleton';
 import { TagInput } from './TagInput';
 import { useToasts } from './Toasts';
@@ -54,11 +54,11 @@ export function PlayForm({ game, initial, heading, submitLabel, saving, error, c
     enabled: suggestSessionNumber && !!startedIso && !!endedIso,
     staleTime: 60_000,
     gcTime: 0,
+    placeholderData: keepPreviousData, // při změně času nebliká původní číslo, než přijde nový návrh
   });
   const suggested = suggestion.data?.sessionNumber;
-  useEffect(() => {
-    if (suggested !== undefined) setDraft((d) => (d.sessionNumberTouched || d.sessionNumber === String(suggested) ? d : { ...d, sessionNumber: String(suggested) }));
-  }, [suggested]);
+  // Dokud číslo sezení uživatel nezměnil, ukazuje se návrh podle času zápisu (do draftu se nekopíruje; posílá se jen ručně zadané).
+  const shownSession = draft.sessionNumberTouched ? draft.sessionNumber : suggested !== undefined ? String(suggested) : draft.sessionNumber;
   const { showError } = useToasts();
   const [showGuests, setShowGuests] = useState(false);
   const [guestName, setGuestName] = useState('');
@@ -120,7 +120,7 @@ export function PlayForm({ game, initial, heading, submitLabel, saving, error, c
       <form className="pad form" onSubmit={submit}>
         <h2>{heading}</h2>
 
-        <label>Číslo sezení<input type="number" inputMode="numeric" min={1} step={1} value={draft.sessionNumber} onChange={(e) => patch({ sessionNumber: e.target.value, sessionNumberTouched: true })} /></label>
+        <label>Číslo sezení<input type="number" inputMode="numeric" min={1} step={1} value={shownSession} onChange={(e) => patch({ sessionNumber: e.target.value, sessionNumberTouched: true })} /></label>
 
         <div className="row">
           <label>Začátek<input type="datetime-local" value={draft.startedAt} onChange={(e) => patch({ startedAt: e.target.value })} required /></label>
@@ -129,42 +129,21 @@ export function PlayForm({ game, initial, heading, submitLabel, saving, error, c
 
         <div className="field">
           <span className="field-label">Hráči</span>
-          {visible.map((m) => {
-            const player = draft.players.find((p) => p.playerId === m.id);
-            return (
-              <div key={m.id} className={`player${player ? ' selected' : ''}`}>
-                <label className="check">
-                  <input type="checkbox" checked={!!player} onChange={() => togglePlayer(m.id)} />
-                  {m.name}
-                  {isGamePlayer(m.id) && <span className="muted hint"> hráč hry</span>}
-                </label>
-                {player && scored && (
-                  <input inputMode="decimal" aria-label={`Skóre ${m.name}`} placeholder="skóre" value={player.score} onChange={(e) => patchPlayer(m.id, { score: e.target.value })} />
-                )}
-                {player && game.scoreType === 'rank_order' && (
-                  <input type="number" min={1} aria-label={`Pořadí ${m.name}`} placeholder="pořadí" value={player.rank} onChange={(e) => patchPlayer(m.id, { rank: e.target.value })} />
-                )}
-                {player && game.characters.length > 0 && (
-                  <select className="character" aria-label={`Postava ${m.name}`} value={player.characterId ?? ''} onChange={(e) => patchPlayer(m.id, { characterId: e.target.value ? Number(e.target.value) : null })}>
-                    <option value="">— postava —</option>
-                    {game.characters.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-                  </select>
-                )}
-                {player && (
-                  <div className="chips">
-                    {game.scoreType !== 'rank_order' && (
-                      <button type="button" className="chip" aria-pressed={isWinner(draft, game, m.id)} aria-label={`Vítěz ${m.name}`} onClick={() => toggleWinner(m.id)}>
-                        <Icon name="workspace_premium" /> Vítěz
-                      </button>
-                    )}
-                    <button type="button" className="chip" aria-pressed={player.starting} aria-label={`Začíná ${m.name}`} onClick={() => toggleStarting(m.id)}>
-                      <Icon name="looks_one" /> Začíná
-                    </button>
-                  </div>
-                )}
-              </div>
-            );
-          })}
+          {visible.map((m) => (
+            <PlayerRow
+              key={m.id}
+              member={m}
+              game={game}
+              player={draft.players.find((p) => p.playerId === m.id)}
+              isGamePlayer={isGamePlayer(m.id)}
+              scored={scored}
+              winner={isWinner(draft, game, m.id)}
+              onToggle={() => togglePlayer(m.id)}
+              onPatch={(changes) => patchPlayer(m.id, changes)}
+              onToggleWinner={() => toggleWinner(m.id)}
+              onToggleStarting={() => toggleStarting(m.id)}
+            />
+          ))}
 
           {showGuests && (
             <div className="guest-add">
