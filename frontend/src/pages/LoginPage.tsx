@@ -2,6 +2,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { type FormEvent, useState } from 'react';
 import { ApiError, post } from '../api/client';
 import { useToasts } from '../components/Toasts';
+import { qk } from '../api/queryKeys';
 
 export function LoginPage() {
   const queryClient = useQueryClient();
@@ -13,7 +14,7 @@ export function LoginPage() {
     e.preventDefault();
     try {
       await post('/auth/dev-login', { email, nickname: email.split('@')[0] });
-      await queryClient.invalidateQueries({ queryKey: ['me'] });
+      await queryClient.invalidateQueries({ queryKey: qk.me() });
     } catch (err) {
       showError(err instanceof ApiError ? err.message : 'Přihlášení selhalo.');
     }

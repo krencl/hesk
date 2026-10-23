@@ -4,7 +4,7 @@ import { refreshAfterPlayChange } from './refresh';
 
 function seeded() {
   const qc = new QueryClient();
-  for (const key of [['games', 3, 'list', {}], ['games', 3, 'plays', 7], ['game', 7], ['plays', 3], ['stats', 3], ['plays', 4]]) qc.setQueryData(key, 'x');
+  for (const key of [['games', 3, 'list', {}], ['games', 3, 'plays', 7], ['game', 7], ['stats', 3], ['stats', 4]]) qc.setQueryData(key, 'x');
   return qc;
 }
 
@@ -13,8 +13,8 @@ describe('refreshAfterPlayChange', () => {
     const qc = seeded();
     await refreshAfterPlayChange(qc, 3, 7);
     const stale = (key: unknown[]) => qc.getQueryState(key)?.isInvalidated;
-    expect([['games', 3, 'list', {}], ['games', 3, 'plays', 7], ['game', 7], ['plays', 3], ['stats', 3]].every(stale)).toBe(true);
-    expect(stale(['plays', 4])).toBe(false);
+    expect([['games', 3, 'list', {}], ['games', 3, 'plays', 7], ['game', 7], ['stats', 3]].every(stale)).toBe(true);
+    expect(stale(['stats', 4])).toBe(false);
   });
 
   it('drops the cached round list of the game when leaving the page', async () => {

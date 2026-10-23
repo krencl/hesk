@@ -4,6 +4,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useApp } from '../AppContext';
 import { api } from '../api';
 import { ErrorMessage } from '../components/ErrorMessage';
+import { qk } from '../api/queryKeys';
 
 /** Přijetí pozvánky: po otevření odkazu se přihlášený uživatel rovnou přidá a parta se stane aktivní. */
 export function JoinPage() {
@@ -15,7 +16,7 @@ export function JoinPage() {
   const accept = useMutation({
     mutationFn: () => api.acceptInvitation(token!),
     onSuccess: async (party) => {
-      await queryClient.invalidateQueries({ queryKey: ['parties'] });
+      await queryClient.invalidateQueries({ queryKey: qk.parties() });
       setActiveParty(party.id);
       navigate('/', { replace: true });
     },

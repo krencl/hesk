@@ -3,6 +3,7 @@ import { api } from '../api';
 import type { GameWithStats } from '../api/types';
 import type { GameListSettings } from './listSettings';
 import { useDebounced } from './useDebounced';
+import { qk } from '../api/queryKeys';
 
 export const GAME_PAGE_SIZE = 20;
 
@@ -12,7 +13,7 @@ export function useGameList(partyId: number, settings: GameListSettings) {
   const sessionNumber = settings.filterVisible ? settings.sessionNumber : null;
 
   const games = useInfiniteQuery({
-    queryKey: ['games', partyId, 'list', { query, sort: settings.sort, sessionNumber }],
+    queryKey: qk.gameList(partyId, { query, sort: settings.sort, sessionNumber }),
     initialPageParam: 0,
     queryFn: async ({ pageParam }) => {
       // Žádáme o jednu položku navíc, abychom věděli, zda existuje další stránka.

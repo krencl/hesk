@@ -13,6 +13,7 @@ import { draftFromPlay } from '../lib/playForm';
 import { refreshAfterPlayChange } from '../lib/refresh';
 import { useGame } from '../lib/useGame';
 import { canWrite } from '../lib/roles';
+import { qk } from '../api/queryKeys';
 
 /** Úprava zápisu; smazání zápisu je až pod formulářem. */
 export function EditPlayPage() {
@@ -21,12 +22,12 @@ export function EditPlayPage() {
   const queryClient = useQueryClient();
   const id = Number(useParams().id);
   const [confirmDelete, setConfirmDelete] = useState(false);
-  const play = useQuery({ queryKey: ['play', id], queryFn: () => api.play(id), retry: false, staleTime: 0, gcTime: 0 });
+  const play = useQuery({ queryKey: qk.play(id), queryFn: () => api.play(id), staleTime: 0, gcTime: 0 });
   const gameId = play.data?.game.id;
   const game = useGame(gameId);
 
   const finish = async (leavingGameId: number) => {
-    queryClient.removeQueries({ queryKey: ['play', id] });
+    queryClient.removeQueries({ queryKey: qk.play(id) });
     await refreshAfterPlayChange(queryClient, party.id, leavingGameId, { leaving: true });
     navigate(`/games/${leavingGameId}`, { replace: true });
   };

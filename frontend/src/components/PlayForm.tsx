@@ -13,6 +13,7 @@ import { Icon } from './Icon';
 import { ListSkeleton } from './Skeleton';
 import { TagInput } from './TagInput';
 import { useToasts } from './Toasts';
+import { qk } from '../api/queryKeys';
 
 interface Props {
   game: Game;
@@ -40,15 +41,15 @@ function validIso(local: string): string | null {
 export function PlayForm({ game, initial, heading, submitLabel, saving, error, cancelTo, suggestSessionNumber = false, onSubmit, children }: Props) {
   const party = useActiveParty();
   const queryClient = useQueryClient();
-  const players = useQuery({ queryKey: ['players', party.id], queryFn: () => api.players(party.id) });
-  const tags = useQuery({ queryKey: ['tags', party.id], queryFn: () => api.tags(party.id) });
+  const players = useQuery({ queryKey: qk.players(party.id), queryFn: () => api.players(party.id) });
+  const tags = useQuery({ queryKey: qk.tags(party.id), queryFn: () => api.tags(party.id) });
   const [draft, setDraft] = useState<PlayDraft>(initial);
 
   // Číslo sezení závisí na čase zápisu (do 24 h od posledního zápisu zůstává, jinak o jedno víc); stejný dotaz už načetla stránka.
   const startedIso = validIso(draft.startedAt);
   const endedIso = validIso(draft.endedAt);
   const suggestion = useQuery({
-    queryKey: ['playDefaults', party.id, startedIso, endedIso],
+    queryKey: qk.playDefaults(party.id, startedIso, endedIso),
     queryFn: () => api.playDefaults(party.id, startedIso!, endedIso!),
     enabled: suggestSessionNumber && !!startedIso && !!endedIso,
     staleTime: 60_000,
@@ -89,7 +90,7 @@ export function PlayForm({ game, initial, heading, submitLabel, saving, error, c
     mutationFn: () => api.createGuest(party.id, guestName.trim()),
     onSuccess: async (p) => {
       setGuestName('');
-      await queryClient.invalidateQueries({ queryKey: ['players', party.id] });
+      await queryClient.invalidateQueries({ queryKey: qk.players(party.id) });
       togglePlayer(p.id);
     },
   });

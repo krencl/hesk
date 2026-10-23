@@ -15,6 +15,7 @@ import { formatDateShort, formatDateTimeShort } from '../lib/datetime';
 import { canWrite } from '../lib/roles';
 import { useGame } from '../lib/useGame';
 import { formatScore, winners } from '../lib/scoring';
+import { qk } from '../api/queryKeys';
 
 const PAGE_SIZE = 10;
 
@@ -26,7 +27,7 @@ export function GameDetailPage() {
 
   const game = useGame(id);
   const rounds = useInfiniteQuery({
-    queryKey: ['games', party.id, 'plays', id],
+    queryKey: qk.gamePlays(party.id, id),
     initialPageParam: 0,
     queryFn: async ({ pageParam }) => {
       const rows = await api.plays(party.id, PAGE_SIZE + 1, pageParam, id);

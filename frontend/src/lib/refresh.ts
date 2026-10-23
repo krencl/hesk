@@ -1,4 +1,5 @@
 import type { QueryClient } from '@tanstack/react-query';
+import { qk } from '../api/queryKeys';
 
 /**
  * Po vytvoření/smazání zápisu zneplatní vše, co z něj vychází (seznamy her, detail hry, chronologie, statistiky).
@@ -6,14 +7,13 @@ import type { QueryClient } from '@tanstack/react-query';
  * nejdřív neukázala stará data bez nového zápisu.
  */
 export async function refreshAfterPlayChange(queryClient: QueryClient, partyId: number, gameId: number, { leaving = false } = {}): Promise<void> {
-  if (leaving) queryClient.removeQueries({ queryKey: ['games', partyId, 'plays', gameId] });
+  if (leaving) queryClient.removeQueries({ queryKey: qk.gamePlays(partyId, gameId) });
   await Promise.all([
-    queryClient.invalidateQueries({ queryKey: ['games', partyId] }),
-    queryClient.invalidateQueries({ queryKey: ['game', gameId] }),
-    queryClient.invalidateQueries({ queryKey: ['plays', partyId] }),
-    queryClient.invalidateQueries({ queryKey: ['stats', partyId] }),
+    queryClient.invalidateQueries({ queryKey: qk.games(partyId) }),
+    queryClient.invalidateQueries({ queryKey: qk.game(gameId) }),
+    queryClient.invalidateQueries({ queryKey: qk.stats(partyId) }),
     // nové tagy z uloženého zápisu a posun čísla sezení pro další zápis
-    queryClient.invalidateQueries({ queryKey: ['tags', partyId] }),
-    queryClient.invalidateQueries({ queryKey: ['playDefaults', partyId] }),
+    queryClient.invalidateQueries({ queryKey: qk.tags(partyId) }),
+    queryClient.invalidateQueries({ queryKey: qk.playDefaults(partyId) }),
   ]);
 }

@@ -12,6 +12,7 @@ import { defaultPlayerIds, defaultTimes, emptyDraft } from '../lib/playForm';
 import { refreshAfterPlayChange } from '../lib/refresh';
 import { useGame } from '../lib/useGame';
 import { canWrite } from '../lib/roles';
+import { qk } from '../api/queryKeys';
 
 /** Nový zápis dané hry (hra se nevybírá, formulář se otevírá z jejího detailu). */
 export function NewPlayPage() {
@@ -26,9 +27,9 @@ export function NewPlayPage() {
   const times = defaultTimes(now);
   const startedIso = fromLocalInput(times.startedAt);
   const endedIso = fromLocalInput(times.endedAt);
-  const players = useQuery({ queryKey: ['players', party.id], queryFn: () => api.players(party.id) });
+  const players = useQuery({ queryKey: qk.players(party.id), queryFn: () => api.players(party.id) });
   const defaults = useQuery({
-    queryKey: ['playDefaults', party.id, startedIso, endedIso],
+    queryKey: qk.playDefaults(party.id, startedIso, endedIso),
     queryFn: () => api.playDefaults(party.id, startedIso, endedIso),
     staleTime: 60_000,
     gcTime: 0,

@@ -9,6 +9,7 @@ import { ErrorMessage } from '../components/ErrorMessage';
 import { PageTitle } from '../components/PageTitle';
 import { StatsFilter } from '../components/StatsFilter';
 import { type FilterItem, parseStatsSearch, statsSearch, toStatsQuery } from '../lib/statsFilter';
+import { qk } from '../api/queryKeys';
 
 /** Statistiky party z adresy (`/parties/:id/stats`); filtr je v parametrech adresy, takže jde sdílet odkazem. */
 export function StatsPage() {
@@ -36,22 +37,21 @@ function PartyStats({ party }: { party: Party }) {
   const gameIds = [...new Set([...params.getAll('games'), ...params.getAll('excludeGames')].map(Number).filter((n) => Number.isInteger(n) && n > 0))];
   const names = useQueries({
     queries: gameIds.map((gameId) => ({
-      queryKey: ['statsGameName', party.id, gameId],
+      queryKey: qk.statsGameName(party.id, gameId),
       queryFn: async () => (await api.game(party.id, gameId)).name,
       staleTime: Infinity,
-      retry: false,
     })),
   });
   const nameById = new Map(gameIds.map((gameId, i) => [gameId, names[i]?.data]));
   const items = parseStatsSearch(params, (gameId) => nameById.get(gameId) ?? `Hra #${gameId}`);
   const setItems = (next: FilterItem[]) => {
-    for (const item of next) if (item.kind === 'game') queryClient.setQueryData(['statsGameName', party.id, item.id], item.name);
+    for (const item of next) if (item.kind === 'game') queryClient.setQueryData(qk.statsGameName(party.id, item.id), item.name);
     setParams(statsSearch(next), { replace: true });
   };
 
   const filter = toStatsQuery(items);
   const { data, isPending, error } = useQuery({
-    queryKey: ['stats', party.id, filter],
+    queryKey: qk.stats(party.id, filter),
     queryFn: () => api.stats(party.id, filter),
     placeholderData: keepPreviousData,
   });

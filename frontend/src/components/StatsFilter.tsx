@@ -6,6 +6,7 @@ import { useDebounced } from '../lib/useDebounced';
 import { normalize } from './Autocomplete';
 import { GameListItem } from './GameListItem';
 import { Icon } from './Icon';
+import { qk } from '../api/queryKeys';
 
 interface Props {
   partyId: number;
@@ -29,9 +30,9 @@ export function StatsFilter({ partyId, items, onChange, query, onQueryChange, op
   const text = query.trim();
   const input = useRef<HTMLInputElement>(null);
   const debounced = useDebounced(text);
-  const tags = useQuery({ queryKey: ['partyGameTags', partyId], queryFn: () => api.partyGameTags(partyId) });
+  const tags = useQuery({ queryKey: qk.partyGameTags(partyId), queryFn: () => api.partyGameTags(partyId) });
   const games = useQuery({
-    queryKey: ['games', partyId, 'statsFilter', debounced],
+    queryKey: qk.statsFilterGames(partyId, debounced),
     queryFn: () => api.games(partyId, { q: debounced, sort: 'name', limit: RESULT_LIMIT }),
     enabled: debounced !== '',
   });

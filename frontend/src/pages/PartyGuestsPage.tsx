@@ -13,20 +13,21 @@ import { ListSkeleton } from '../components/Skeleton';
 import { LEAVE_PARTY_MANAGEMENT_PATH } from '../lib/partyPath';
 import { playsLabel } from '../lib/plural';
 import { canWrite } from '../lib/roles';
+import { qk } from '../api/queryKeys';
 
 /** Hosté party (hráči bez účtu): přidání, přejmenování a smazání těch, kteří nikde nehráli. */
 export function PartyGuestsPage() {
   const id = Number(useParams().id);
   const queryClient = useQueryClient();
-  const detail = useQuery({ queryKey: ['party', id], queryFn: () => api.party(id), retry: false });
-  const players = useQuery({ queryKey: ['players', id], queryFn: () => api.players(id), enabled: !!detail.data });
+  const detail = useQuery({ queryKey: qk.party(id), queryFn: () => api.party(id) });
+  const players = useQuery({ queryKey: qk.players(id), queryFn: () => api.players(id), enabled: !!detail.data });
   // rozpracované změny hostů (jméno, zobrazování), ukládají se najednou tlačítkem Uložit
   const [edited, setEdited] = useState<Record<number, { name?: string; visible?: boolean }>>({});
   const [newName, setNewName] = useState('');
   const [confirming, setConfirming] = useState<{ id: number; name: string } | null>(null);
   const [linking, setLinking] = useState<{ id: number; name: string; playCount: number } | null>(null);
 
-  const refresh = () => queryClient.invalidateQueries({ queryKey: ['players', id] });
+  const refresh = () => queryClient.invalidateQueries({ queryKey: qk.players(id) });
   const add = useMutation({
     mutationFn: () => api.createGuest(id, newName.trim()),
     onSuccess: async () => {

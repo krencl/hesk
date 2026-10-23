@@ -14,6 +14,7 @@ import { SelectPopup } from '../components/SelectPopup';
 import { LEAVE_PARTY_MANAGEMENT_PATH } from '../lib/partyPath';
 import { ROLE_LABELS, ROLE_ORDER } from '../lib/roles';
 import { ListSkeleton } from '../components/Skeleton';
+import { qk } from '../api/queryKeys';
 
 /** Detail party: členové a jejich role, pozvánky a opuštění party. Seznam part a zakládání jsou ve správě part. */
 export function PartyDetailPage() {
@@ -24,8 +25,8 @@ export function PartyDetailPage() {
   const [inviteLink, setInviteLink] = useState<string | null>(null);
   // člen, kterého se právě potvrzuje odebrání (nebo já při opuštění party)
   const [confirming, setConfirming] = useState<{ userId: number; nickname: string } | null>(null);
-  const detail = useQuery({ queryKey: ['party', id], queryFn: () => api.party(id), retry: false });
-  const refresh = () => Promise.all([queryClient.invalidateQueries({ queryKey: ['parties'] }), queryClient.invalidateQueries({ queryKey: ['party'] })]);
+  const detail = useQuery({ queryKey: qk.party(id), queryFn: () => api.party(id) });
+  const refresh = () => Promise.all([queryClient.invalidateQueries({ queryKey: qk.parties() }), queryClient.invalidateQueries({ queryKey: qk.party() })]);
 
   const invite = useMutation({
     mutationFn: () => api.invite(id),

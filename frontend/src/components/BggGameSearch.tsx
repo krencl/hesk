@@ -7,6 +7,7 @@ import { useDebounced } from '../lib/useDebounced';
 import { Actions } from './Actions';
 import { ErrorMessage } from './ErrorMessage';
 import { GameListItem } from './GameListItem';
+import { qk } from '../api/queryKeys';
 
 interface Props {
   partyId: number;
@@ -25,7 +26,7 @@ export function BggGameSearch({ partyId, onPick, onLinked, onCustom }: Props) {
   const [text, setText] = useState('');
   const query = useDebounced(text.trim());
   const searching = query.length >= MIN_QUERY_LENGTH;
-  const search = useQuery({ queryKey: ['bgg-search', partyId, query], queryFn: () => api.bggSearch(partyId, query), enabled: searching });
+  const search = useQuery({ queryKey: qk.bggSearch(partyId, query), queryFn: () => api.bggSearch(partyId, query), enabled: searching, staleTime: 5 * 60_000 });
   const pick = useMutation({ mutationFn: (bggId: number) => api.bggImport(partyId, bggId), onSuccess: onPick });
   const link = useMutation({ mutationFn: (gameId: number) => api.linkGame(partyId, gameId), onSuccess: onLinked });
 

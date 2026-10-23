@@ -4,6 +4,7 @@ import type { GameSort } from '../api/types';
 import type { GameListSettings } from '../lib/listSettings';
 import { Icon } from './Icon';
 import { type SelectOption, SelectPopup } from './SelectPopup';
+import { qk } from '../api/queryKeys';
 
 interface Props {
   partyId: number;
@@ -20,7 +21,7 @@ const SORT_OPTIONS: SelectOption<GameSort>[] = [
 
 /** Hledání her podle názvu a filtr (řazení, seance) s výběrem v popupu; sdílí ho seznam her i správa her. */
 export function GameSearch({ partyId, settings, onChange, withSession = false }: Props) {
-  const sessions = useQuery({ queryKey: ['sessions', partyId], queryFn: () => api.sessions(partyId), enabled: withSession && settings.filterVisible });
+  const sessions = useQuery({ queryKey: qk.sessions(partyId), queryFn: () => api.sessions(partyId), enabled: withSession && settings.filterVisible });
 
   return (
     <div className="search">

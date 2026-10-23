@@ -3,6 +3,7 @@ import { type FormEvent, useState } from 'react';
 import { api } from '../api';
 import { Actions } from '../components/Actions';
 import { ErrorMessage } from '../components/ErrorMessage';
+import { qk } from '../api/queryKeys';
 
 /** Formulář přezdívky – povinný krok po prvním přihlášení, jinak úprava v profilu. */
 export function NicknamePage({ first = false, initial = '' }: { first?: boolean; initial?: string }) {
@@ -10,7 +11,7 @@ export function NicknamePage({ first = false, initial = '' }: { first?: boolean;
   const [nickname, setNickname] = useState(initial);
   const save = useMutation({
     mutationFn: () => api.setNickname(nickname.trim()),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['me'] }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: qk.me() }),
   });
   const submit = (e: FormEvent) => {
     e.preventDefault();

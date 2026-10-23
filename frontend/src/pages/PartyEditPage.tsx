@@ -9,11 +9,12 @@ import { ErrorMessage } from '../components/ErrorMessage';
 import { PartyHeader } from '../components/PartyHeader';
 import { ListSkeleton } from '../components/Skeleton';
 import { LEAVE_PARTY_MANAGEMENT_PATH } from '../lib/partyPath';
+import { qk } from '../api/queryKeys';
 
 /** Úprava názvu a zkratky party (jen admin); po uložení se vrací na detail party. */
 export function PartyEditPage() {
   const id = Number(useParams().id);
-  const detail = useQuery({ queryKey: ['party', id], queryFn: () => api.party(id), retry: false });
+  const detail = useQuery({ queryKey: qk.party(id), queryFn: () => api.party(id) });
 
   if (detail.error instanceof ApiError && (detail.error.status === 404 || detail.error.status === 403)) {
     return (
@@ -38,7 +39,7 @@ function PartyEditForm({ party }: { party: PartyDetail }) {
   const update = useMutation({
     mutationFn: () => api.updateParty(party.id, { name: name.trim(), shortName: shortName.trim() }),
     onSuccess: async () => {
-      await Promise.all([queryClient.invalidateQueries({ queryKey: ['parties'] }), queryClient.invalidateQueries({ queryKey: ['party'] })]);
+      await Promise.all([queryClient.invalidateQueries({ queryKey: qk.parties() }), queryClient.invalidateQueries({ queryKey: qk.party() })]);
       navigate(`/parties/${party.id}`, { replace: true });
     },
   });

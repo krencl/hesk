@@ -5,6 +5,7 @@ import { useApp } from '../AppContext';
 import { api } from '../api';
 import { ErrorMessage } from '../components/ErrorMessage';
 import { PageTitle } from '../components/PageTitle';
+import { qk } from '../api/queryKeys';
 
 /** Správa part: seznam mých part, přepnutí aktivní party a založení nové. Členy spravuje detail party. */
 export function PartiesPage() {
@@ -17,7 +18,7 @@ export function PartiesPage() {
     mutationFn: () => api.createParty(name.trim()),
     onSuccess: async (party) => {
       setName('');
-      await queryClient.invalidateQueries({ queryKey: ['parties'] });
+      await queryClient.invalidateQueries({ queryKey: qk.parties() });
       setActiveParty(party.id);
       navigate(`/parties/${party.id}`);
     },

@@ -5,6 +5,7 @@ import { ApiError } from './api/client';
 import type { Me, Party } from './api/types';
 import { LoadingSplash, ServerDownSplash } from './components/Splash';
 import { loadActivePartyId, resolveActiveParty, saveActivePartyId } from './lib/activeParty';
+import { qk } from './api/queryKeys';
 
 interface AppState {
   me: Me;
@@ -30,7 +31,7 @@ export function useActiveParty(): Party {
 
 export function useCurrentUserQuery() {
   return useQuery({
-    queryKey: ['me'],
+    queryKey: qk.me(),
     queryFn: async () => {
       try {
         return await api.me();
@@ -45,7 +46,7 @@ export function useCurrentUserQuery() {
 export function AppProvider({ me, children }: { me: Me; children: ReactNode }) {
   const queryClient = useQueryClient();
   const [storedId, setStoredId] = useState<number | null>(loadActivePartyId);
-  const partiesQuery = useQuery({ queryKey: ['parties'], queryFn: api.parties });
+  const partiesQuery = useQuery({ queryKey: qk.parties(), queryFn: api.parties });
   const parties = partiesQuery.data;
 
   const activeParty = useMemo(() => (parties ? resolveActiveParty(parties, storedId) : null), [parties, storedId]);
@@ -54,7 +55,8 @@ export function AppProvider({ me, children }: { me: Me; children: ReactNode }) {
     (id: number) => {
       saveActivePartyId(id);
       setStoredId(id);
-      void queryClient.invalidateQueries({ predicate: (q) => q.queryKey[0] !== 'me' && q.queryKey[0] !== 'parties' });
+      // Dotazy aktivní party mají `partyId` v klíči, takže se pro novou partu načtou samy; ostatní jen označíme za zastaralé.
+      void queryClient.invalidateQueries({ predicate: (q) => q.queryKey[0] !== qk.me()[0] && q.queryKey[0] !== qk.parties()[0], refetchType: 'none' });
     },
     [queryClient],
   );
