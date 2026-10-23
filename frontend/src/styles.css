@@ -224,6 +224,8 @@ button.list-item:disabled { opacity: 0.6; cursor: default; }
 .bar-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .bar-track { background: var(--light-gray); border-radius: var(--radius); height: 0.9rem; overflow: hidden; }
 .bar-fill { display: block; height: 100%; background: var(--main); transition: width 0.5s ease-out; animation: bar-grow 0.7s ease-out backwards; }
+/* Od čtvrté položky slabší odstín modré (první tři jsou plné) */
+.bar-fill.rest { background: #68a2e5; }
 @keyframes bar-grow { from { width: 0; } }
 @media (prefers-reduced-motion: reduce) { .bar-fill { animation: none; transition: none; } }
 .bar-value { text-align: right; font-variant-numeric: tabular-nums; }

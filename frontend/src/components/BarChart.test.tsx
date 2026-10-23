@@ -9,6 +9,12 @@ describe('BarChart', () => {
     expect(screen.getByRole('img', { name: 'Bob: 2' })).toHaveStyle({ width: '50%' });
   });
 
+  it('marks the first three bars as the top and the rest with a lighter shade', () => {
+    render(<BarChart items={[1, 2, 3, 4, 5].map((n) => ({ key: n, label: `P${n}`, value: 10 - n }))} />);
+    const rest = [1, 2, 3, 4, 5].map((n) => screen.getByRole('img', { name: `P${n}: ${10 - n}` }).classList.contains('rest'));
+    expect(rest).toEqual([false, false, false, true, true]);
+  });
+
   it('shows a placeholder without data', () => {
     render(<BarChart items={[]} />);
     expect(screen.getByText('Zatím žádná data.')).toBeInTheDocument();
