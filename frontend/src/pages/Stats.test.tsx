@@ -21,4 +21,16 @@ describe('statistics', () => {
     expect(screen.getByText('Azul')).toBeInTheDocument();
     expect(screen.queryByText('Ticket to Ride: Evropa')).not.toBeInTheDocument();
   });
+
+  it('shows just a sentence when the party has not played anything', async () => {
+    mockApi({
+      '/me': { body: ME },
+      '/parties': { body: [PARTY] },
+      '/parties/3/stats': { body: { wins: [], topGames: [] } },
+    });
+    renderApp('/stats');
+    expect(await screen.findByText('Ještě jste nic neodehráli, je čas to napravit.')).toBeInTheDocument();
+    expect(screen.queryByText('Výhry hráčů')).not.toBeInTheDocument();
+    expect(screen.queryByText('Nejhranější hry')).not.toBeInTheDocument();
+  });
 });

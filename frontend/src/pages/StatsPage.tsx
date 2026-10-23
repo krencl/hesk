@@ -15,7 +15,8 @@ export function StatsPage() {
       <div className="pad">
         <ErrorMessage error={error} />
         {isPending && <p className="muted">Načítám…</p>}
-        {data && (
+        {data && data.topGames.length === 0 && <p className="muted">Ještě jste nic neodehráli, je čas to napravit.</p>}
+        {data && data.topGames.length > 0 && (
           <>
             <h3>Výhry hráčů</h3>
             <BarChart items={data.wins.map((w) => ({ key: w.playerId, label: w.name, value: w.wins }))} />
