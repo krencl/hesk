@@ -11,7 +11,7 @@ export function StatsPage() {
 
   return (
     <section className="page">
-      <PageTitle>Statistiky – {party.name}</PageTitle>
+      <PageTitle label="Statistiky">{party.name}</PageTitle>
       <div className="pad">
         <ErrorMessage error={error} />
         {isPending && <p className="muted">Načítám…</p>}
