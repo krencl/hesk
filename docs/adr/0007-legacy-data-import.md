@@ -1,6 +1,6 @@
 # 0007 – Převzetí dat ze staré aplikace a model Hráče
 
-Stav: přijato (2026-10-03)
+Stav: přijato (2026-10-03); migrace z tohoto ADR nahradila jedna úvodní migrace (ADR 0026)
 
 ## Kontext
 Dev DB (MariaDB 11) obsahovala schéma prototypu `hesk-dev-old` s reálnými daty (2013–2022: 544 kol, 2071 výsledků, 5 part, 4 uživatelé, 36 hráčů). Majitel povolil s DB nakládat libovolně (má zálohu). Data ukázala, že ~17 % výsledků patří hráčům **bez uživatelského účtu** (hosté) – model „výsledek = uživatel“ (ADR 0004) nestačí.
