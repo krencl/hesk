@@ -181,6 +181,10 @@ export interface PlayDefaults {
 export interface Stats {
   wins: { playerId: number; name: string; wins: number; plays: number }[];
   topGames: { gameId: number; name: string; shortName: string | null; plays: number }[];
+  /** Kolikrát byl hráč označen jako začínající (jen u her, kde se začínající eviduje). */
+  starters: { playerId: number; name: string; starts: number }[];
+  /** Nejčastější tagy zápisů (uživatel do nich dává, co chce: místo, příležitost, …). */
+  playTags: { name: string; plays: number }[];
 }
 
 /** Výsledek hledání při přidávání hry: `party` = hra už v partě, `catalog` = hra z katalogu, kterou parta nemá (stačí ji zařadit podle `gameId`), `cache` = lokální cache BGG, `bgg` = živé BGG API. */

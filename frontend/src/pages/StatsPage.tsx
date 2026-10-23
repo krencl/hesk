@@ -72,8 +72,12 @@ function PartyStats({ party }: { party: Party }) {
             <>
               <h3>Výhry hráčů</h3>
               <BarChart items={data.wins.map((w) => ({ key: w.playerId, label: w.name, value: w.wins }))} />
+              <h3>Nejčastější začínající</h3>
+              <BarChart items={data.starters.map((s) => ({ key: s.playerId, label: s.name, value: s.starts }))} />
               <h3>Nejhranější hry</h3>
               <BarChart items={data.topGames.map((g) => ({ key: g.gameId, label: g.shortName ?? g.name, value: g.plays }))} />
+              <h3>Nejčastější tagy</h3>
+              <BarChart items={data.playTags.map((t) => ({ key: t.name, label: t.name, value: t.plays }))} />
             </>
           )
         )}

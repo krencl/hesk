@@ -276,7 +276,7 @@ describe('party detail (/parties/:id)', () => {
   });
 
   it('highlights only one of Statistiky / Spravovat in the menu, although both live under /parties/:id', async () => {
-    mockApi({ ...base, '/parties/3/stats': { body: { wins: [], topGames: [{ gameId: 2, name: 'Azul', shortName: null, plays: 4 }] } } });
+    mockApi({ ...base, '/parties/3/stats': { body: { wins: [], topGames: [{ gameId: 2, name: 'Azul', shortName: null, plays: 4 }], starters: [], playTags: [] } } });
     renderApp('/parties/3/stats');
     await screen.findByText('Azul');
     fireEvent.click(await screen.findByRole('button', { name: /Menu – Pátek/ }));

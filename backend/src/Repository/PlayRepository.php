@@ -105,6 +105,40 @@ class PlayRepository extends ServiceEntityRepository
         ], $rows);
     }
 
+    /**
+     * Kolikrát byl každý hráč označen jako začínající (jen u her, kde se začínající eviduje).
+     *
+     * @return list<array{playerId: int, name: string, starts: int}>
+     */
+    public function startingPerPlayer(Party $party, StatsFilter $filter = new StatsFilter()): array
+    {
+        $query = $this->getEntityManager()->createQuery(
+            'SELECT pl.id AS playerId, pl.name AS name, COUNT(r.id) AS starts
+             FROM App\Entity\PlayResult r JOIN r.play p JOIN r.player pl
+             WHERE p.party = :party AND r.starting = true'.$this->filterDql($filter).' GROUP BY pl.id, pl.name ORDER BY starts DESC, pl.name ASC',
+        )->setParameter('party', $party);
+        $rows = $this->bindFilter($query, $filter)->getArrayResult();
+
+        return array_map(static fn (array $r): array => ['playerId' => (int) $r['playerId'], 'name' => $r['name'], 'starts' => (int) $r['starts']], $rows);
+    }
+
+    /**
+     * Nejčastější tagy zápisů (libovolný význam, např. místo nebo příležitost); zápis se počítá do každého svého tagu.
+     *
+     * @return list<array{name: string, plays: int}>
+     */
+    public function topPlayTags(Party $party, int $limit = 10, StatsFilter $filter = new StatsFilter()): array
+    {
+        $query = $this->getEntityManager()->createQuery(
+            'SELECT t.name AS name, COUNT(p.id) AS plays
+             FROM App\Entity\Play p JOIN p.tags t WHERE p.party = :party'.$this->filterDql($filter).'
+             GROUP BY t.id, t.name ORDER BY plays DESC, t.name ASC',
+        )->setParameter('party', $party)->setMaxResults($limit);
+        $rows = $this->bindFilter($query, $filter)->getArrayResult();
+
+        return array_map(static fn (array $r): array => ['name' => $r['name'], 'plays' => (int) $r['plays']], $rows);
+    }
+
     /** Podmínky filtru na hru zápisu (alias zápisu je `p`); poddotazy mají unikátní aliasy, ať jdou použít vedle sebe. */
     private function filterDql(StatsFilter $filter): string
     {

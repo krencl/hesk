@@ -35,6 +35,8 @@ final class StatsController extends ApiController
         return new JsonResponse([
             'wins' => $this->plays->winsPerPlayer($party, $filter),
             'topGames' => $this->plays->topGames($party, 10, $filter),
+            'starters' => $this->plays->startingPerPlayer($party, $filter),
+            'playTags' => $this->plays->topPlayTags($party, 10, $filter),
         ]);
     }
 

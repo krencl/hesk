@@ -13,6 +13,8 @@ describe('statistics', () => {
         body: {
           wins: [{ playerId: 1, name: 'Anna', wins: 3, plays: 5 }],
           topGames: [{ gameId: 1, name: 'Ticket to Ride: Evropa', shortName: 'TtR Evropa', plays: 7 }, { gameId: 2, name: 'Azul', shortName: null, plays: 4 }],
+          starters: [{ playerId: 1, name: 'Anna', starts: 4 }, { playerId: 2, name: 'Petr', starts: 2 }],
+          playTags: [{ name: 'Skalka', plays: 6 }, { name: 'Horoušánky', plays: 3 }],
         },
       },
     });
@@ -22,11 +24,32 @@ describe('statistics', () => {
     expect(screen.queryByText('Ticket to Ride: Evropa')).not.toBeInTheDocument();
   });
 
+  it('shows who started most often and the most frequent play tags', async () => {
+    mockApi({
+      '/me': { body: ME },
+      '/parties': { body: [PARTY] },
+      '/parties/3/stats': {
+        body: {
+          wins: [{ playerId: 1, name: 'Anna', wins: 3, plays: 5 }],
+          topGames: [{ gameId: 2, name: 'Azul', shortName: null, plays: 4 }],
+          starters: [{ playerId: 1, name: 'Anna', starts: 4 }, { playerId: 2, name: 'Petr', starts: 2 }],
+          playTags: [{ name: 'Skalka', plays: 6 }, { name: 'Horoušánky', plays: 3 }],
+        },
+      },
+    });
+    renderApp('/parties/3/stats');
+    expect(await screen.findByRole('heading', { name: 'Nejčastější začínající' })).toBeInTheDocument();
+    expect(screen.getByRole('img', { name: 'Petr: 2' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Nejčastější tagy' })).toBeInTheDocument();
+    expect(screen.getByRole('img', { name: 'Skalka: 6' })).toBeInTheDocument();
+    expect(screen.getByRole('img', { name: 'Horoušánky: 3' })).toBeInTheDocument();
+  });
+
   it('shows just a sentence when the party has not played anything', async () => {
     mockApi({
       '/me': { body: ME },
       '/parties': { body: [PARTY] },
-      '/parties/3/stats': { body: { wins: [], topGames: [] } },
+      '/parties/3/stats': { body: { wins: [], topGames: [], starters: [], playTags: [] } },
     });
     renderApp('/stats');
     expect(await screen.findByText('Ještě jste nic neodehráli, je čas to napravit.')).toBeInTheDocument();
@@ -35,14 +58,14 @@ describe('statistics', () => {
   });
 
   it('filters by searched games and tags: picked ones start as "+", a click turns them into "−"', async () => {
-    const empty = { body: { wins: [], topGames: [] } };
+    const empty = { body: { wins: [], topGames: [], starters: [], playTags: [] } };
     const fetchMock = mockApi({
       '/me': { body: ME },
       '/parties': { body: [PARTY] },
       '/parties/3/game-tags': { body: ['Rychlovka', 'Strategie'] },
       '/parties/3/games?q=azu&sort=name&limit=20': { body: [{ ...GAME, id: 2, name: 'Azul' }] },
-      '/parties/3/stats': { body: { wins: [{ playerId: 1, name: 'Anna', wins: 3, plays: 5 }], topGames: [{ gameId: 2, name: 'Azul', shortName: null, plays: 4 }] } },
-      '/parties/3/stats?tags%5B%5D=Strategie': { body: { wins: [], topGames: [{ gameId: 3, name: 'Caverna', shortName: null, plays: 2 }] } },
+      '/parties/3/stats': { body: { wins: [{ playerId: 1, name: 'Anna', wins: 3, plays: 5 }], topGames: [{ gameId: 2, name: 'Azul', shortName: null, plays: 4 }], starters: [], playTags: [] } },
+      '/parties/3/stats?tags%5B%5D=Strategie': { body: { wins: [], topGames: [{ gameId: 3, name: 'Caverna', shortName: null, plays: 2 }], starters: [], playTags: [] } },
       '/parties/3/stats?excludeTags%5B%5D=Strategie': empty,
       '/parties/3/stats?excludeTags%5B%5D=Strategie&games%5B%5D=2': empty,
     });
@@ -78,8 +101,8 @@ describe('statistics', () => {
       '/me': { body: ME },
       '/parties': { body: [PARTY] },
       '/parties/3/game-tags': { body: ['Rychlovka', 'Strategie'] },
-      '/parties/3/stats': { body: { wins: [{ playerId: 1, name: 'Anna', wins: 3, plays: 5 }], topGames: [{ gameId: 2, name: 'Azul', shortName: null, plays: 4 }] } },
-      '/parties/3/stats?tags%5B%5D=Rychlovka': { body: { wins: [], topGames: [{ gameId: 3, name: 'Caverna', shortName: null, plays: 2 }] } },
+      '/parties/3/stats': { body: { wins: [{ playerId: 1, name: 'Anna', wins: 3, plays: 5 }], topGames: [{ gameId: 2, name: 'Azul', shortName: null, plays: 4 }], starters: [], playTags: [] } },
+      '/parties/3/stats?tags%5B%5D=Rychlovka': { body: { wins: [], topGames: [{ gameId: 3, name: 'Caverna', shortName: null, plays: 2 }], starters: [], playTags: [] } },
     });
     renderApp('/stats');
     expect(await screen.findByText('Azul')).toBeInTheDocument();
@@ -108,9 +131,9 @@ describe('statistics', () => {
       '/parties': { body: [PARTY] },
       '/parties/3/game-tags': { body: ['Rychlovka', 'Strategie'] },
       '/parties/3/games?q=azu&sort=name&limit=20': { body: [{ ...GAME, id: 2, name: 'Azul' }] },
-      '/parties/3/stats': { body: { wins: [], topGames: [{ gameId: 2, name: 'Azul', shortName: null, plays: 4 }] } },
-      '/parties/3/stats?excludeTags%5B%5D=Rychlovka': { body: { wins: [], topGames: [{ gameId: 2, name: 'Azul', shortName: null, plays: 4 }] } },
-      '/parties/3/stats?excludeTags%5B%5D=Rychlovka&games%5B%5D=2': { body: { wins: [], topGames: [{ gameId: 2, name: 'Azul', shortName: null, plays: 4 }] } },
+      '/parties/3/stats': { body: { wins: [], topGames: [{ gameId: 2, name: 'Azul', shortName: null, plays: 4 }], starters: [], playTags: [] } },
+      '/parties/3/stats?excludeTags%5B%5D=Rychlovka': { body: { wins: [], topGames: [{ gameId: 2, name: 'Azul', shortName: null, plays: 4 }], starters: [], playTags: [] } },
+      '/parties/3/stats?excludeTags%5B%5D=Rychlovka&games%5B%5D=2': { body: { wins: [], topGames: [{ gameId: 2, name: 'Azul', shortName: null, plays: 4 }], starters: [], playTags: [] } },
     });
     renderApp('/stats');
     expect(await screen.findByText('Azul')).toBeInTheDocument();
@@ -131,8 +154,8 @@ describe('statistics', () => {
       '/parties': { body: [PARTY] },
       '/parties/3/game-tags': { body: ['Rychlovka', 'Strategie'] },
       '/parties/3/games/2': { body: { ...GAME, id: 2, name: 'Azul' } },
-      '/parties/3/stats': { body: { wins: [], topGames: [{ gameId: 2, name: 'Azul', shortName: null, plays: 4 }, { gameId: 3, name: 'Caverna', shortName: null, plays: 2 }] } },
-      '/parties/3/stats?tags%5B%5D=Rychlovka&excludeTags%5B%5D=Strategie&games%5B%5D=2': { body: { wins: [], topGames: [{ gameId: 2, name: 'Azul', shortName: null, plays: 4 }] } },
+      '/parties/3/stats': { body: { wins: [], topGames: [{ gameId: 2, name: 'Azul', shortName: null, plays: 4 }, { gameId: 3, name: 'Caverna', shortName: null, plays: 2 }], starters: [], playTags: [] } },
+      '/parties/3/stats?tags%5B%5D=Rychlovka&excludeTags%5B%5D=Strategie&games%5B%5D=2': { body: { wins: [], topGames: [{ gameId: 2, name: 'Azul', shortName: null, plays: 4 }], starters: [], playTags: [] } },
     });
     renderApp('/parties/3/stats?games=2&tags=Rychlovka&excludeTags=Strategie');
 
@@ -152,7 +175,7 @@ describe('statistics', () => {
     mockApi({
       '/me': { body: ME },
       '/parties': { body: [PARTY] },
-      '/parties/3/stats': { body: { wins: [], topGames: [{ gameId: 2, name: 'Azul', shortName: null, plays: 4 }] } },
+      '/parties/3/stats': { body: { wins: [], topGames: [{ gameId: 2, name: 'Azul', shortName: null, plays: 4 }], starters: [], playTags: [] } },
     });
     renderApp('/stats');
     expect(await screen.findByRole('heading', { name: /Pátek/ })).toBeInTheDocument();
@@ -170,7 +193,7 @@ describe('statistics', () => {
       '/me': { body: ME },
       '/parties': { body: [PARTY] },
       '/parties/3/game-tags': { body: ['Rychlovka'] },
-      '/parties/3/stats': { body: { wins: [], topGames: [{ gameId: 2, name: 'Azul', shortName: null, plays: 4 }] } },
+      '/parties/3/stats': { body: { wins: [], topGames: [{ gameId: 2, name: 'Azul', shortName: null, plays: 4 }], starters: [], playTags: [] } },
     });
     renderApp('/parties/3/stats');
     expect(await screen.findByText('Azul')).toBeInTheDocument();
