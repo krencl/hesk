@@ -1,17 +1,16 @@
 import { Link, useParams } from 'react-router-dom';
 import { Actions } from '../components/Actions';
-import { ErrorMessage } from '../components/ErrorMessage';
 import { GameHeader } from '../components/GameHeader';
+import { LoadingOrError } from '../components/PageState';
 import { SafeHtml } from '../components/SafeHtml';
 import { renderCheatSheet } from '../lib/cheatSheet';
 import { useGame } from '../lib/useGame';
-import { ListSkeleton } from '../components/Skeleton';
 
 export function GameCheatsheetPage() {
   const id = Number(useParams().id);
   const game = useGame(id);
 
-  if (!game.data) return game.error ? <section className="page pad"><ErrorMessage inline error={game.error} /></section> : <ListSkeleton rows={1} />;
+  if (!game.data) return <LoadingOrError error={game.error} rows={1} />;
 
   return (
     <section className="page game-detail">

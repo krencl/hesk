@@ -2,14 +2,15 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { type FormEvent, type KeyboardEvent, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { api } from '../api';
-import { ApiError } from '../api/client';
 import { Actions } from '../components/Actions';
 import { ConfirmPopup } from '../components/ConfirmPopup';
 import { ErrorMessage } from '../components/ErrorMessage';
 import { GuestLinkPopup } from '../components/GuestLinkPopup';
 import { Icon } from '../components/Icon';
+import { EmptyState, LoadingOrError, PartyNotFound, isNotFound } from '../components/PageState';
 import { PartyHeader } from '../components/PartyHeader';
 import { ListSkeleton } from '../components/Skeleton';
+import { usePartyDetail } from '../lib/usePartyDetail';
 import { LEAVE_PARTY_MANAGEMENT_PATH } from '../lib/partyPath';
 import { playsLabel } from '../lib/plural';
 import { canWrite } from '../lib/roles';
@@ -19,7 +20,7 @@ import { qk } from '../api/queryKeys';
 export function PartyGuestsPage() {
   const id = Number(useParams().id);
   const queryClient = useQueryClient();
-  const detail = useQuery({ queryKey: qk.party(id), queryFn: () => api.party(id) });
+  const detail = usePartyDetail(id);
   const players = useQuery({ queryKey: qk.players(id), queryFn: () => api.players(id), enabled: !!detail.data });
   // rozpracované změny hostů (jméno, zobrazování), ukládají se najednou tlačítkem Uložit
   const [edited, setEdited] = useState<Record<number, { name?: string; visible?: boolean }>>({});
@@ -57,23 +58,11 @@ export function PartyGuestsPage() {
   });
   const remove = useMutation({ mutationFn: (playerId: number) => api.deletePlayer(playerId), onSuccess: refresh });
 
-  if (detail.error instanceof ApiError && (detail.error.status === 404 || detail.error.status === 403)) {
-    return (
-      <section className="page pad">
-        <p className="empty">Tahle parta neexistuje nebo v ní nejsi.</p>
-        <Actions><Link className="btn outline-secondary" to="/parties">Správa part</Link></Actions>
-      </section>
-    );
-  }
+  if (isNotFound(detail.error)) return <PartyNotFound />;
   if (detail.data && !canWrite(detail.data.role)) {
-    return (
-      <section className="page pad">
-        <p className="empty">Hosty spravuje jen zapisovač nebo správce.</p>
-        <Actions><Link className="btn outline-secondary" to={`/parties/${id}`}>Zpět</Link></Actions>
-      </section>
-    );
+    return <EmptyState message="Hosty spravuje jen zapisovač nebo správce." backTo={`/parties/${id}`} backLabel="Zpět" />;
   }
-  if (!detail.data) return detail.error ? <section className="page pad"><ErrorMessage inline error={detail.error} /></section> : <ListSkeleton rows={3} withImage={false} />;
+  if (!detail.data) return <LoadingOrError error={detail.error} rows={3} withImage={false} />;
 
   const submit = (e: FormEvent) => {
     e.preventDefault();

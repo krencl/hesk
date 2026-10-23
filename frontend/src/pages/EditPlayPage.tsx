@@ -1,14 +1,12 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { useActiveParty } from '../AppContext';
 import { api } from '../api';
-import { ApiError } from '../api/client';
 import type { PlayInput } from '../api/types';
 import { ErrorMessage } from '../components/ErrorMessage';
-import { Actions } from '../components/Actions';
 import { PlayForm } from '../components/PlayForm';
-import { ListSkeleton } from '../components/Skeleton';
+import { EmptyState, LoadingOrError, isNotFound } from '../components/PageState';
 import { draftFromPlay } from '../lib/playForm';
 import { refreshAfterPlayChange } from '../lib/refresh';
 import { useGame } from '../lib/useGame';
@@ -34,18 +32,9 @@ export function EditPlayPage() {
   const save = useMutation({ mutationFn: (input: PlayInput) => api.updatePlay(id, input), onSuccess: (saved) => finish(saved.game.id) });
   const remove = useMutation({ mutationFn: () => api.deletePlay(id), onSuccess: () => finish(gameId!) });
 
-  if (play.error instanceof ApiError && (play.error.status === 404 || play.error.status === 403)) {
-    return <p className="page pad empty">Tenhle zápis neexistuje nebo k němu nemáš přístup.<Link className="btn" to="/games">Zpět na hry</Link></p>;
-  }
-  if (!canWrite(party.role)) {
-    return (
-      <section className="page pad">
-        <p className="empty">Upravovat zápisy může jen zapisovač nebo správce.</p>
-        <Actions><Link className="btn outline-secondary" to="/games">Zpět na hry</Link></Actions>
-      </section>
-    );
-  }
-  if (!play.data || !game.data) return play.error || game.error ? <section className="page pad"><ErrorMessage inline error={play.error ?? game.error} /></section> : <ListSkeleton rows={3} withImage={false} />;
+  if (isNotFound(play.error)) return <EmptyState message="Tenhle zápis neexistuje nebo k němu nemáš přístup." backTo="/games" backLabel="Zpět na hry" />;
+  if (!canWrite(party.role)) return <EmptyState message="Upravovat zápisy může jen zapisovač nebo správce." backTo="/games" backLabel="Zpět na hry" />;
+  if (!play.data || !game.data) return <LoadingOrError error={play.error ?? game.error} rows={3} withImage={false} />;
 
   return (
     <PlayForm

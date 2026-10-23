@@ -3,13 +3,13 @@ import { useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { useActiveParty } from '../AppContext';
 import { api } from '../api';
-import { ApiError } from '../api/client';
 import type { Play } from '../api/types';
 import { Actions } from '../components/Actions';
 import { ErrorMessage } from '../components/ErrorMessage';
 import { LoadMore } from '../components/LoadMore';
 import { GameHeader } from '../components/GameHeader';
 import { Icon } from '../components/Icon';
+import { EmptyState, LoadingOrError, isNotFound } from '../components/PageState';
 import { ListSkeleton } from '../components/Skeleton';
 import { formatDateShort, formatDateTimeShort } from '../lib/datetime';
 import { canWrite } from '../lib/roles';
@@ -38,15 +38,8 @@ export function GameDetailPage() {
   const plays = rounds.data?.pages.flatMap((p) => p.items) ?? [];
   const selectedId = openId === undefined ? plays[0]?.id : openId;
 
-  if (game.error instanceof ApiError && (game.error.status === 404 || game.error.status === 403)) {
-    return (
-      <section className="page pad">
-        <p className="empty">Tahle hra neexistuje nebo k ní nemáš přístup.</p>
-        <Actions><Link className="btn outline-secondary" to="/games">Zpět</Link></Actions>
-      </section>
-    );
-  }
-  if (!game.data) return game.error ? <section className="page pad"><ErrorMessage inline error={game.error} /></section> : <ListSkeleton rows={1} />;
+  if (isNotFound(game.error)) return <EmptyState message="Tahle hra neexistuje nebo k ní nemáš přístup." backTo="/games" backLabel="Zpět" />;
+  if (!game.data) return <LoadingOrError error={game.error} rows={1} />;
 
   const remaining = Math.max(0, game.data.playCount - plays.length);
 

@@ -1,10 +1,9 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { useActiveParty } from '../AppContext';
 import { api } from '../api';
-import { ApiError } from '../api/client';
-import { Actions } from '../components/Actions';
+import { EmptyState, isNotFound } from '../components/PageState';
 import { PlayForm } from '../components/PlayForm';
 import { ListSkeleton } from '../components/Skeleton';
 import { fromLocalInput } from '../lib/datetime';
@@ -44,18 +43,9 @@ export function NewPlayPage() {
     },
   });
 
-  if (game.error instanceof ApiError && (game.error.status === 404 || game.error.status === 403)) {
-    return <p className="page pad empty">Tahle hra neexistuje nebo k ní nemáš přístup.<Link className="btn" to="/games">Zpět na hry</Link></p>;
-  }
-  if (!canWrite(party.role)) {
-    return (
-      <section className="page pad">
-        <p className="empty">Zapisovat hry může jen zapisovač nebo správce.</p>
-        <Actions><Link className="btn outline-secondary" to={`/games/${gameId}`}>Zpět</Link></Actions>
-      </section>
-    );
-  }
-  if (!game.data || !players.data || (defaults.isPending && !defaults.isError)) return <ListSkeleton rows={3} withImage={false} />;
+  if (isNotFound(game.error)) return <EmptyState message="Tahle hra neexistuje nebo k ní nemáš přístup." backTo="/games" backLabel="Zpět na hry" />;
+  if (!canWrite(party.role)) return <EmptyState message="Zapisovat hry může jen zapisovač nebo správce." backTo={`/games/${gameId}`} backLabel="Zpět" />;
+  if (!game.data || !players.data || defaults.isPending) return <ListSkeleton rows={3} withImage={false} />;
 
   return (
     <PlayForm

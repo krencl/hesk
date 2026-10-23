@@ -1,9 +1,8 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useApp } from '../AppContext';
 import { api } from '../api';
-import { ApiError } from '../api/client';
 import type { PartyRole } from '../api/types';
 import { Actions } from '../components/Actions';
 import { ErrorMessage } from '../components/ErrorMessage';
@@ -13,7 +12,8 @@ import { PartyHeader } from '../components/PartyHeader';
 import { SelectPopup } from '../components/SelectPopup';
 import { LEAVE_PARTY_MANAGEMENT_PATH } from '../lib/partyPath';
 import { ROLE_LABELS, ROLE_ORDER } from '../lib/roles';
-import { ListSkeleton } from '../components/Skeleton';
+import { LoadingOrError, PartyNotFound, isNotFound } from '../components/PageState';
+import { usePartyDetail } from '../lib/usePartyDetail';
 import { qk } from '../api/queryKeys';
 
 /** Detail party: členové a jejich role, pozvánky a opuštění party. Seznam part a zakládání jsou ve správě part. */
@@ -25,7 +25,7 @@ export function PartyDetailPage() {
   const [inviteLink, setInviteLink] = useState<string | null>(null);
   // člen, kterého se právě potvrzuje odebrání (nebo já při opuštění party)
   const [confirming, setConfirming] = useState<{ userId: number; nickname: string } | null>(null);
-  const detail = useQuery({ queryKey: qk.party(id), queryFn: () => api.party(id) });
+  const detail = usePartyDetail(id);
   const refresh = () => Promise.all([queryClient.invalidateQueries({ queryKey: qk.parties() }), queryClient.invalidateQueries({ queryKey: qk.party() })]);
 
   const invite = useMutation({
@@ -41,15 +41,8 @@ export function PartyDetailPage() {
     },
   });
 
-  if (detail.error instanceof ApiError && (detail.error.status === 404 || detail.error.status === 403)) {
-    return (
-      <section className="page pad">
-        <p className="empty">Tahle parta neexistuje nebo v ní nejsi.</p>
-        <Actions><Link className="btn outline-secondary" to="/parties">Správa part</Link></Actions>
-      </section>
-    );
-  }
-  if (!detail.data) return detail.error ? <section className="page pad"><ErrorMessage inline error={detail.error} /></section> : <ListSkeleton rows={3} withImage={false} />;
+  if (isNotFound(detail.error)) return <PartyNotFound />;
+  if (!detail.data) return <LoadingOrError error={detail.error} rows={3} withImage={false} />;
 
   const party = detail.data;
   const isAdmin = party.role === 'admin';
