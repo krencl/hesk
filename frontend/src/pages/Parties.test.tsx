@@ -274,4 +274,13 @@ describe('party detail (/parties/:id)', () => {
     const stats = screen.getByRole('link', { name: 'Statistiky' });
     expect(stats.compareDocumentPosition(screen.getByRole('link', { name: 'Spravovat' })) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
+
+  it('highlights only one of Statistiky / Spravovat in the menu, although both live under /parties/:id', async () => {
+    mockApi({ ...base, '/parties/3/stats': { body: { wins: [], topGames: [{ gameId: 2, name: 'Azul', shortName: null, plays: 4 }] } } });
+    renderApp('/parties/3/stats');
+    await screen.findByText('Azul');
+    fireEvent.click(await screen.findByRole('button', { name: /Menu – Pátek/ }));
+    expect(screen.getByRole('link', { name: 'Statistiky' })).toHaveClass('active');
+    expect(screen.getByRole('link', { name: 'Spravovat' })).not.toHaveClass('active');
+  });
 });

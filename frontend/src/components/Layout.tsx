@@ -98,7 +98,7 @@ export function Layout() {
               </h4>
               <ul className="menu-list">
                 <li><NavLink to={activeParty ? `/parties/${activeParty.id}/stats` : '/stats'} onClick={closeMenu}>Statistiky</NavLink></li>
-                {activeParty && <li><NavLink to={`/parties/${activeParty.id}`} onClick={closeMenu}>Spravovat</NavLink></li>}
+                {activeParty && <li><NavLink to={`/parties/${activeParty.id}`} className={({ isActive }) => (isActive && !location.pathname.endsWith('/stats') ? 'active' : undefined)} onClick={closeMenu}>Spravovat</NavLink></li>}
               </ul>
             </>
           )}
