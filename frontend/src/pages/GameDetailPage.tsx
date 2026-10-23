@@ -39,7 +39,7 @@ export function GameDetailPage() {
   const plays = rounds.data?.pages.flatMap((p) => p.items) ?? [];
   const selectedId = openId === undefined ? plays[0]?.id : openId;
 
-  if (isNotFound(game.error)) return <EmptyState message="Tahle hra neexistuje nebo k ní nemáš přístup." backTo="/games" backLabel="Zpět" />;
+  if (isNotFound(game.error)) return <EmptyState message="Tahle hra neexistuje nebo k ní nemáš přístup." backTo="/" backLabel="Zpět" />;
   if (!game.data) return <LoadingOrError error={game.error} rows={1} />;
 
   const remaining = Math.max(0, game.data.playCount - plays.length);
@@ -75,7 +75,7 @@ export function GameDetailPage() {
       <Actions>
         {canWrite(party.role) && <Link className="btn" to={`/games/${id}/new-play`}>Nový zápis</Link>}
         {game.data.cheatSheet && <Link className="btn outline" to={`/games/${id}/cheatsheet`}>Cheatsheet</Link>}
-        <Link className="btn outline-secondary" to="/games">Zpět</Link>
+        <Link className="btn outline-secondary" to="/">Zpět</Link>
       </Actions>
     </section>
   );

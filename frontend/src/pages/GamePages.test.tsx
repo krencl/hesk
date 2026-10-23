@@ -3,9 +3,15 @@ import { describe, expect, it, vi } from 'vitest';
 import { BASE_ROUTES, GAME, PLAY, games, mockApi, renderApp, requestedUrls, sentBody } from '../test/helpers';
 
 describe('game list', () => {
-  it('redirects the root to the game list', async () => {
+  it('shows the game list at the root', async () => {
     mockApi({ ...BASE_ROUTES, '/parties/3/games?sort=activity&limit=21&offset=0': { body: [] } });
     renderApp('/');
+    expect(await screen.findByText('Ještě jste nic nehráli, je čas to napravit!')).toBeInTheDocument();
+  });
+
+  it('redirects the former /games address to the root', async () => {
+    mockApi({ ...BASE_ROUTES, '/parties/3/games?sort=activity&limit=21&offset=0': { body: [] } });
+    renderApp('/games');
     expect(await screen.findByText('Ještě jste nic nehráli, je čas to napravit!')).toBeInTheDocument();
   });
 
@@ -15,7 +21,7 @@ describe('game list', () => {
       '/parties/3/games?sort=activity&limit=21&offset=0': { body: [...games(20), { ...GAME, id: 99, name: 'Dvacátá první' }] },
       '/parties/3/games?sort=activity&limit=21&offset=20': { body: [{ ...GAME, id: 99, name: 'Dvacátá první', lastPlay: null, playCount: 0 }] },
     });
-    renderApp('/games');
+    renderApp('/');
     expect(await screen.findByText('Hra 20')).toBeInTheDocument();
     expect(screen.queryByText('Dvacátá první')).not.toBeInTheDocument();
 
@@ -39,7 +45,7 @@ describe('game list', () => {
       '/parties/3/games?sort=activity&limit=21&offset=0': { body: [...games(20), { ...GAME, id: 99, name: 'Dvacátá první' }] },
       '/parties/3/games?sort=activity&limit=21&offset=20': { body: [{ ...GAME, id: 99, name: 'Dvacátá první', lastPlay: null, playCount: 0 }] },
     });
-    renderApp('/games');
+    renderApp('/');
     expect(await screen.findByText('Hra 20')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Načíst další' })).not.toBeInTheDocument();
     expect(requestedUrls(fetchMock)).not.toContain('/parties/3/games?sort=activity&limit=21&offset=20');
@@ -58,7 +64,7 @@ describe('game list', () => {
       '/parties/3/games?sort=activity&limit=21&offset=0': { body: [GAME] },
       '/parties/3/games?q=xyz&sort=activity&limit=21&offset=0': { body: [] },
     });
-    renderApp('/games');
+    renderApp('/');
     await screen.findByText('Carcassonne');
 
     fireEvent.change(screen.getByRole('searchbox', { name: 'Hledat hru' }), { target: { value: 'xyz' } });
@@ -79,7 +85,7 @@ describe('game list', () => {
       '/parties/3/games?sort=name&limit=21&offset=0': { body: [GAME] },
       '/parties/3/games?sort=name&sessionNumber=3&limit=21&offset=0': { body: [] },
     });
-    renderApp('/games');
+    renderApp('/');
     await screen.findByText('Carcassonne');
     expect(screen.queryByRole('button', { name: 'Řazení' })).not.toBeInTheDocument();
 
@@ -128,7 +134,7 @@ describe('game detail', () => {
 
     expect(screen.getByRole('link', { name: 'Nový zápis' })).toHaveAttribute('href', '/games/1/new-play');
     expect(screen.getByRole('link', { name: 'Cheatsheet' })).toHaveAttribute('href', '/games/1/cheatsheet');
-    expect(screen.getByRole('link', { name: 'Zpět' })).toHaveAttribute('href', '/games');
+    expect(screen.getByRole('link', { name: 'Zpět' })).toHaveAttribute('href', '/');
   });
 
   it('hides the cheat-sheet button for games without one and offers editing instead of deleting', async () => {

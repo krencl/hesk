@@ -7,5 +7,5 @@ import { EmptyState } from './PageState';
 export function RequireWriter() {
   const party = useActiveParty();
   if (canWrite(party.role)) return <Outlet />;
-  return <EmptyState message="Hry party spravuje jen zapisovač nebo správce." backTo="/games" backLabel="Zpět na hry" />;
+  return <EmptyState message="Hry party spravuje jen zapisovač nebo správce." backTo="/" backLabel="Zpět na hry" />;
 }

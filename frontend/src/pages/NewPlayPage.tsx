@@ -44,7 +44,7 @@ export function NewPlayPage() {
     },
   });
 
-  if (isNotFound(game.error)) return <EmptyState message="Tahle hra neexistuje nebo k ní nemáš přístup." backTo="/games" backLabel="Zpět na hry" />;
+  if (isNotFound(game.error)) return <EmptyState message="Tahle hra neexistuje nebo k ní nemáš přístup." backTo="/" backLabel="Zpět na hry" />;
   if (!canWrite(party.role)) return <EmptyState message="Zapisovat hry může jen zapisovač nebo správce." backTo={`/games/${gameId}`} backLabel="Zpět" />;
   if (!game.data || !players.data || defaults.isPending) return <ListSkeleton rows={3} withImage={false} />;
 

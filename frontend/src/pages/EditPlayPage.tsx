@@ -32,8 +32,8 @@ export function EditPlayPage() {
   const save = useMutation({ mutationFn: (input: PlayInput) => api.updatePlay(id, input), onSuccess: (saved) => finish(saved.game.id) });
   const remove = useMutation({ mutationFn: () => api.deletePlay(id), onSuccess: () => finish(gameId!) });
 
-  if (isNotFound(play.error)) return <EmptyState message="Tenhle zápis neexistuje nebo k němu nemáš přístup." backTo="/games" backLabel="Zpět na hry" />;
-  if (!canWrite(party.role)) return <EmptyState message="Upravovat zápisy může jen zapisovač nebo správce." backTo="/games" backLabel="Zpět na hry" />;
+  if (isNotFound(play.error)) return <EmptyState message="Tenhle zápis neexistuje nebo k němu nemáš přístup." backTo="/" backLabel="Zpět na hry" />;
+  if (!canWrite(party.role)) return <EmptyState message="Upravovat zápisy může jen zapisovač nebo správce." backTo="/" backLabel="Zpět na hry" />;
   if (!play.data || !game.data) return <LoadingOrError error={play.error ?? game.error} rows={3} withImage={false} />;
 
   return (

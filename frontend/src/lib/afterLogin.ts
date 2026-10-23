@@ -18,6 +18,12 @@ export function peekAfterLoginPath(): string | null {
   }
 }
 
+/** Token pozvánky ze zapamatované cesty `/join/<token>`; s ním smí nový uživatel při přihlášení založit účet (registrace je jinak uzavřená). */
+export function peekInvitationToken(): string | null {
+  const match = /^\/join\/([^/?#]+)/.exec(peekAfterLoginPath() ?? '');
+  return match ? decodeURIComponent(match[1]) : null;
+}
+
 /** Smaže zapamatovanou cestu; volat až po přesměrování (efekt), ne při renderu. */
 export function clearAfterLoginPath(): void {
   try {

@@ -10,6 +10,7 @@ Specifikace: přihlášení přes Google („Google 2FA“ – chápáno jako p�
 - **Stavová session (cookie)**, ne JWT: SPA je na stejné doméně (v dev přes Vite proxy), cookie je `SameSite=Lax`, odpadá správa tokenů na klientu. Neautorizovaný přístup vrací `401` JSON (`JsonEntryPoint`), ne redirect.
 - Pomocný `SessionLoginAuthenticator` se nikdy sám neaktivuje (`supports()` = false); slouží jen tomu, aby `Security::login()` mělo authenticator.
 - **Přezdívka** se nastavuje po prvním přihlášení (`PATCH /api/me`); frontend bez ní nepustí dál. Backend ji zatím nevynucuje na ostatních endpointech (viz otevřené body).
+- **Registrace je uzavřená** (ADR 0027): nový účet vznikne jen přes platnou pozvánku.
 - `POST /api/auth/dev-login` existuje **jen v `dev`/`test`** (jinak 404) – umožňuje vývoj a testy bez Google credentials.
 - Autorizace part přes `PartyVoter` (`PARTY_VIEW` = člen, `PARTY_ADMIN` = admin).
 

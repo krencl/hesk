@@ -1,6 +1,8 @@
 import { useQueryClient } from '@tanstack/react-query';
 import { type FormEvent, useState } from 'react';
+import { useLocation } from 'react-router-dom';
 import { ApiError, post } from '../api/client';
+import { peekInvitationToken } from '../lib/afterLogin';
 import { useToasts } from '../components/Toasts';
 import { qk } from '../api/queryKeys';
 
@@ -8,6 +10,8 @@ export function LoginPage() {
   const queryClient = useQueryClient();
   const [email, setEmail] = useState('dev@example.com');
   const { showError } = useToasts();
+  const registrationDenied = new URLSearchParams(useLocation().search).get('registration') === 'denied';
+  const invitation = peekInvitationToken();
 
   // Pouze ve vývoji: přihlášení bez Googlu (backend endpoint existuje jen v env dev/test).
   const devLogin = async (e: FormEvent) => {
@@ -24,7 +28,10 @@ export function LoginPage() {
     <div className="login">
       <img className="login-logo" src={`${import.meta.env.BASE_URL}logo.svg`} alt="HESK" />
       <p>Zapisuj odehrané deskovky a sleduj, kdo vyhrává.</p>
-      <a className="btn" href="/api/auth/google">Přihlásit přes Google</a>
+      {registrationDenied && (
+        <p role="alert" className="error">Registrace je zatím uzavřená. Účet si můžeš založit jen přes pozvánku od člena party.</p>
+      )}
+      <a className="btn" href={invitation ? `/api/auth/google?invitation=${encodeURIComponent(invitation)}` : '/api/auth/google'}>Přihlásit přes Google</a>
       {import.meta.env.DEV && (
         <form onSubmit={devLogin} className="dev-login">
           <small>Vývojové přihlášení</small>

@@ -75,8 +75,8 @@ function AppContent() {
           <Route path="/join/:token" element={<JoinPage />} />
           <Route path="/settings" element={<SettingsPage />} />
           <Route element={<RequireParty />}>
-            <Route path="/" element={<Navigate to="/games" replace />} />
-            <Route path="/games" element={<GameListPage />} />
+            <Route path="/" element={<GameListPage />} />
+            <Route path="/games" element={<Navigate to="/" replace />} />
             <Route element={<RequireWriter />}>
               <Route path="/games/new" element={<GameFormPage />} />
               <Route path="/games/:id/edit" element={<GameFormPage />} />

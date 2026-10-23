@@ -1,5 +1,5 @@
 /** Kam vede „Zrušit“ na stránkách správy party: celá správa party se zavře a vrátíme se do aplikace (seznam her). */
-export const LEAVE_PARTY_MANAGEMENT_PATH = '/games';
+export const LEAVE_PARTY_MANAGEMENT_PATH = '/';
 
 /**
  * Stránka správy party (`/parties/:id`, `/parties/:id/guests`, `/parties/:id/edit`) a statistiky (`/parties/:id/stats`) po přepnutí na jinou partu: stejná stránka pod novou partou

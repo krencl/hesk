@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { clearAfterLoginPath, peekAfterLoginPath, rememberAfterLoginPath } from './afterLogin';
+import { clearAfterLoginPath, peekAfterLoginPath, peekInvitationToken, rememberAfterLoginPath } from './afterLogin';
 
 describe('afterLogin', () => {
   it('remembers invitation paths until they are cleared', () => {
@@ -8,6 +8,12 @@ describe('afterLogin', () => {
     expect(peekAfterLoginPath()).toBe('/join/abc'); // čtení nic nemaže (StrictMode renderuje dvakrát)
     clearAfterLoginPath();
     expect(peekAfterLoginPath()).toBeNull();
+  });
+
+  it('extracts the invitation token from the remembered path', () => {
+    expect(peekInvitationToken()).toBeNull();
+    rememberAfterLoginPath('/join/abc123');
+    expect(peekInvitationToken()).toBe('abc123');
   });
 
   it('ignores other paths', () => {

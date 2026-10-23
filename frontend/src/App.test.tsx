@@ -10,6 +10,25 @@ describe('App gating', () => {
     expect(sessionStorage.getItem('hesk.afterLogin')).toBe('/join/tok123');
   });
 
+  it('passes the invitation token to the Google login so an invited user can register', async () => {
+    mockApi({ '/me': { status: 401, body: { error: 'Unauthorized' } } });
+    renderApp('/join/tok123');
+    expect(await screen.findByRole('link', { name: /Google/ })).toHaveAttribute('href', '/api/auth/google?invitation=tok123');
+  });
+
+  it('logs in without an invitation parameter on a regular visit', async () => {
+    mockApi({ '/me': { status: 401, body: { error: 'Unauthorized' } } });
+    renderApp('/');
+    expect(await screen.findByRole('link', { name: /Google/ })).toHaveAttribute('href', '/api/auth/google');
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+  });
+
+  it('explains that registration is closed after a denied sign-up', async () => {
+    mockApi({ '/me': { status: 401, body: { error: 'Unauthorized' } } });
+    renderApp('/?registration=denied');
+    expect(await screen.findByRole('alert')).toHaveTextContent('Registrace je zatím uzavřená');
+  });
+
   it('forces setting a nickname first', async () => {
     mockApi({ '/me': { body: { id: 1, nickname: null, email: 'a@b.cz', hasNickname: false } } });
     renderApp();

@@ -74,7 +74,7 @@ describe('party guests (/parties/:id/guests)', () => {
     mockApi(base);
     renderApp('/parties/3/guests');
     await screen.findByLabelText('Jméno hosta Bob');
-    expect(screen.getByRole('link', { name: 'Zrušit' })).toHaveAttribute('href', '/games');
+    expect(screen.getByRole('link', { name: 'Zrušit' })).toHaveAttribute('href', '/');
   });
 
   it('keeps Save disabled while nothing is changed', async () => {

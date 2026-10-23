@@ -113,7 +113,7 @@ export function Layout() {
           <hr />
           <h4 className="primary">Menu</h4>
           <ul className="menu-list">
-            <li><NavLink to="/games" end onClick={closeMenu}>Seznam her</NavLink></li>
+            <li><NavLink to="/" end onClick={closeMenu}>Seznam her</NavLink></li>
           </ul>
 
           <hr />

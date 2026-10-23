@@ -15,9 +15,9 @@ describe('PageState', () => {
   });
 
   it('renders the message with a back link', () => {
-    render(<MemoryRouter><EmptyState message="Nic tu není." backTo="/games" backLabel="Zpět" /></MemoryRouter>);
+    render(<MemoryRouter><EmptyState message="Nic tu není." backTo="/" backLabel="Zpět" /></MemoryRouter>);
     expect(screen.getByText('Nic tu není.')).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Zpět' })).toHaveAttribute('href', '/games');
+    expect(screen.getByRole('link', { name: 'Zpět' })).toHaveAttribute('href', '/');
   });
 
   it('shows the skeleton while loading and the error message when it failed', () => {

@@ -87,7 +87,7 @@ describe('party detail (/parties/:id)', () => {
     const link = (await screen.findByLabelText('Odkaz pozvánky')) as HTMLInputElement;
     expect(link.value).toMatch(/\/join\/abc$/);
     // sekundární tlačítko je na všech záložkách „Zrušit“ a zavře celou správu party
-    expect(screen.getByRole('link', { name: 'Zrušit' })).toHaveAttribute('href', '/games');
+    expect(screen.getByRole('link', { name: 'Zrušit' })).toHaveAttribute('href', '/');
     expect(screen.queryByRole('link', { name: 'Správa part' })).not.toBeInTheDocument();
   });
 
@@ -140,7 +140,7 @@ describe('party detail (/parties/:id)', () => {
     renderApp('/parties/3/edit');
     expect(await screen.findByRole('heading', { name: 'Parta Pátek' })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Nastavení' })).toHaveClass('active');
-    expect(screen.getByRole('link', { name: 'Zrušit' })).toHaveAttribute('href', '/games');
+    expect(screen.getByRole('link', { name: 'Zrušit' })).toHaveAttribute('href', '/');
   });
 
   it('offers the sections as tabs with their own addresses; settings only for an admin', async () => {
@@ -261,7 +261,7 @@ describe('party detail (/parties/:id)', () => {
 
   it('is reachable from the menu for the active party', async () => {
     mockApi(base);
-    renderApp('/games');
+    renderApp('/');
     await screen.findByRole('searchbox', { name: 'Hledat hru' });
     fireEvent.click(await screen.findByRole('button', { name: /Menu – Pátek/ }));
     expect(screen.getByRole('link', { name: 'Spravovat' })).toHaveAttribute('href', '/parties/3');
