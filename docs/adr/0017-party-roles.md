@@ -12,4 +12,4 @@ Do té doby byla role jen admin / člen a zapisovat mohl každý člen. Potřeba
 - **Frontend:** v seznamu členů admin mění roli popupem (`SelectPopup` bez hledání: Člen / Zapisovač / Správce), ostatní vidí roli jako text. Člen nemá na detailu hry tlačítko „Nový zápis“ ani „Upravit“ u zápisu a stránky nového/upraveného zápisu mu místo formuláře ukážou vysvětlení (`canWrite` v `lib/roles.ts`).
 
 ## Důsledky
-- Správa hostů (přidání, přejmenování, skrytí, smazání) zůstává otevřená každému členu; zpřísnit ji na zapisovače a admina je jedna změna v `PlayerController`.
+- ~~Správa hostů zůstává otevřená každému členu~~ (2026-10-22): přidání, přejmenování, skrytí a smazání hosta vyžaduje `PARTY_WRITE` (zapisovač a správce); obyčejný člen hosty jen vidí ve výběru hráčů, záložka Hosté se mu nenabízí. Stejně tak správa her party (ADR 0023).

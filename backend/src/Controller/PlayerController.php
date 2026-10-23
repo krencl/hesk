@@ -8,8 +8,8 @@ use App\Domain\Exception\DomainException;
 use App\Dto\LinkMemberRequest;
 use App\Dto\PlayerNameRequest;
 use App\Dto\UpdatePlayerRequest;
-use App\Entity\Game;
 use App\Entity\Party;
+use App\Entity\PartyGame;
 use App\Entity\Player;
 use App\Repository\PlayRepository;
 use App\Security\PartyVoter;
@@ -43,7 +43,7 @@ final class PlayerController extends ApiController
     }
 
     #[Route('/api/parties/{id}/players', requirements: ['id' => '\d+'], methods: ['POST'])]
-    #[IsGranted(PartyVoter::VIEW, 'party')]
+    #[IsGranted(PartyVoter::WRITE, 'party')]
     public function createGuest(Party $party, #[MapRequestPayload] PlayerNameRequest $req): JsonResponse
     {
         $player = $party->addGuest($req->name);
@@ -55,7 +55,7 @@ final class PlayerController extends ApiController
     #[Route('/api/players/{id}', requirements: ['id' => '\d+'], methods: ['PATCH'])]
     public function update(Player $player, #[MapRequestPayload] UpdatePlayerRequest $req): JsonResponse
     {
-        $this->denyAccessUnlessGranted(PartyVoter::VIEW, $player->getParty());
+        $this->denyAccessUnlessGranted(PartyVoter::WRITE, $player->getParty());
         if (null !== $player->getUser()) {
             throw new DomainException('Člena s účtem tu upravit nejde, jeho jméno se mění přezdívkou.');
         }
@@ -77,7 +77,7 @@ final class PlayerController extends ApiController
     #[Route('/api/players/{id}', requirements: ['id' => '\d+'], methods: ['DELETE'])]
     public function delete(Player $player): Response
     {
-        $this->denyAccessUnlessGranted(PartyVoter::VIEW, $player->getParty());
+        $this->denyAccessUnlessGranted(PartyVoter::WRITE, $player->getParty());
         if (null !== $player->getUser()) {
             throw new DomainException('Člena s účtem nelze smazat, nejdřív ho odeber z party.');
         }
@@ -85,8 +85,8 @@ final class PlayerController extends ApiController
         if ($played > 0) {
             throw new DomainException(sprintf('Host už hrál v %d zápisech, smazat ho nejde.', $played));
         }
-        if ($game = $this->em->createQuery('SELECT g FROM '.Game::class.' g WHERE :player MEMBER OF g.players')->setParameter('player', $player)->setMaxResults(1)->getOneOrNullResult()) {
-            throw new DomainException(sprintf('Host je hráčem hry %s, smazat ho nejde.', $game->getName()));
+        if ($link = $this->em->createQuery('SELECT pg FROM '.PartyGame::class.' pg WHERE :player MEMBER OF pg.players')->setParameter('player', $player)->setMaxResults(1)->getOneOrNullResult()) {
+            throw new DomainException(sprintf('Host je hráčem hry %s, smazat ho nejde.', $link->getGame()->getName()));
         }
         $this->merger->forgetInvitations($player);
         $this->em->remove($player);

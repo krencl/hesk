@@ -160,7 +160,7 @@ describe('party detail (/parties/:id)', () => {
 
     renderApp('/parties/4');
     await screen.findByRole('heading', { name: 'Parta Víkend' });
-    expect(within(screen.getByRole('navigation', { name: 'Správa party' })).getAllByRole('link').map((a) => a.textContent)).toEqual(['Členové', 'Hosté']);
+    expect(within(screen.getByRole('navigation', { name: 'Správa party' })).getAllByRole('link').map((a) => a.textContent)).toEqual(['Členové']); // hosty spravuje jen zapisovač a správce
   });
 
   it('sends a plain member from the edit page back to the detail', async () => {

@@ -16,6 +16,7 @@ use App\Entity\Party;
 use App\Entity\Play;
 use App\Entity\PlayResult;
 use App\Entity\User;
+use App\Enum\PartyRole;
 use App\Enum\ScoreType;
 use App\Repository\GameRepository;
 use App\Repository\PlayRepository;
@@ -145,6 +146,40 @@ final class GameControllerTest extends TestCase
             } catch (AccessDeniedException) {
                 $this->addToAssertionCount(1);
             }
+        }
+    }
+
+    public function testPlainMemberOnlyReadsGamesOfThePartyWhileWriterManagesThem(): void
+    {
+        $bob = Fixtures::member($this->party, Fixtures::user('Bob'));
+        $cyril = Fixtures::member($this->party, Fixtures::user('Cyril'), PartyRole::Writer);
+        $game = Fixtures::game($this->party, 'Azul');
+        $catalog = Fixtures::catalogGame('Tokaido');
+        $games = $this->createStub(GameRepository::class);
+        $games->method('statsFor')->willReturn([$game->getId() => ['lastPlay' => null, 'playCount' => 0]]);
+        $controller = $this->controller($games, known: [$game, $catalog]);
+        $manage = [
+            ['create', ['party' => $this->party, 'req' => $this->request()]],
+            ['link', ['party' => $this->party, 'req' => new GameLinkRequest($catalog->getId())]],
+            ['setPlayers', ['party' => $this->party, 'game' => $game, 'req' => new GamePlayersRequest()]],
+            ['uploadImage', ['party' => $this->party, 'request' => new Request()]],
+            ['unlink', ['party' => $this->party, 'game' => $game]],
+        ];
+
+        foreach ($manage as [$action, $args]) {
+            try {
+                ControllerHarness::as($bob)->call($controller, $action, $args);
+                self::fail("Obyčejný člen nesmí volat $action.");
+            } catch (AccessDeniedException) {
+                $this->addToAssertionCount(1);
+            }
+        }
+        $harness = ControllerHarness::as($bob);
+        $harness->call($controller, 'list', ['party' => $this->party, 'request' => new Request()]);
+        $harness->call($controller, 'show', ['party' => $this->party, 'game' => $game]);
+
+        foreach (array_slice($manage, 0, 3) as [$action, $args]) {
+            ControllerHarness::as($cyril)->call($controller, $action, $args);
         }
     }
 

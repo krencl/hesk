@@ -9,6 +9,7 @@ import { LoadMore } from '../components/LoadMore';
 import { ListSkeleton } from '../components/Skeleton';
 import { formatDateTimeShort } from '../lib/datetime';
 import { loadGameListSettings, saveGameListSettings } from '../lib/listSettings';
+import { canWrite } from '../lib/roles';
 import { useGameList } from '../lib/useGameList';
 
 export function GameListPage() {
@@ -27,8 +28,10 @@ export function GameListPage() {
 
       {games.data && items.length === 0 && (
         <p className="empty">
-          {query ? <>Hledání „<b className="primary">{query}</b>“ nic nenašlo.</> : sessionNumber ? 'V tomhle sezení se nehrála žádná hra.' : 'Ještě jste nic nehráli, je čas to napravit!'}
-          {!query && !sessionNumber && <Link className="btn" to="/games/new">Přidat hru</Link>}
+          <span>
+            {query ? <>Hledání „<b className="primary">{query}</b>“ nic nenašlo.</> : sessionNumber ? 'V tomhle sezení se nehrála žádná hra.' : 'Ještě jste nic nehráli, je čas to napravit!'}
+          </span>
+          {!sessionNumber && canWrite(party.role) && <Link className="btn" to="/games/new">Přidat hru</Link>}
         </p>
       )}
 

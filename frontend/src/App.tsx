@@ -3,6 +3,7 @@ import { consumeAfterLoginPath, rememberAfterLoginPath } from './lib/afterLogin'
 import { AppProvider, useCurrentUserQuery } from './AppContext';
 import { Layout } from './components/Layout';
 import { RequireParty } from './components/RequireParty';
+import { RequireWriter } from './components/RequireWriter';
 import { ToastProvider } from './components/Toasts';
 import { TooltipLayer } from './components/TooltipLayer';
 import { GameCheatsheetPage } from './pages/GameCheatsheetPage';
@@ -60,12 +61,14 @@ function AppContent() {
           <Route element={<RequireParty />}>
             <Route path="/" element={<Navigate to="/games" replace />} />
             <Route path="/games" element={<GameListPage />} />
-            <Route path="/games/new" element={<GameFormPage />} />
+            <Route element={<RequireWriter />}>
+              <Route path="/games/new" element={<GameFormPage />} />
+              <Route path="/games/:id/edit" element={<GameFormPage />} />
+              <Route path="/manage/games" element={<GamesPage />} />
+            </Route>
             <Route path="/games/:id" element={<GameDetailPage />} />
             <Route path="/games/:id/cheatsheet" element={<GameCheatsheetPage />} />
             <Route path="/games/:id/new-play" element={<NewPlayPage />} />
-            <Route path="/games/:id/edit" element={<GameFormPage />} />
-            <Route path="/manage/games" element={<GamesPage />} />
             <Route path="/plays/:id/edit" element={<EditPlayPage />} />
             <Route path="/stats" element={<StatsPage />} />
           </Route>

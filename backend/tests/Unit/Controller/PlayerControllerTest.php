@@ -86,6 +86,32 @@ final class PlayerControllerTest extends TestCase
         }
     }
 
+    public function testPlainMemberCannotAddOrManageGuestsButWriterCan(): void
+    {
+        Fixtures::member($this->party, $this->bob, PartyRole::Member);
+        Fixtures::member($this->party, $this->eve, PartyRole::Writer);
+        $cyril = Fixtures::guest($this->party, 'Cyril');
+        $calls = [
+            ['createGuest', ['party' => $this->party, 'req' => new PlayerNameRequest('X')]],
+            ['update', ['player' => $cyril, 'req' => new UpdatePlayerRequest('Y')]],
+            ['delete', ['player' => $cyril]],
+        ];
+
+        foreach ($calls as [$action, $args]) {
+            try {
+                ControllerHarness::as($this->bob)->call($this->controller(), $action, $args);
+                self::fail("Obyčejný člen nesmí volat $action.");
+            } catch (AccessDeniedException) {
+                $this->addToAssertionCount(1);
+            }
+        }
+        // čtení hráčů zůstává členovi (výběr hráčů se zobrazuje všem), zapisovač hosty spravuje
+        ControllerHarness::as($this->bob)->call($this->controller(), 'list', ['party' => $this->party]);
+        foreach ($calls as [$action, $args]) {
+            ControllerHarness::as($this->eve)->call($this->controller(), $action, $args);
+        }
+    }
+
     public function testGuestIsCreatedWithTrimmedNameAndDuplicatesAreRejected(): void
     {
         $harness = ControllerHarness::as($this->anna);
@@ -186,7 +212,7 @@ final class PlayerControllerTest extends TestCase
         $this->expectDomainError(fn () => $harness->call($this->controller(), 'delete', ['player' => $annaPlayer]), 'Člena s účtem');
 
         // hráč hry
-        $this->playedGame = Fixtures::game($this->party, 'Coop');
+        $this->playedGame = $this->party->findGameLink(Fixtures::game($this->party, 'Coop'));
         $this->expectDomainError(fn () => $harness->call($this->controller(), 'delete', ['player' => $dora]), 'Coop');
 
         self::assertArrayNotHasKey('remove', $this->calls->getArrayCopy());

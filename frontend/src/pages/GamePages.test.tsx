@@ -67,7 +67,9 @@ describe('game list', () => {
     await screen.findByText('Carcassonne');
 
     fireEvent.change(screen.getByRole('searchbox', { name: 'Hledat hru' }), { target: { value: 'xyz' } });
-    expect(await screen.findByText(/nic nenašlo/)).toBeInTheDocument();
+    const message = await screen.findByText(/nic nenašlo/);
+    expect(message.textContent).toBe('Hledání „xyz“ nic nenašlo.'); // jeden celek, ne řádek po řádku
+    expect(screen.getByRole('link', { name: 'Přidat hru' })).toHaveAttribute('href', '/games/new');
     expect(requestedUrls(fetchMock)).toContain('/parties/3/games?q=xyz&sort=activity&limit=21&offset=0');
 
     fireEvent.click(screen.getByRole('button', { name: 'Smazat hledání' }));

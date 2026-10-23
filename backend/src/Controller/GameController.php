@@ -29,8 +29,8 @@ use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 
 /**
- * Sdílený katalog her (ADR 0023): hru může upravit a smazat jen správce her (`ROLE_GAMES_ADMIN`), zařadit ji do party nebo
- * ji odebrat smí člen party. Vlastní hráči hry patří partě.
+ * Sdílený katalog her (ADR 0023): hru může upravit a smazat jen správce her (`ROLE_GAMES_ADMIN`). Hry party (založit,
+ * zařadit, odebrat, hráči hry) spravuje zapisovač a správce party; obyčejný člen hry jen čte.
  */
 final class GameController extends ApiController
 {
@@ -57,7 +57,7 @@ final class GameController extends ApiController
 
     /** Založí novou hru v katalogu a rovnou ji zařadí do party. Duplicitu (stejné `bgg_id`, u vlastní hry stejný název) odmítne. */
     #[Route('/api/parties/{id}/games', requirements: ['id' => '\d+'], methods: ['POST'])]
-    #[IsGranted(PartyVoter::VIEW, 'party')]
+    #[IsGranted(PartyVoter::WRITE, 'party')]
     public function create(Party $party, #[MapRequestPayload] GameRequest $req): JsonResponse
     {
         $this->assertNoDuplicate(null, $req);
@@ -73,7 +73,7 @@ final class GameController extends ApiController
 
     /** Zařadí hru z katalogu do party (idempotentní: je-li už v partě, vrátí ji). */
     #[Route('/api/parties/{id}/game-links', requirements: ['id' => '\d+'], methods: ['POST'])]
-    #[IsGranted(PartyVoter::VIEW, 'party')]
+    #[IsGranted(PartyVoter::WRITE, 'party')]
     public function link(Party $party, #[MapRequestPayload] GameLinkRequest $req): JsonResponse
     {
         $game = $this->em->find(Game::class, $req->gameId) ?? throw new NotFoundHttpException('Hra neexistuje.');
@@ -88,7 +88,7 @@ final class GameController extends ApiController
 
     /** Odebere hru z party; hra s odehranými zápisy v partě se odebrat nedá. Hra zůstává v katalogu. */
     #[Route('/api/parties/{id}/games/{gameId}', requirements: ['id' => '\d+', 'gameId' => '\d+'], methods: ['DELETE'])]
-    #[IsGranted(PartyVoter::VIEW, 'party')]
+    #[IsGranted(PartyVoter::WRITE, 'party')]
     public function unlink(Party $party, #[MapEntity(id: 'gameId')] Game $game): Response
     {
         $this->linkOrFail($party, $game);
@@ -113,7 +113,7 @@ final class GameController extends ApiController
 
     /** Vlastní hráči hry v této partě. */
     #[Route('/api/parties/{id}/games/{gameId}/players', requirements: ['id' => '\d+', 'gameId' => '\d+'], methods: ['PUT'])]
-    #[IsGranted(PartyVoter::VIEW, 'party')]
+    #[IsGranted(PartyVoter::WRITE, 'party')]
     public function setPlayers(Party $party, #[MapEntity(id: 'gameId')] Game $game, #[MapRequestPayload] GamePlayersRequest $req): JsonResponse
     {
         $link = $this->linkOrFail($party, $game);
@@ -125,7 +125,7 @@ final class GameController extends ApiController
 
     /** Nahraje obrázek hry (už oříznutý na čtverec v prohlížeči); vrací adresu pro `imageUrl`. */
     #[Route('/api/parties/{id}/game-images', requirements: ['id' => '\d+'], methods: ['POST'])]
-    #[IsGranted(PartyVoter::VIEW, 'party')]
+    #[IsGranted(PartyVoter::WRITE, 'party')]
     public function uploadImage(Party $party, Request $request): JsonResponse
     {
         return new JsonResponse(['url' => $this->covers->store($request->files->get('file'))], Response::HTTP_CREATED);

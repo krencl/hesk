@@ -12,6 +12,7 @@ import { PartyHeader } from '../components/PartyHeader';
 import { ListSkeleton } from '../components/Skeleton';
 import { LEAVE_PARTY_MANAGEMENT_PATH } from '../lib/partyPath';
 import { playsLabel } from '../lib/plural';
+import { canWrite } from '../lib/roles';
 
 /** Hosté party (hráči bez účtu): přidání, přejmenování a smazání těch, kteří nikde nehráli. */
 export function PartyGuestsPage() {
@@ -60,6 +61,14 @@ export function PartyGuestsPage() {
       <section className="page pad">
         <p className="empty">Tahle parta neexistuje nebo v ní nejsi.</p>
         <Actions><Link className="btn outline-secondary" to="/parties">Správa part</Link></Actions>
+      </section>
+    );
+  }
+  if (detail.data && !canWrite(detail.data.role)) {
+    return (
+      <section className="page pad">
+        <p className="empty">Hosty spravuje jen zapisovač nebo správce.</p>
+        <Actions><Link className="btn outline-secondary" to={`/parties/${id}`}>Zpět</Link></Actions>
       </section>
     );
   }

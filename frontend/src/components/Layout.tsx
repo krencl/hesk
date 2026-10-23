@@ -4,6 +4,7 @@ import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-do
 import { useApp } from '../AppContext';
 import { api } from '../api';
 import { pathForSwitchedParty } from '../lib/partyPath';
+import { canWrite } from '../lib/roles';
 import { Icon } from './Icon';
 
 export function Layout() {
@@ -112,7 +113,7 @@ export function Layout() {
           <h4 className="primary">Správa</h4>
           <ul className="menu-list">
             <li><NavLink to="/parties" end onClick={closeMenu}>Spravovat party</NavLink></li>
-            <li><NavLink to="/manage/games" onClick={closeMenu}>Spravovat hry</NavLink></li>
+            {activeParty && canWrite(activeParty.role) && <li><NavLink to="/manage/games" onClick={closeMenu}>Spravovat hry</NavLink></li>}
             <li><NavLink to="/settings" onClick={closeMenu}>Nastavení</NavLink></li>
           </ul>
 

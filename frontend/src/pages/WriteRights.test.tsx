@@ -54,3 +54,48 @@ describe('who may write plays', () => {
     expect(await screen.findByRole('heading', { name: 'Nový zápis' })).toBeInTheDocument();
   });
 });
+
+describe('who may manage the games and guests of the party', () => {
+  const guests = (role: 'admin' | 'writer' | 'member') => ({
+    ...routesFor(role),
+    '/parties/3': { body: { ...PARTY, role, members: [] } },
+    '/parties/3/games?sort=name&limit=21&offset=0': { body: [GAME] },
+  });
+
+  it('keeps a plain member away from the game management, its menu item and the add-game page', async () => {
+    mockApi(guests('member'));
+    const { unmount } = renderApp('/manage/games');
+    expect(await screen.findByText('Hry party spravuje jen zapisovač nebo správce.')).toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: 'Správa her' })).not.toBeInTheDocument();
+    unmount();
+
+    renderApp('/games/new');
+    expect(await screen.findByText('Hry party spravuje jen zapisovač nebo správce.')).toBeInTheDocument();
+    expect(screen.queryByLabelText('Název')).not.toBeInTheDocument();
+  });
+
+  it.each(['writer', 'admin'] as const)('lets a %s into the game management', async (role) => {
+    mockApi(guests(role));
+    renderApp('/manage/games');
+    expect(await screen.findByRole('heading', { name: 'Správa her' })).toBeInTheDocument();
+  });
+
+  it('hides the guests tab and page from a plain member', async () => {
+    mockApi(guests('member'));
+    const { unmount } = renderApp('/parties/3');
+    await screen.findByRole('heading', { name: 'Parta Pátek' });
+    expect(screen.queryByRole('link', { name: 'Hosté' })).not.toBeInTheDocument();
+    unmount();
+
+    renderApp('/parties/3/guests');
+    expect(await screen.findByText('Hosty spravuje jen zapisovač nebo správce.')).toBeInTheDocument();
+    expect(screen.queryByPlaceholderText(/Jméno/)).not.toBeInTheDocument();
+  });
+
+  it('offers the guests tab to a writer', async () => {
+    mockApi(guests('writer'));
+    renderApp('/parties/3');
+    await screen.findByRole('heading', { name: 'Parta Pátek' });
+    expect(screen.getByRole('link', { name: 'Hosté' })).toHaveAttribute('href', '/parties/3/guests');
+  });
+});
