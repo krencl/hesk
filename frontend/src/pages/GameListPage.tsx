@@ -1,49 +1,33 @@
-import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useActiveParty } from '../AppContext';
 import type { GameWithStats } from '../api/types';
-import { ErrorMessage } from '../components/ErrorMessage';
 import { GameListItem } from '../components/GameListItem';
 import { GameSearch } from '../components/GameSearch';
-import { LoadMore } from '../components/LoadMore';
-import { ListSkeleton } from '../components/Skeleton';
+import { GameListView } from '../components/GameListView';
 import { formatDateTimeShort } from '../lib/datetime';
-import { loadGameListSettings, saveGameListSettings } from '../lib/listSettings';
 import { canWrite } from '../lib/roles';
 import { useGameList } from '../lib/useGameList';
+import { useGameListSettings } from '../lib/useGameListSettings';
 
 export function GameListPage() {
   const party = useActiveParty();
-  const [settings, setSettings] = useState(() => loadGameListSettings());
-  const patch = (changes: Partial<typeof settings>) => setSettings((s) => ({ ...s, ...changes }));
-  useEffect(() => saveGameListSettings(settings), [settings]);
-  const { games, items, query, sessionNumber } = useGameList(party.id, settings);
+  const [settings, patch] = useGameListSettings();
+  const list = useGameList(party.id, settings);
+  const { sessionNumber } = list;
 
   return (
     <section className="page game-list">
       <GameSearch partyId={party.id} settings={settings} onChange={patch} withSession />
-
-      {games.error && <div className="pad"><ErrorMessage error={games.error} /></div>}
-      {games.isPending && <ListSkeleton />}
-
-      {games.data && items.length === 0 && (
-        <p className="empty">
-          <span>
-            {query ? <>Hledání „<b className="primary">{query}</b>“ nic nenašlo.</> : sessionNumber ? 'V tomhle sezení se nehrála žádná hra.' : 'Ještě jste nic nehráli, je čas to napravit!'}
-          </span>
-          {!sessionNumber && canWrite(party.role) && <Link className="btn" to="/games/new">Přidat hru</Link>}
-        </p>
-      )}
-
-      <ul className={`list${games.isPlaceholderData ? ' stale' : ''}`}>
-        {items.map((game) => (
+      <GameListView
+        list={list}
+        emptyText={sessionNumber ? 'V tomhle sezení se nehrála žádná hra.' : 'Ještě jste nic nehráli, je čas to napravit!'}
+        emptyAction={!sessionNumber && canWrite(party.role) ? <Link className="btn" to="/games/new">Přidat hru</Link> : undefined}
+        renderItem={(game) => (
           <GameListItem key={game.id} to={`/games/${game.id}`} imageUrl={game.imageUrl} name={game.name}>
             <LastPlay game={game} />
           </GameListItem>
-        ))}
-      </ul>
-
-      <LoadMore hasMore={games.hasNextPage} loading={games.isFetchingNextPage} failed={games.isFetchNextPageError} onLoad={() => games.fetchNextPage()} />
+        )}
+      />
     </section>
   );
 }
