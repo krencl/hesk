@@ -1,10 +1,8 @@
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { ApiError, get, post } from './client';
 
 const respond = (status: number, body?: unknown) =>
   vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(body === undefined ? null : JSON.stringify(body), { status })));
-
-afterEach(() => vi.unstubAllGlobals());
 
 describe('api client', () => {
   it('sends credentials and parses JSON', async () => {

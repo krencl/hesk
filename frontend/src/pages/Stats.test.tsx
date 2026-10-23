@@ -1,8 +1,6 @@
 import { fireEvent, screen, waitFor } from '@testing-library/react';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { GAME, mockApi, ME, PARTY, renderApp, requestedUrls } from '../test/helpers';
-
-afterEach(() => { vi.unstubAllGlobals(); sessionStorage.clear(); });
 
 describe('statistics', () => {
   it('uses the short name of a game when it has one', async () => {

@@ -1,8 +1,6 @@
 import { fireEvent, screen, waitFor } from '@testing-library/react';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { GAME, mockApi, ME, PARTY, renderApp, requestedUrls } from './test/helpers';
-
-afterEach(() => { vi.unstubAllGlobals(); sessionStorage.clear(); });
 
 describe('App gating', () => {
   it('shows login for anonymous users and remembers invitation path', async () => {

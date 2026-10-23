@@ -1,7 +1,5 @@
-import { afterEach, describe, expect, it } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { DEFAULT_GAME_LIST_SETTINGS, DEFAULT_MANAGE_GAMES_SETTINGS, loadGameListSettings, MANAGE_GAMES_KEY, saveGameListSettings } from './listSettings';
-
-afterEach(() => sessionStorage.clear());
 
 describe('game list settings', () => {
   it('returns defaults when nothing is stored', () => {

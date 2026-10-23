@@ -9,9 +9,9 @@ vi.mock('react-easy-crop', () => ({
 vi.mock('../lib/cropImage', () => ({ cropToBlob: vi.fn(async () => new Blob(['x'], { type: 'image/jpeg' })) }));
 
 import { cropToBlob } from '../lib/cropImage';
-import { GAME, GAMES_ADMIN, mockApi, ME, PARTY, renderApp, requestedUrls } from '../test/helpers';
+import { GAME, GAMES_ADMIN, mockApi, ME, PARTY, renderApp, requestedUrls, sentBody } from '../test/helpers';
 
-afterEach(() => { vi.unstubAllGlobals(); vi.clearAllMocks(); sessionStorage.clear(); });
+afterEach(() => vi.clearAllMocks());
 
 const PLAYERS = [
   { id: 1, name: 'Anna', hasAccount: true, visible: true },
@@ -36,10 +36,6 @@ const routes = {
 };
 const stubUrls = () => {
   vi.stubGlobal('URL', Object.assign(URL, { createObjectURL: vi.fn(() => 'blob:cover'), revokeObjectURL: vi.fn() }));
-};
-const sent = (fetchMock: ReturnType<typeof mockApi>, method: string, url: string) => {
-  const call = fetchMock.mock.calls.find(([u, init]) => String(u) === `/api${url}` && init?.method === method);
-  return call ? JSON.parse(String(call[1]?.body)) : undefined;
 };
 
 describe('game form (/games/:id/edit)', () => {
@@ -72,7 +68,7 @@ describe('game form (/games/:id/edit)', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Odebrat tag Rychlovka' }));
     fireEvent.click(screen.getByRole('button', { name: 'Uložit' }));
 
-    await waitFor(() => expect(sent(fetchMock, 'PUT', '/games/5')?.tags).toEqual(['Strategie']));
+    await waitFor(() => expect(sentBody(fetchMock, 'PUT', '/games/5')?.tags).toEqual(['Strategie']));
   });
 
   it('saves renamed items with their ids, new ones without, and the removed ones are left out', async () => {
@@ -89,8 +85,8 @@ describe('game form (/games/:id/edit)', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Přidat postavu' }));
     fireEvent.click(screen.getByRole('button', { name: 'Uložit' }));
 
-    await waitFor(() => expect(sent(fetchMock, 'PUT', '/games/5')).toBeDefined());
-    expect(sent(fetchMock, 'PUT', '/games/5')).toMatchObject({
+    await waitFor(() => expect(sentBody(fetchMock, 'PUT', '/games/5')).toBeDefined());
+    expect(sentBody(fetchMock, 'PUT', '/games/5')).toMatchObject({
       name: 'King of Tokyo', shortName: 'KoT', scoreType: 'winner_only', players: [{ id: 2, name: 'Boss' }, { id: 3, name: 'Host' }],
       addons: [{ id: 11, name: 'Power Up 2' }, { name: 'Nové rozšíření' }],
       characters: [{ id: 21, name: 'Gigazaur' }, { id: 22, name: 'Kraken Mk2' }],
@@ -103,7 +99,7 @@ describe('game form (/games/:id/edit)', () => {
     renderApp('/games/5/edit');
     await waitFor(() => expect(screen.getByLabelText('Hráč hry 1')).toHaveValue('Boss'));
     fireEvent.click(screen.getByRole('button', { name: 'Uložit' }));
-    await waitFor(() => expect(sent(fetchMock, 'PUT', '/parties/3/games/5/players')?.players).toEqual([{ id: 2, name: 'Boss' }, { id: 3, name: 'Host' }]));
+    await waitFor(() => expect(sentBody(fetchMock, 'PUT', '/parties/3/games/5/players')?.players).toEqual([{ id: 2, name: 'Boss' }, { id: 3, name: 'Host' }]));
   });
 
   it('renames an own player by id, drops a removed one and adds a new one by name', async () => {
@@ -115,7 +111,7 @@ describe('game form (/games/:id/edit)', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Přidat hráče hry' }));
     fireEvent.change(screen.getByLabelText('Hráč hry 2'), { target: { value: 'T.I.M.E' } });
     fireEvent.click(screen.getByRole('button', { name: 'Uložit' }));
-    await waitFor(() => expect(sent(fetchMock, 'PUT', '/parties/3/games/5/players')?.players).toEqual([{ id: 2, name: 'Šéf' }, { name: 'T.I.M.E' }]));
+    await waitFor(() => expect(sentBody(fetchMock, 'PUT', '/parties/3/games/5/players')?.players).toEqual([{ id: 2, name: 'Šéf' }, { name: 'T.I.M.E' }]));
   });
 
   it('can remove all own players', async () => {
@@ -126,7 +122,7 @@ describe('game form (/games/:id/edit)', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Odebrat hráče hry 1' }));
     expect(screen.getByText('Hra nemá vlastní hráče.')).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'Uložit' }));
-    await waitFor(() => expect(sent(fetchMock, 'PUT', '/parties/3/games/5/players')?.players).toEqual([]));
+    await waitFor(() => expect(sentBody(fetchMock, 'PUT', '/parties/3/games/5/players')?.players).toEqual([]));
   });
 
   describe('shared game and rights', () => {
@@ -145,8 +141,8 @@ describe('game form (/games/:id/edit)', () => {
 
       fireEvent.change(screen.getByLabelText('Hráč hry 1'), { target: { value: 'Šéf' } });
       fireEvent.click(screen.getByRole('button', { name: 'Uložit' }));
-      await waitFor(() => expect(sent(fetchMock, 'PUT', '/parties/3/games/5/players')?.players).toEqual([{ id: 2, name: 'Šéf' }, { id: 3, name: 'Host' }]));
-      expect(sent(fetchMock, 'PUT', '/games/5')).toBeUndefined();
+      await waitFor(() => expect(sentBody(fetchMock, 'PUT', '/parties/3/games/5/players')?.players).toEqual([{ id: 2, name: 'Šéf' }, { id: 3, name: 'Host' }]));
+      expect(sentBody(fetchMock, 'PUT', '/games/5')).toBeUndefined();
     });
 
     it('lets the admin edit the shared data and delete the game from the catalog', async () => {
@@ -156,8 +152,8 @@ describe('game form (/games/:id/edit)', () => {
       expect(screen.getByRole('button', { name: 'Smazat hru z databáze' })).toBeInTheDocument();
 
       fireEvent.click(screen.getByRole('button', { name: 'Uložit' }));
-      await waitFor(() => expect(sent(fetchMock, 'PUT', '/games/5')).toBeDefined());
-      await waitFor(() => expect(sent(fetchMock, 'PUT', '/parties/3/games/5/players')).toBeDefined());
+      await waitFor(() => expect(sentBody(fetchMock, 'PUT', '/games/5')).toBeDefined());
+      await waitFor(() => expect(sentBody(fetchMock, 'PUT', '/parties/3/games/5/players')).toBeDefined());
     });
 
     it('removes the game from the party only, after confirmation', async () => {
@@ -237,7 +233,7 @@ describe('game form (/games/:id/edit)', () => {
       expect(screen.getByText('Hra nemá postavy.')).toBeInTheDocument();
       expect(screen.getByText('Hra nemá vlastní hráče.')).toBeInTheDocument();
       fireEvent.click(screen.getByRole('button', { name: 'Uložit' }));
-      await waitFor(() => expect(sent(fetchMock, 'POST', '/parties/3/games')).toMatchObject({ name: 'Nová', shortName: null, bggId: null, addons: [], characters: [], players: [] }));
+      await waitFor(() => expect(sentBody(fetchMock, 'POST', '/parties/3/games')).toMatchObject({ name: 'Nová', shortName: null, bggId: null, addons: [], characters: [], players: [] }));
     });
 
     it('lists results from every source: a game already in the party links to it, the rest are selectable', async () => {
@@ -286,7 +282,7 @@ describe('game form (/games/:id/edit)', () => {
       fireEvent.click(screen.getByRole('button', { name: /Vládce Tokia/ }));
 
       expect(await screen.findByRole('heading', { name: 'Vládce Tokia' })).toBeInTheDocument();
-      expect(sent(fetchMock, 'POST', '/parties/3/game-links')).toEqual({ gameId: 77 });
+      expect(sentBody(fetchMock, 'POST', '/parties/3/game-links')).toEqual({ gameId: 77 });
       expect(requestedUrls(fetchMock).some((u) => u.includes('/bgg/import'))).toBe(false);
       expect(fetchMock.mock.calls.some(([u, init]) => init?.method === 'POST' && String(u) === '/api/parties/3/games')).toBe(false);
       expect(screen.queryByLabelText('Zkrácený název')).not.toBeInTheDocument();
@@ -317,7 +313,7 @@ describe('game form (/games/:id/edit)', () => {
       // formulář je předvyplněný a hned se otevře ořez; ten čte obrázek přes náš server, ne přímo z CDN
       expect(await screen.findByRole('dialog', { name: 'Oříznout obrázek' })).toBeInTheDocument();
       expect(screen.getByLabelText('Název')).toHaveValue('Catan');
-      expect(sent(fetchMock, 'POST', '/parties/3/bgg/import')).toEqual({ bggId: 13 });
+      expect(sentBody(fetchMock, 'POST', '/parties/3/bgg/import')).toEqual({ bggId: 13 });
       expect(cropToBlob).not.toHaveBeenCalled();
 
       // zrušení ořezu nechá živý náhled z CDN a nabídne ořez znovu; do hry se nic z CDN neuloží
@@ -335,7 +331,7 @@ describe('game form (/games/:id/edit)', () => {
       expect(screen.getByRole('link', { name: 'BoardGameGeek' })).toHaveAttribute('href', 'https://boardgamegeek.com/boardgame/13');
 
       fireEvent.click(screen.getByRole('button', { name: 'Uložit' }));
-      await waitFor(() => expect(sent(fetchMock, 'POST', '/parties/3/games')).toMatchObject({ name: 'Catan', bggId: 13, imageUrl: '/uploads/covers/abc.webp' }));
+      await waitFor(() => expect(sentBody(fetchMock, 'POST', '/parties/3/games')).toMatchObject({ name: 'Catan', bggId: 13, imageUrl: '/uploads/covers/abc.webp' }));
     });
 
     it('saves a BGG game without a picture when the user never crops it', async () => {
@@ -351,7 +347,7 @@ describe('game form (/games/:id/edit)', () => {
       fireEvent.click(await screen.findByRole('button', { name: /Catan \(1995\)/ }));
       fireEvent.click(await screen.findByRole('button', { name: 'Zrušit' }));
       fireEvent.click(screen.getByRole('button', { name: 'Uložit' }));
-      await waitFor(() => expect(sent(fetchMock, 'POST', '/parties/3/games')).toMatchObject({ name: 'Catan', bggId: 13, imageUrl: null }));
+      await waitFor(() => expect(sentBody(fetchMock, 'POST', '/parties/3/games')).toMatchObject({ name: 'Catan', bggId: 13, imageUrl: null }));
     });
   });
 
@@ -379,7 +375,7 @@ describe('game form (/games/:id/edit)', () => {
       expect(screen.getByRole('button', { name: 'Změnit obrázek' })).toBeInTheDocument();
 
       fireEvent.click(screen.getByRole('button', { name: 'Uložit' }));
-      await waitFor(() => expect(sent(fetchMock, 'PUT', '/games/5')?.imageUrl).toBe('/uploads/covers/abc.webp'));
+      await waitFor(() => expect(sentBody(fetchMock, 'PUT', '/games/5')?.imageUrl).toBe('/uploads/covers/abc.webp'));
     });
 
     it('cancelling the editor changes nothing, and the picture can be removed', async () => {
@@ -396,7 +392,7 @@ describe('game form (/games/:id/edit)', () => {
 
       fireEvent.click(screen.getByRole('button', { name: 'Odebrat obrázek' }));
       fireEvent.click(screen.getByRole('button', { name: 'Uložit' }));
-      await waitFor(() => expect(sent(fetchMock, 'PUT', '/games/5')?.imageUrl).toBeNull());
+      await waitFor(() => expect(sentBody(fetchMock, 'PUT', '/games/5')?.imageUrl).toBeNull());
     });
 
     it('keeps the editor open and shows the server error when the upload is refused', async () => {

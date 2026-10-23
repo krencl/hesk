@@ -1,7 +1,5 @@
-import { afterEach, describe, expect, it } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { clearAfterLoginPath, peekAfterLoginPath, rememberAfterLoginPath } from './afterLogin';
-
-afterEach(() => sessionStorage.clear());
 
 describe('afterLogin', () => {
   it('remembers invitation paths until they are cleared', () => {

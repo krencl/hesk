@@ -1,22 +1,17 @@
 import { act, fireEvent, screen, waitFor } from '@testing-library/react';
-import { afterEach, describe, expect, it, vi } from 'vitest';
-import { GAME, mockApi, ME, PARTY, PLAY, renderApp, requestedUrls } from '../test/helpers';
-
-afterEach(() => { vi.unstubAllGlobals(); sessionStorage.clear(); });
-
-const base = { '/me': { body: ME }, '/parties': { body: [PARTY] } };
-const games = (n: number, from = 0) => Array.from({ length: n }, (_, i) => ({ ...GAME, id: from + i + 1, name: `Hra ${from + i + 1}` }));
+import { describe, expect, it, vi } from 'vitest';
+import { BASE_ROUTES, GAME, PLAY, games, mockApi, renderApp, requestedUrls, sentBody } from '../test/helpers';
 
 describe('game list', () => {
   it('redirects the root to the game list', async () => {
-    mockApi({ ...base, '/parties/3/games?sort=activity&limit=21&offset=0': { body: [] } });
+    mockApi({ ...BASE_ROUTES, '/parties/3/games?sort=activity&limit=21&offset=0': { body: [] } });
     renderApp('/');
     expect(await screen.findByText('Ještě jste nic nehráli, je čas to napravit!')).toBeInTheDocument();
   });
 
   it('shows games without plays and loads further pages on demand', async () => {
     const fetchMock = mockApi({
-      ...base,
+      ...BASE_ROUTES,
       '/parties/3/games?sort=activity&limit=21&offset=0': { body: [...games(20), { ...GAME, id: 99, name: 'Dvacátá první' }] },
       '/parties/3/games?sort=activity&limit=21&offset=20': { body: [{ ...GAME, id: 99, name: 'Dvacátá první', lastPlay: null, playCount: 0 }] },
     });
@@ -40,7 +35,7 @@ describe('game list', () => {
       disconnect() { this.entry.disconnected = true; }
     });
     const fetchMock = mockApi({
-      ...base,
+      ...BASE_ROUTES,
       '/parties/3/games?sort=activity&limit=21&offset=0': { body: [...games(20), { ...GAME, id: 99, name: 'Dvacátá první' }] },
       '/parties/3/games?sort=activity&limit=21&offset=20': { body: [{ ...GAME, id: 99, name: 'Dvacátá první', lastPlay: null, playCount: 0 }] },
     });
@@ -59,7 +54,7 @@ describe('game list', () => {
 
   it('searches by name and says so when nothing is found', async () => {
     const fetchMock = mockApi({
-      ...base,
+      ...BASE_ROUTES,
       '/parties/3/games?sort=activity&limit=21&offset=0': { body: [GAME] },
       '/parties/3/games?q=xyz&sort=activity&limit=21&offset=0': { body: [] },
     });
@@ -78,7 +73,7 @@ describe('game list', () => {
 
   it('filters by sort order and session number, remembering the settings', async () => {
     const fetchMock = mockApi({
-      ...base,
+      ...BASE_ROUTES,
       '/parties/3/games?sort=activity&limit=21&offset=0': { body: [GAME] },
       '/parties/3/sessions': { body: [{ id: 7, number: 69, startedAt: '', endedAt: '' }, { id: 6, number: 3, startedAt: '', endedAt: '' }] },
       '/parties/3/games?sort=name&limit=21&offset=0': { body: [GAME] },
@@ -109,7 +104,7 @@ describe('game detail', () => {
   const older = { ...PLAY, id: 8, sessionNumber: 12, startedAt: '2019-01-01T10:00:00+00:00', addons: [{ id: 1, name: 'Řeka' }], tags: ['rodinná'], notes: 'Skvělá hra',
     results: [{ playerId: 2, name: 'Petr', score: 80, rank: 1, winner: true }, { playerId: 1, name: 'Anna', score: 70, rank: 2, winner: false }] };
   const detailRoutes = (cheatSheet: string | null) => ({
-    ...base,
+    ...BASE_ROUTES,
     '/parties/3/games/1': { body: { ...GAME, playCount: 12, cheatSheet } },
     '/parties/3/plays?limit=11&offset=0&gameId=1': { body: [PLAY, older, ...Array.from({ length: 9 }, (_, i) => ({ ...PLAY, id: 100 + i, sessionNumber: 50 - i }))] },
   });
@@ -150,7 +145,7 @@ describe('game detail', () => {
   });
 
   it('shows a friendly message for an unknown game', async () => {
-    mockApi({ ...base, '/parties/3/games/1': { status: 404, body: { error: 'nf' } } });
+    mockApi({ ...BASE_ROUTES, '/parties/3/games/1': { status: 404, body: { error: 'nf' } } });
     renderApp('/games/1');
     expect(await screen.findByText(/neexistuje nebo k ní nemáš přístup/)).toBeInTheDocument();
   });
@@ -167,7 +162,7 @@ describe('game detail', () => {
 describe('new play', () => {
   const players = [{ id: 1, name: 'Anna', hasAccount: true, visible: true }, { id: 2, name: 'Petr', hasAccount: true, visible: true }, { id: 3, name: 'Host', hasAccount: false, visible: true }];
   const routes = {
-    ...base,
+    ...BASE_ROUTES,
     '/parties/3/games/1': { body: { ...GAME, addons: [{ id: 5, name: 'Řeka' }] } },
     '/parties/3/players': { body: players },
     '/parties/3/plays': { body: PLAY },
@@ -202,9 +197,8 @@ describe('new play', () => {
     fireEvent.change(screen.getByLabelText('Skóre Petr'), { target: { value: '75' } });
     fireEvent.click(screen.getByRole('button', { name: 'Uložit zápis' }));
 
-    await waitFor(() => expect(fetchMock.mock.calls.some(([u, init]) => String(u) === '/api/parties/3/plays' && init?.method === 'POST')).toBe(true));
-    const post = fetchMock.mock.calls.find(([u, init]) => String(u) === '/api/parties/3/plays' && init?.method === 'POST')!;
-    const body = JSON.parse(String(post[1]?.body));
+    await waitFor(() => expect(sentBody(fetchMock, 'POST', '/parties/3/plays')).toBeDefined());
+    const body = sentBody(fetchMock, 'POST', '/parties/3/plays');
     expect(body).toMatchObject({ gameId: 1, addonIds: [5] });
     expect(body.players).toEqual([{ playerId: 1, score: 90, starting: false }, { playerId: 2, score: 75, starting: false }]);
     // po uložení se vrací na detail hry
@@ -260,9 +254,8 @@ describe('new play', () => {
     fireEvent.blur(tags); // klik na „Uložit“ nejdřív opustí input, rozepsaný tag se tím přidá
     fireEvent.click(screen.getByRole('button', { name: 'Uložit zápis' }));
 
-    const isPost = ([u, init]: [string, RequestInit?]) => String(u) === '/api/parties/3/plays' && init?.method === 'POST';
-    await waitFor(() => expect(fetchMock.mock.calls.some(isPost)).toBe(true));
-    const body = JSON.parse(String(fetchMock.mock.calls.find(isPost)![1]?.body));
+    await waitFor(() => expect(sentBody(fetchMock, 'POST', '/parties/3/plays')).toBeDefined());
+    const body = sentBody(fetchMock, 'POST', '/parties/3/plays');
     expect(body).toMatchObject({ tags: ['liga', 'novinka'] });
     expect(body).not.toHaveProperty('sessionNumber');
   });
@@ -279,9 +272,8 @@ describe('new play', () => {
     fireEvent.change(screen.getByLabelText('Skóre Anna'), { target: { value: '9' } });
     fireEvent.change(screen.getByLabelText('Skóre Petr'), { target: { value: '5' } });
     fireEvent.click(screen.getByRole('button', { name: 'Uložit zápis' }));
-    const isPost = ([u, init]: [string, RequestInit?]) => String(u) === '/api/parties/3/plays' && init?.method === 'POST';
-    await waitFor(() => expect(fetchMock.mock.calls.some(isPost)).toBe(true));
-    expect(JSON.parse(String(fetchMock.mock.calls.find(isPost)![1]?.body)).sessionNumber).toBe(120);
+    await waitFor(() => expect(sentBody(fetchMock, 'POST', '/parties/3/plays')).toBeDefined());
+    expect(sentBody(fetchMock, 'POST', '/parties/3/plays').sessionNumber).toBe(120);
   });
 
   it('updates the suggested number when the start time moves to another session', async () => {
@@ -352,16 +344,15 @@ describe('new play', () => {
     expect(screen.getByRole('button', { name: 'Začíná Petr' })).toHaveAttribute('aria-pressed', 'true');
 
     fireEvent.click(screen.getByRole('button', { name: 'Uložit zápis' }));
-    await waitFor(() => expect(fetchMock.mock.calls.some(([u, init]) => String(u) === '/api/parties/3/plays' && init?.method === 'POST')).toBe(true));
-    const post = fetchMock.mock.calls.find(([u, init]) => String(u) === '/api/parties/3/plays' && init?.method === 'POST')!;
-    expect(JSON.parse(String(post[1]?.body)).players).toEqual([
+    await waitFor(() => expect(sentBody(fetchMock, 'POST', '/parties/3/plays')).toBeDefined());
+    expect(sentBody(fetchMock, 'POST', '/parties/3/plays').players).toEqual([
       { playerId: 1, score: 50, starting: false, winner: false },
       { playerId: 2, score: 50, starting: true, winner: true },
     ]);
   });
 
   it('shows a friendly message for an unknown game', async () => {
-    mockApi({ ...base, '/parties/3/players': { body: players }, '/parties/3/games/1': { status: 404, body: { error: 'nf' } } });
+    mockApi({ ...BASE_ROUTES, '/parties/3/players': { body: players }, '/parties/3/games/1': { status: 404, body: { error: 'nf' } } });
     renderApp('/games/1/new-play');
     expect(await screen.findByText(/neexistuje nebo k ní nemáš přístup/)).toBeInTheDocument();
   });
@@ -371,7 +362,7 @@ describe('game with characters and an own player', () => {
   const players = [{ id: 1, name: 'Anna', hasAccount: true, visible: true }, { id: 2, name: 'Boss', hasAccount: false, visible: true }, { id: 3, name: 'Host', hasAccount: false, visible: true }];
   const game = { ...GAME, id: 1, players: [{ id: 2, name: 'Boss' }], characters: [{ id: 21, name: 'Gigazaur' }, { id: 22, name: 'Kraken' }] };
   const routes = {
-    ...base,
+    ...BASE_ROUTES,
     '/parties/3/games/1': { body: game },
     '/parties/3/players': { body: players },
     '/parties/3/plays': { body: PLAY },
@@ -396,9 +387,8 @@ describe('game with characters and an own player', () => {
     expect(screen.getByLabelText('Postava Boss')).toHaveValue(''); // postava je volitelná
     fireEvent.click(screen.getByRole('button', { name: 'Uložit zápis' }));
 
-    await waitFor(() => expect(fetchMock.mock.calls.some(([u, init]) => String(u) === '/api/parties/3/plays' && init?.method === 'POST')).toBe(true));
-    const post = fetchMock.mock.calls.find(([u, init]) => String(u) === '/api/parties/3/plays' && init?.method === 'POST')!;
-    expect(JSON.parse(String(post[1]?.body)).players).toEqual([
+    await waitFor(() => expect(sentBody(fetchMock, 'POST', '/parties/3/plays')).toBeDefined());
+    expect(sentBody(fetchMock, 'POST', '/parties/3/plays').players).toEqual([
       { playerId: 2, score: 5, starting: false },
       { playerId: 1, score: 9, starting: false, characterId: 22 },
     ]);

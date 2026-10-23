@@ -1,8 +1,8 @@
 import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { GAME, mockApi, ME, PARTY, renderApp } from '../test/helpers';
+import { GAME, mockApi, ME, PARTY, renderApp, sentBody } from '../test/helpers';
 
-afterEach(() => { vi.unstubAllGlobals(); vi.restoreAllMocks(); sessionStorage.clear(); localStorage.clear(); });
+afterEach(() => vi.restoreAllMocks());
 
 const MEMBER_PARTY = { id: 4, name: 'Víkend', shortName: 'Ví', role: 'member' };
 const detail = (party: { id: number; name: string; shortName: string; role: string }, members = [
@@ -66,8 +66,7 @@ describe('party management (/parties)', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Vytvořit' }));
 
     expect(await screen.findByRole('heading', { name: 'Parta Nová' })).toBeInTheDocument();
-    const post = fetchMock.mock.calls.find(([u, init]) => String(u) === '/api/parties' && init?.method === 'POST')!;
-    expect(JSON.parse(String(post[1]?.body))).toEqual({ name: 'Nová' });
+    expect(sentBody(fetchMock, 'POST', '/parties')).toEqual({ name: 'Nová' });
     expect(screen.getByRole('button', { name: 'Pozvat hráče' })).toBeInTheDocument();
   });
 });
@@ -104,8 +103,7 @@ describe('party detail (/parties/:id)', () => {
     expect(screen.queryByRole('searchbox')).not.toBeInTheDocument(); // u tří rolí se nehledá
     fireEvent.click(screen.getByRole('option', { name: 'Zapisovač' }));
 
-    await waitFor(() => expect(fetchMock.mock.calls.some(([u, init]) => String(u) === '/api/parties/3/members/2' && init?.method === 'PATCH')).toBe(true));
-    expect(JSON.parse(String(fetchMock.mock.calls.find(([, init]) => init?.method === 'PATCH')![1]?.body))).toEqual({ role: 'writer' });
+    await waitFor(() => expect(sentBody(fetchMock, 'PATCH', '/parties/3/members/2')).toEqual({ role: 'writer' }));
   });
 
   it('does not send anything when the same role is picked again', async () => {
@@ -132,9 +130,7 @@ describe('party detail (/parties/:id)', () => {
     fireEvent.change(screen.getByLabelText(/Zkratka/), { target: { value: ' PTK ' } });
     fireEvent.click(screen.getByRole('button', { name: 'Uložit' }));
 
-    await waitFor(() => expect(fetchMock.mock.calls.some(([u, init]) => String(u) === '/api/parties/3' && init?.method === 'PATCH')).toBe(true));
-    const patch = fetchMock.mock.calls.find(([, init]) => init?.method === 'PATCH')!;
-    expect(JSON.parse(String(patch[1]?.body))).toEqual({ name: 'Pátek večer', shortName: 'PTK' });
+    await waitFor(() => expect(sentBody(fetchMock, 'PATCH', '/parties/3')).toEqual({ name: 'Pátek večer', shortName: 'PTK' }));
     expect(await screen.findByRole('link', { name: 'Pozvat hráče' }).catch(() => screen.findByRole('button', { name: 'Pozvat hráče' }))).toBeInTheDocument(); // zpět na detail
     expect(screen.queryByLabelText('Název')).not.toBeInTheDocument();
   });

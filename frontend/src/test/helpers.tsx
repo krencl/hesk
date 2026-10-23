@@ -1,9 +1,10 @@
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { QueryClientProvider } from '@tanstack/react-query';
 import { render } from '@testing-library/react';
 import { StrictMode } from 'react';
 import { MemoryRouter } from 'react-router-dom';
 import { vi } from 'vitest';
 import { App } from '../App';
+import { createQueryClient } from '../queryClient';
 
 export type MockRoutes = Record<string, { status?: number; body: unknown }>;
 
@@ -26,10 +27,16 @@ export function mockApi(routes: MockRoutes) {
   return fetchMock;
 }
 
+/** Tělo (jako JSON) požadavku dané metody na danou cestu (bez /api); `undefined`, když takový požadavek nebyl. */
+export function sentBody(fetchMock: ReturnType<typeof mockApi>, method: string, path: string): any {
+  const call = fetchMock.mock.calls.find(([url, init]) => String(url) === `/api${path}` && (init?.method ?? 'GET') === method);
+  return call?.[1]?.body === undefined ? undefined : JSON.parse(String(call[1].body));
+}
+
 export const requestedUrls = (fetchMock: ReturnType<typeof mockApi>) => fetchMock.mock.calls.map((c) => String(c[0]).replace('/api', ''));
 
 export function renderApp(path = '/', { strict = false }: { strict?: boolean } = {}) {
-  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  const client = createQueryClient();
   const tree = (
     <QueryClientProvider client={client}>
       <MemoryRouter initialEntries={[path]}><App /></MemoryRouter>
@@ -42,6 +49,8 @@ export const ME = { id: 1, nickname: 'Anna', email: 'a@b.cz', hasNickname: true,
 /** Správce sdíleného katalogu her: smí upravovat sdílené údaje her. */
 export const GAMES_ADMIN = { ...ME, roles: ['ROLE_USER', 'ROLE_GAMES_ADMIN'] };
 export const PARTY = { id: 3, name: 'Pátek', shortName: 'Pá', role: 'admin' };
+/** Přihlášený uživatel s jednou partou: základ většiny testů stránek. */
+export const BASE_ROUTES: MockRoutes = { '/me': { body: ME }, '/parties': { body: [PARTY] } };
 
 export const GAME = {
   id: 1, name: 'Carcassonne', shortName: null, scoreType: 'most_points', imageUrl: null, bggId: null, description: null, cheatSheet: null, addons: [], characters: [], players: [], tags: [],
@@ -53,3 +62,6 @@ export const PLAY = {
   startedAt: '2022-02-06T20:06:00+00:00', endedAt: '2022-02-06T20:06:00+00:00', notes: null, addons: [], tags: [],
   results: [{ playerId: 1, name: 'Anna', score: 90, rank: 1, winner: true, starting: true, character: null }, { playerId: 2, name: 'Petr', score: 75, rank: 2, winner: false, starting: false, character: null }],
 };
+
+/** `n` her („Hra 1“, „Hra 2“…) s id od `from + 1`. */
+export const games = (n: number, from = 0) => Array.from({ length: n }, (_, i) => ({ ...GAME, id: from + i + 1, name: `Hra ${from + i + 1}` }));

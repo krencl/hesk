@@ -1,9 +1,7 @@
 import { fireEvent, screen, waitFor } from '@testing-library/react';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { toLocalInput } from '../lib/datetime';
-import { GAME, mockApi, ME, PARTY, PLAY, renderApp } from '../test/helpers';
-
-afterEach(() => { vi.unstubAllGlobals(); sessionStorage.clear(); });
+import { GAME, mockApi, ME, PARTY, PLAY, renderApp, sentBody } from '../test/helpers';
 
 const PLAYERS = [{ id: 1, name: 'Anna', hasAccount: true, visible: true }, { id: 2, name: 'Petr', hasAccount: false, visible: true }, { id: 3, name: 'Eva', hasAccount: false, visible: true }];
 // Anna je hlavní hráč, Petr (vybraný) a Eva (nevybraná) jsou hosté
@@ -63,9 +61,8 @@ describe('edit play (/plays/:id/edit)', () => {
     fireEvent.click(screen.getByLabelText('Řeka'));
     fireEvent.click(screen.getByRole('button', { name: 'Uložit změny' }));
 
-    const isPut = ([u, init]: [string, RequestInit?]) => String(u) === '/api/plays/9' && init?.method === 'PUT';
-    await waitFor(() => expect(fetchMock.mock.calls.some(isPut)).toBe(true));
-    const body = JSON.parse(String(fetchMock.mock.calls.find(isPut)![1]?.body));
+    await waitFor(() => expect(sentBody(fetchMock, 'PUT', '/plays/9')).toBeDefined());
+    const body = sentBody(fetchMock, 'PUT', '/plays/9');
     expect(body).toMatchObject({ gameId: 1, addonIds: [], tags: ['rodinná', 'liga'], notes: 'Skvělá hra' });
     expect(body.players).toEqual([
       { playerId: 1, score: 90, starting: true },

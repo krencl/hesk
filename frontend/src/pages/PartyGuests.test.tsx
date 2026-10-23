@@ -1,8 +1,8 @@
 import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { GAME, mockApi, ME, PARTY, renderApp } from '../test/helpers';
+import { GAME, mockApi, ME, PARTY, renderApp, sentBody } from '../test/helpers';
 
-afterEach(() => { vi.unstubAllGlobals(); vi.restoreAllMocks(); sessionStorage.clear(); localStorage.clear(); });
+afterEach(() => vi.restoreAllMocks());
 
 const detail = { ...PARTY, members: [{ userId: 1, nickname: 'Anna', role: 'admin' }, { userId: 2, nickname: 'Viki', role: 'writer' }] };
 const PLAYERS = [
@@ -39,8 +39,7 @@ describe('party guests (/parties/:id/guests)', () => {
     expect(save).toBeEnabled();
     fireEvent.click(save);
 
-    await waitFor(() => expect(fetchMock.mock.calls.some(([u, init]) => String(u) === '/api/players/2' && init?.method === 'PATCH')).toBe(true));
-    expect(JSON.parse(String(fetchMock.mock.calls.find(([, init]) => init?.method === 'PATCH')![1]?.body))).toEqual({ name: 'Bobík' });
+    await waitFor(() => expect(sentBody(fetchMock, 'PATCH', '/players/2')).toEqual({ name: 'Bobík' }));
     expect(fetchMock.mock.calls.filter(([, init]) => init?.method === 'PATCH')).toHaveLength(1);
   });
 
@@ -67,8 +66,8 @@ describe('party guests (/parties/:id/guests)', () => {
     fireEvent.click(cyril);
     fireEvent.click(save);
     await waitFor(() => expect(fetchMock.mock.calls.filter(([, init]) => init?.method === 'PATCH')).toHaveLength(2));
-    const bodies = Object.fromEntries(fetchMock.mock.calls.filter(([, init]) => init?.method === 'PATCH').map(([u, init]) => [String(u), JSON.parse(String(init?.body))]));
-    expect(bodies).toEqual({ '/api/players/2': { visible: false }, '/api/players/3': { visible: true } });
+    expect(sentBody(fetchMock, 'PATCH', '/players/2')).toEqual({ visible: false });
+    expect(sentBody(fetchMock, 'PATCH', '/players/3')).toEqual({ visible: true });
   });
 
   it('has "Zrušit" as the secondary button, closing the whole party management', async () => {
@@ -92,8 +91,7 @@ describe('party guests (/parties/:id/guests)', () => {
     expect(screen.getByRole('button', { name: 'Přidat' })).toBeDisabled();
     fireEvent.change(input, { target: { value: ' Dora ' } });
     fireEvent.keyDown(input, { key: 'Enter' });
-    await waitFor(() => expect(fetchMock.mock.calls.some(([u, init]) => String(u) === '/api/parties/3/players' && init?.method === 'POST')).toBe(true));
-    expect(JSON.parse(String(fetchMock.mock.calls.find(([, init]) => init?.method === 'POST')![1]?.body))).toEqual({ name: 'Dora' });
+    await waitFor(() => expect(sentBody(fetchMock, 'POST', '/parties/3/players')).toEqual({ name: 'Dora' }));
     await waitFor(() => expect(input).toHaveValue(''));
   });
 
@@ -138,8 +136,7 @@ describe('party guests (/parties/:id/guests)', () => {
       expect(fetchMock.mock.calls.some(([, init]) => init?.method === 'POST' && String(init?.body).includes('userId'))).toBe(false);
       fireEvent.click(screen.getByRole('button', { name: 'Propojit' }));
 
-      await waitFor(() => expect(fetchMock.mock.calls.some(([u, init]) => String(u) === '/api/players/2/link-member' && init?.method === 'POST')).toBe(true));
-      expect(JSON.parse(String(fetchMock.mock.calls.find(([u]) => String(u).includes('link-member'))![1]?.body))).toEqual({ userId: 2 });
+      await waitFor(() => expect(sentBody(fetchMock, 'POST', '/players/2/link-member')).toEqual({ userId: 2 }));
       await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
     });
 
@@ -163,7 +160,7 @@ describe('party guests (/parties/:id/guests)', () => {
       const link = (await screen.findByLabelText('Odkaz pozvánky')) as HTMLInputElement;
       expect(link.value).toMatch(/\/join\/tok42$/);
       expect(screen.getByText(/host Bob se propojí s jeho účtem/)).toBeInTheDocument();
-      expect(JSON.parse(String(fetchMock.mock.calls.find(([u]) => String(u) === '/api/parties/3/invitations')![1]?.body))).toEqual({ guestId: 2 });
+      expect(sentBody(fetchMock, 'POST', '/parties/3/invitations')).toEqual({ guestId: 2 });
     });
 
     it('closes without doing anything by the cross and Escape', async () => {

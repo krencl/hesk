@@ -20,5 +20,7 @@ export default defineConfig(({ command }) => ({
     globals: true,
     setupFiles: ['./src/test/setup.ts'],
     css: false,
+    // jsdom se vytváří jednou na worker (testy ~25 % rychlejší); izolace souborů zůstává, při potížích (paměť) vrátit 'forks'
+    pool: 'vmThreads',
   },
 }));

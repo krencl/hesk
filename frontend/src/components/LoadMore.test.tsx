@@ -17,7 +17,7 @@ class FakeObserver {
   static get active() { return FakeObserver.instances.filter((i) => !i.disconnected); }
 }
 
-afterEach(() => { vi.unstubAllGlobals(); FakeObserver.instances = []; });
+afterEach(() => { FakeObserver.instances = []; });
 const withObserver = () => vi.stubGlobal('IntersectionObserver', FakeObserver);
 
 describe('LoadMore', () => {

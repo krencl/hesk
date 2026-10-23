@@ -1,8 +1,6 @@
 import { screen } from '@testing-library/react';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { GAME, mockApi, ME, PARTY, PLAY, renderApp, requestedUrls } from '../test/helpers';
-
-afterEach(() => { vi.unstubAllGlobals(); sessionStorage.clear(); localStorage.clear(); });
 
 const routesFor = (role: 'admin' | 'writer' | 'member') => ({
   '/me': { body: ME },
