@@ -20,6 +20,7 @@ use App\Tests\Support\Fixtures;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\QueryBuilder;
 use PHPUnit\Framework\TestCase;
+use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Security\Core\Exception\AccessDeniedException;
 
 /** Statistiky, seance a tagy party: data z repozitářů jsou namockovaná, ověřuje se výstup API a přístup. */
@@ -43,10 +44,10 @@ final class StatsAndListsControllerTest extends TestCase
         $wins = [['playerId' => 1, 'name' => 'Anna', 'wins' => 2, 'plays' => 3], ['playerId' => 2, 'name' => 'Bob', 'wins' => 1, 'plays' => 3]];
         $top = [['gameId' => 5, 'name' => 'King of Tokyo', 'shortName' => 'Tokyo', 'plays' => 3]];
         $plays = $this->createMock(PlayRepository::class);
-        $plays->expects(self::once())->method('winsPerPlayer')->with($this->party)->willReturn($wins);
-        $plays->expects(self::once())->method('topGames')->with($this->party)->willReturn($top);
+        $plays->expects(self::once())->method('winsPerPlayer')->with($this->party, [], [])->willReturn($wins);
+        $plays->expects(self::once())->method('topGames')->with($this->party, 10, [], [])->willReturn($top);
 
-        $response = ControllerHarness::as($this->anna)->call(new StatsController(new Presenter(), $plays), '__invoke', ['party' => $this->party]);
+        $response = ControllerHarness::as($this->anna)->call(new StatsController(new Presenter(), $plays), '__invoke', ['party' => $this->party, 'request' => new Request()]);
 
         self::assertSame(['wins' => $wins, 'topGames' => $top], ControllerHarness::json($response));
     }
@@ -54,7 +55,17 @@ final class StatsAndListsControllerTest extends TestCase
     public function testStatsAreForMembersOnly(): void
     {
         $this->expectException(AccessDeniedException::class);
-        ControllerHarness::as($this->eve)->call(new StatsController(new Presenter(), $this->createStub(PlayRepository::class)), '__invoke', ['party' => $this->party]);
+        ControllerHarness::as($this->eve)->call(new StatsController(new Presenter(), $this->createStub(PlayRepository::class)), '__invoke', ['party' => $this->party, 'request' => new Request()]);
+    }
+
+    public function testStatsCanBeFilteredByGameTags(): void
+    {
+        $plays = $this->createMock(PlayRepository::class);
+        $plays->expects(self::once())->method('winsPerPlayer')->with($this->party, ['Strategie'], ['Rychlovka', 'Párty'])->willReturn([]);
+        $plays->expects(self::once())->method('topGames')->with($this->party, 10, ['Strategie'], ['Rychlovka', 'Párty'])->willReturn([]);
+        $request = new Request(['tags' => ['Strategie', ' ', 'Strategie'], 'excludeTags' => ['Rychlovka', 'Párty']]);
+
+        ControllerHarness::as($this->anna)->call(new StatsController(new Presenter(), $plays), '__invoke', ['party' => $this->party, 'request' => $request]);
     }
 
     public function testSessionsAreListedWithNumberAndBounds(): void
@@ -98,6 +109,19 @@ final class StatsAndListsControllerTest extends TestCase
         $response = ControllerHarness::as($this->anna)->call($this->tagController([['name' => 'víkend'], ['name' => 'Liga'], ['name' => 'doma']]), 'list', ['party' => $this->party]);
 
         self::assertSame(['doma', 'Liga', 'víkend'], ControllerHarness::json($response));
+    }
+
+    public function testGameTagsOfThePartyAndOfTheCatalogAreSortedCaseInsensitively(): void
+    {
+        $em = $this->createStub(EntityManagerInterface::class);
+        $em->method('createQuery')->willReturn($this->mockQuery(['getArrayResult' => [['name' => 'Strategie'], ['name' => 'karetní'], ['name' => 'Rychlovka']]]));
+        $controller = new TagController(new Presenter(), $em);
+
+        self::assertSame(['karetní', 'Rychlovka', 'Strategie'], ControllerHarness::json(ControllerHarness::as($this->anna)->call($controller, 'partyGameTags', ['party' => $this->party])));
+        self::assertSame(['karetní', 'Rychlovka', 'Strategie'], ControllerHarness::json(ControllerHarness::as($this->anna)->call($controller, 'gameTags')));
+
+        $this->expectException(AccessDeniedException::class);
+        ControllerHarness::as($this->eve)->call($controller, 'partyGameTags', ['party' => $this->party]);
     }
 
     public function testNoTagsGiveEmptyListAndStrangersAreDenied(): void

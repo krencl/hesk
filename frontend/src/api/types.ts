@@ -56,6 +56,8 @@ export interface Game {
   characters: Character[];
   /** Vlastní hráči hry (kooperativní hry s „protihráčem“); jsou to hráči party (typicky hosté). */
   players: { id: number; name: string }[];
+  /** Tagy hry ve sdíleném katalogu (rychlovka, strategická, …). */
+  tags: string[];
 }
 
 export type GameSort = 'activity' | 'name';
@@ -107,6 +109,7 @@ export interface GameInput {
   characters: NamedItemInput[];
   /** Hráči hry: `id` je id hráče party (přejmenuje se), bez něj se spáruje podle jména nebo vznikne host. */
   players: NamedItemInput[];
+  tags: string[];
 }
 
 export interface Player {

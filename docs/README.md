@@ -27,6 +27,7 @@ Primárně architektonická rozhodnutí (ADR). Aplikační dokumentace je zámě
 | [0021](adr/0021-bgg-game-search.md) | Zakládání her přes BoardGameGeek (hry party → cache → BGG API) |
 | [0022](adr/0022-backend-tests-without-database.md) | Backendové testy bez databáze (mocky místo SQLite) |
 | [0023](adr/0023-shared-game-catalog.md) | Sdílený katalog her: hra je jedna pro všechny party, vazba party↔hra, správce her |
+| [0024](adr/0024-game-tags-and-stats-filter.md) | Tagy her (v katalogu) a filtr statistik podle nich |
 
 Poznámky ke vzoru z předchozích verzí: [prototype-notes.md](prototype-notes.md).
 

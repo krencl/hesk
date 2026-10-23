@@ -23,12 +23,14 @@ const FULL_GAME = {
   addons: [{ id: 11, name: 'Power Up' }, { id: 12, name: 'Halloween' }],
   characters: [{ id: 21, name: 'Gigazaur' }, { id: 22, name: 'Kraken' }],
   players: [{ id: 2, name: 'Boss' }, { id: 3, name: 'Host' }],
+  tags: ['Rychlovka'],
 };
 const routes = {
   '/me': { body: GAMES_ADMIN },
   '/parties': { body: [PARTY] },
   '/parties/3/games/5': { body: FULL_GAME },
   'PUT /parties/3/games/5/players': { body: FULL_GAME },
+  '/game-tags': { body: ['Rychlovka', 'Strategie'] },
   '/parties/3/players': { body: PLAYERS },
   '/parties/3/games?sort=name&limit=21&offset=0': { body: [FULL_GAME] },
 };
@@ -57,6 +59,20 @@ describe('game form (/games/:id/edit)', () => {
     expect(screen.queryByRole('combobox', { name: /Hráč/ })).not.toBeInTheDocument();
     // úprava hry je jediné místo, odkud se odchází zpět do správy her
     expect(screen.getByRole('link', { name: 'Zpět' })).toHaveAttribute('href', '/manage/games');
+  });
+
+  it('edits the tags of the shared game', async () => {
+    const fetchMock = mockApi({ ...routes, 'PUT /games/5': { body: FULL_GAME } });
+    renderApp('/games/5/edit');
+    await waitFor(() => expect(screen.getByLabelText('Název')).toHaveValue('King of Tokyo'));
+    expect(screen.getByText('Rychlovka')).toBeInTheDocument();
+
+    fireEvent.change(screen.getByLabelText('Tagy'), { target: { value: 'Strategie' } });
+    fireEvent.keyDown(screen.getByLabelText('Tagy'), { key: 'Enter' });
+    fireEvent.click(screen.getByRole('button', { name: 'Odebrat tag Rychlovka' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Uložit' }));
+
+    await waitFor(() => expect(sent(fetchMock, 'PUT', '/games/5')?.tags).toEqual(['Strategie']));
   });
 
   it('saves renamed items with their ids, new ones without, and the removed ones are left out', async () => {

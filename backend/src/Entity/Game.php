@@ -46,6 +46,13 @@ class Game
     #[ORM\OrderBy(['id' => 'ASC'])]
     private Collection $characters;
 
+    /** @var Collection<int, GameTag> */
+    #[ORM\ManyToMany(targetEntity: GameTag::class)]
+    #[ORM\JoinTable(name: 'game_game_tag')]
+    #[ORM\JoinColumn(onDelete: 'CASCADE')]
+    #[ORM\InverseJoinColumn(onDelete: 'CASCADE')]
+    private Collection $tags;
+
     public function __construct(
         #[ORM\Column(length: 150)]
         private string $name,
@@ -54,6 +61,7 @@ class Game
     ) {
         $this->addons = new ArrayCollection();
         $this->characters = new ArrayCollection();
+        $this->tags = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -106,6 +114,18 @@ class Game
     public function getCharacters(): Collection
     {
         return $this->characters;
+    }
+
+    /** @return Collection<int, GameTag> */
+    public function getTags(): Collection
+    {
+        return $this->tags;
+    }
+
+    /** @param list<GameTag> $tags */
+    public function setTags(array $tags): void
+    {
+        $this->tags = new ArrayCollection($tags);
     }
 
     /**

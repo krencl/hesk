@@ -346,6 +346,18 @@ final class GameControllerTest extends TestCase
         self::assertEqualsCanonicalizing(['Anna', 'Boss', 'Minion'], $this->party->getPlayers()->map(static fn ($p): string => $p->getName())->toArray());
     }
 
+    public function testGameTagsBelongToTheSharedGameAndAreCleanedAndSorted(): void
+    {
+        $created = ControllerHarness::json(ControllerHarness::as($this->anna)->call($this->controller(), 'create', ['party' => $this->party, 'req' => $this->request(['tags' => ['strategie', ' Rychlovka ', 'Strategie', ' ']])]));
+        self::assertSame(['Rychlovka', 'strategie'], $created['tags'], 'trimmed, deduplicated case-insensitively, sorted');
+
+        $game = Fixtures::game($this->party, 'Coop', ScoreType::WinnerOnly);
+        $updated = ControllerHarness::json(ControllerHarness::as($this->admin())->call($this->controller(known: [$game]), 'update', ['game' => $game, 'req' => $this->request(['name' => 'Coop', 'scoreType' => ScoreType::WinnerOnly, 'tags' => ['Párty', 'Kooperativní']])]));
+        self::assertSame(['Kooperativní', 'Párty'], $updated['tags']);
+        $cleared = ControllerHarness::json(ControllerHarness::as($this->admin())->call($this->controller(known: [$game]), 'update', ['game' => $game, 'req' => $this->request(['name' => 'Coop', 'scoreType' => ScoreType::WinnerOnly])]));
+        self::assertSame([], $cleared['tags']);
+    }
+
     public function testGamePlayerEditedByIdIsRenamedAndRemovedOneStaysInTheParty(): void
     {
         $boss = Fixtures::guest($this->party, 'Boss');

@@ -1,4 +1,4 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { type FormEvent, useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useActiveParty, useApp } from '../AppContext';
@@ -12,6 +12,7 @@ import { ImageCropPopup } from '../components/ImageCropPopup';
 import { NamedListEditor } from '../components/NamedListEditor';
 import { PageTitle } from '../components/PageTitle';
 import { SafeHtml } from '../components/SafeHtml';
+import { TagInput } from '../components/TagInput';
 import { renderCheatSheet } from '../lib/cheatSheet';
 import { type CropArea, cropToBlob } from '../lib/cropImage';
 import { type EditItem, fromEditItems, toEditItems } from '../lib/namedItems';
@@ -29,10 +30,11 @@ interface FormState {
   addons: EditItem[];
   characters: EditItem[];
   players: EditItem[];
+  tags: string[];
   bggId: number | null;
 }
 
-const EMPTY: FormState = { name: '', shortName: '', scoreType: 'most_points', imageUrl: '', description: '', cheatSheet: '', addons: [], characters: [], players: [], bggId: null };
+const EMPTY: FormState = { name: '', shortName: '', scoreType: 'most_points', imageUrl: '', description: '', cheatSheet: '', addons: [], characters: [], players: [], tags: [], bggId: null };
 
 /**
  * Formulář hry (přidání / úprava); vstupuje se do něj ze správy her. Hra je sdílená mezi partami (ADR 0023): sdílené údaje
@@ -56,6 +58,7 @@ export function GameFormPage() {
   // Originál obrázku na BGG CDN: jen náhled, lokálně se uloží až výřez z ořezového editoru.
   const [bggImage, setBggImage] = useState<string | null>(null);
   const fileInput = useRef<HTMLInputElement>(null);
+  const gameTags = useQuery({ queryKey: ['gameTags'], queryFn: api.gameTags });
 
   useEffect(() => {
     const g = existing.data;
@@ -70,6 +73,7 @@ export function GameFormPage() {
         addons: toEditItems(g.addons),
         characters: toEditItems(g.characters),
         players: toEditItems(g.players),
+        tags: g.tags,
         bggId: g.bggId,
       });
     }
@@ -78,6 +82,9 @@ export function GameFormPage() {
   const done = async (target: string) => {
     await queryClient.invalidateQueries({ queryKey: ['games', party.id] });
     await queryClient.invalidateQueries({ queryKey: ['game', gameId] });
+    await queryClient.invalidateQueries({ queryKey: ['gameTags'] });
+    await queryClient.invalidateQueries({ queryKey: ['partyGameTags'] });
+    await queryClient.invalidateQueries({ queryKey: ['stats', party.id] });
     navigate(target);
   };
   const save = useMutation({
@@ -92,6 +99,7 @@ export function GameFormPage() {
         addons: fromEditItems(form.addons),
         characters: fromEditItems(form.characters),
         players: fromEditItems(form.players),
+        tags: form.tags,
         bggId: form.bggId,
       };
       if (gameId === null) return api.createGame(party.id, input);
@@ -184,6 +192,10 @@ export function GameFormPage() {
         </div>
         {form.bggId && <p className="muted hint">Hra na <a href={`https://boardgamegeek.com/boardgame/${form.bggId}`} target="_blank" rel="noreferrer">BoardGameGeek</a>.</p>}
         <label>Popis<textarea rows={3} value={form.description} onChange={(e) => set({ description: e.target.value })} /></label>
+        <div className="field">
+          <label htmlFor="game-tags" className="field-label">Tagy</label>
+          <TagInput id="game-tags" tags={form.tags} options={gameTags.data ?? []} onChange={(tags) => set({ tags })} />
+        </div>
 
         <NamedListEditor
           label="Rozšíření"

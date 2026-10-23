@@ -14,6 +14,7 @@ final readonly class GameRequest
      * @param list<NamedItemRequest> $addons     rozšíření hry
      * @param list<NamedItemRequest> $characters postavy hry
      * @param list<NamedItemRequest> $players    vlastní hráči hry (`id` = id hráče party)
+     * @param list<string>           $tags       tagy hry v partě
      */
     public function __construct(
         #[Assert\NotBlank, Assert\Length(max: 150)]
@@ -33,6 +34,8 @@ final readonly class GameRequest
         public array $players = [],
         #[Assert\Positive]
         public ?int $bggId = null,
+        #[Assert\All([new Assert\NotBlank(), new Assert\Length(max: 100)])]
+        public array $tags = [],
     ) {
     }
 }

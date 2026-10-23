@@ -1,11 +1,12 @@
 import { del, get, patch, post, put } from './client';
 import type { BggPreparedGame, BggSearch, Game, GameListQuery, GameWithStats, NamedItemInput, Player, GameInput, SessionInfo, Me, Party, PartyDetail, PartyRole, Play, PlayDefaults, PlayInput, Stats } from './types';
 
-/** Sestaví `?a=1&b=2`; prázdné hodnoty (undefined, null, '') vynechá. */
+/** Sestaví `?a=1&b=2`; prázdné hodnoty (undefined, null, '') vynechá, pole jde jako `a[]=1&a[]=2`. */
 export function queryString(params: object): string {
   const search = new URLSearchParams();
   for (const [key, value] of Object.entries(params)) {
-    if (value !== undefined && value !== null && value !== '') search.set(key, String(value));
+    if (Array.isArray(value)) value.forEach((v) => search.append(`${key}[]`, String(v)));
+    else if (value !== undefined && value !== null && value !== '') search.set(key, String(value));
   }
   const text = search.toString();
   return text ? `?${text}` : '';
@@ -63,12 +64,17 @@ export const api = {
   playDefaults: (partyId: number, startedAt: string, endedAt: string) =>
     get<PlayDefaults>(`/parties/${partyId}/plays/defaults${queryString({ startedAt, endedAt })}`),
   tags: (partyId: number) => get<string[]>(`/parties/${partyId}/tags`),
+  /** Všechny tagy her v katalogu (našeptávání ve formuláři hry). */
+  gameTags: () => get<string[]>('/game-tags'),
+  /** Tagy her, které má aspoň jedna hra zařazená v partě (filtr statistik). */
+  partyGameTags: (partyId: number) => get<string[]>(`/parties/${partyId}/game-tags`),
   play: (id: number) => get<Play>(`/plays/${id}`),
   createPlay: (partyId: number, input: PlayInput) => post<Play>(`/parties/${partyId}/plays`, input),
   updatePlay: (id: number, input: PlayInput) => put<Play>(`/plays/${id}`, input),
   deletePlay: (id: number) => del(`/plays/${id}`),
 
-  stats: (partyId: number) => get<Stats>(`/parties/${partyId}/stats`),
+  /** Statistiky; `tags` = jen hry s aspoň jedním z tagů, `excludeTags` = bez her s kterýmkoli z nich. */
+  stats: (partyId: number, filter: { tags?: string[]; excludeTags?: string[] } = {}) => get<Stats>(`/parties/${partyId}/stats${queryString(filter)}`),
 };
 
 /** Obrázek z BGG CDN přes náš server (stejný origin, takže ho jde načíst do canvasu při ořezu). */

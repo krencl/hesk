@@ -45,6 +45,7 @@ final class LegacyImportTest extends KernelTestCase
             'CREATE TABLE round (id INTEGER PRIMARY KEY, party_id INT, game_id INT, game_version_id INT, session_number INT, note TEXT, created_at TEXT)',
             'CREATE TABLE round_player (id INTEGER PRIMARY KEY, round_id INT, player_id INT, game_character_id INT, score INT, is_winner INT, is_starting INT)',
             'CREATE TABLE tag_round (tag_id INT, round_id INT)',
+            'CREATE TABLE tag_game (tag_id INT, game_id INT)',
         ] as $sql) {
             $this->legacy->executeStatement($sql);
         }
@@ -75,6 +76,8 @@ final class LegacyImportTest extends KernelTestCase
         $in('game_character', ['id' => 200, 'game_id' => 10, 'name' => 'Gigazaur']);
         $in('game_character', ['id' => 201, 'game_id' => 10, 'name' => 'Kraken']);
         $in('tag', ['id' => 300, 'name' => 'víkend']);
+        $in('tag', ['id' => 301, 'name' => 'Rychlovka']);
+        $in('tag_game', ['tag_id' => 301, 'game_id' => 11]);
 
         $in('round', ['id' => 1000, 'party_id' => 1, 'game_id' => 11, 'game_version_id' => 110, 'session_number' => 1, 'note' => 'Skvělé', 'created_at' => '2022-03-01 20:00:00']);
         $in('round', ['id' => 1001, 'party_id' => 1, 'game_id' => 10, 'game_version_id' => 101, 'session_number' => 1, 'note' => null, 'created_at' => '2022-03-01 22:00:00']);
@@ -111,7 +114,7 @@ final class LegacyImportTest extends KernelTestCase
     private function snapshot(): array
     {
         $out = [];
-        foreach (['app_user', 'party', 'party_member', 'player', 'game', 'party_game', 'party_game_player', 'game_addon', 'game_character', 'tag', 'game_session', 'play', 'play_addon', 'play_tag', 'play_result', 'legacy_map'] as $t) {
+        foreach (['app_user', 'party', 'party_member', 'player', 'game', 'party_game', 'party_game_player', 'game_tag', 'game_game_tag', 'game_addon', 'game_character', 'tag', 'game_session', 'play', 'play_addon', 'play_tag', 'play_result', 'legacy_map'] as $t) {
             $out[$t] = $this->rowCount($t);
         }
 
@@ -149,6 +152,8 @@ final class LegacyImportTest extends KernelTestCase
         self::assertSame(2, $this->rowCount('game'), 'Azul is one shared game, as in the old app');
         self::assertSame(3, $this->rowCount('party_game'));
         self::assertSame([[1, 'Azul'], [1, 'King of Tokyo'], [2, 'Azul']], array_map('array_values', $this->rows('SELECT pg.party_id, g.name FROM party_game pg JOIN game g ON g.id = pg.game_id ORDER BY pg.party_id, g.name')));
+        // tagy her (typ „game“ ve staré aplikaci) patří hře v katalogu a jsou jiné než tagy zápisů; „víkend“ je tag zápisu, ne hry
+        self::assertSame([['Azul', 'Rychlovka']], array_map('array_values', $this->rows('SELECT g.name AS game, t.name AS tag FROM game_game_tag x JOIN game g ON g.id = x.game_id JOIN game_tag t ON t.id = x.game_tag_id')));
     }
 
     public function testPlaysKeepIdsConvertTimesToUtcAndComputeResults(): void

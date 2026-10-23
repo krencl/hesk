@@ -10,6 +10,7 @@ use App\Dto\GamePlayersRequest;
 use App\Dto\GameRequest;
 use App\Dto\NamedItemRequest;
 use App\Entity\Game;
+use App\Entity\GameTag;
 use App\Entity\Party;
 use App\Entity\PartyGame;
 use App\Entity\User;
@@ -186,9 +187,39 @@ final class GameController extends ApiController
         return array_map(static fn (NamedItemRequest $i): array => ['id' => $i->id, 'name' => $i->name], $list);
     }
 
+    /**
+     * Tagy hry (sdílené v katalogu): názvy se očistí a sloučí bez ohledu na velikost písmen, neexistující tagy se založí.
+     *
+     * @param list<string> $names
+     *
+     * @return list<GameTag>
+     */
+    private function resolveTags(array $names): array
+    {
+        $unique = [];
+        foreach ($names as $name) {
+            $name = trim($name);
+            if ('' !== $name) {
+                $unique[mb_strtolower($name)] ??= $name;
+            }
+        }
+        $tags = [];
+        foreach ($unique as $name) {
+            $tag = $this->em->getRepository(GameTag::class)->findOneBy(['name' => $name]);
+            if (!$tag) {
+                $tag = new GameTag($name);
+                $this->em->persist($tag);
+            }
+            $tags[] = $tag;
+        }
+
+        return $tags;
+    }
+
     /** Přenese sdílené údaje z požadavku na hru. */
     private function apply(Game $game, GameRequest $req): void
     {
         $game->update(trim($req->name), $req->shortName, $req->scoreType, $req->imageUrl, $req->description, $req->cheatSheet, $this->items($req->addons), $this->items($req->characters), $req->bggId);
+        $game->setTags($this->resolveTags($req->tags));
     }
 }

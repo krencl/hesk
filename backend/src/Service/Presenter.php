@@ -47,7 +47,7 @@ final class Presenter
         return ['id' => $player->getId(), 'name' => $player->getName(), 'hasAccount' => null !== $player->getUser(), 'visible' => $player->isVisible()];
     }
 
-    /** Sdílená hra; `$link` (zařazení do party) přidá vlastní hráče hry v té partě. */
+    /** Sdílená hra (vč. tagů); `$link` (zařazení do party) přidá vlastní hráče hry v té partě. */
     public function game(Game $game, ?PartyGame $link = null): array
     {
         return [
@@ -71,7 +71,17 @@ final class Presenter
                 static fn ($p): array => ['id' => $p->getId(), 'name' => $p->getName()],
                 null === $link ? [] : $link->getPlayers()->toArray(),
             )),
+            'tags' => $this->gameTagNames($game),
         ];
+    }
+
+    /** @return list<string> */
+    private function gameTagNames(Game $game): array
+    {
+        $names = array_map(static fn ($t): string => $t->getName(), $game->getTags()->toArray());
+        usort($names, static fn (string $a, string $b): int => strcasecmp($a, $b));
+
+        return $names;
     }
 
     /**

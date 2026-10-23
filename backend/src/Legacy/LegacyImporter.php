@@ -94,6 +94,7 @@ final class LegacyImporter
             'rounds' => $all('SELECT id, party_id, game_id, game_version_id, session_number, note, created_at FROM round ORDER BY id'),
             'roundPlayers' => $all('SELECT id, round_id, player_id, game_character_id, score, is_winner, is_starting FROM round_player ORDER BY round_id, id'),
             'tagRounds' => $all('SELECT tag_id, round_id FROM tag_round'),
+            'tagGames' => $all('SELECT tag_id, game_id FROM tag_game'),
         ];
         $d['versionsById'] = $byId($d['versions']);
         $d['roundsById'] = $byId($d['rounds']);
@@ -341,6 +342,18 @@ final class LegacyImporter
                 'cheat_sheet' => '' !== trim((string) $g['cheat_sheet']) ? $g['cheat_sheet'] : null,
             ];
             $newGameId = $this->upsert('game', (string) $gameId, 'game', fn () => $this->findId('SELECT id FROM game WHERE LOWER(name) = LOWER(?)', [$name]), $values);
+
+            // tagy hry (typ „game“, tabulka `tag_game` ve staré aplikaci) patří hře v katalogu; import je jen přidává
+            foreach ($d['tagGames'] as $tg) {
+                $tagName = trim((string) ($d['tags'][$tg['tag_id']] ?? ''));
+                if ((int) $tg['game_id'] !== $gameId || '' === $tagName) {
+                    continue;
+                }
+                $gameTagId = $this->upsert('gametag', (string) $tg['tag_id'], 'game_tag', fn () => $this->findId('SELECT id FROM game_tag WHERE LOWER(name) = LOWER(?)', [$tagName]), ['name' => $tagName]);
+                if (false === $this->target->fetchOne('SELECT 1 FROM game_game_tag WHERE game_id = ? AND game_tag_id = ?', [$newGameId, $gameTagId])) {
+                    $this->target->insert('game_game_tag', ['game_id' => $newGameId, 'game_tag_id' => $gameTagId]);
+                }
+            }
 
             // rozšíření = verze hry kromě „Základní“ (ta je hra sama)
             foreach ($d['versions'] as $v) {

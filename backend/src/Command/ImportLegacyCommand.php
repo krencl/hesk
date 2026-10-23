@@ -21,7 +21,7 @@ final class ImportLegacyCommand extends Command
 {
     private const LABELS = [
         'user' => 'Uživatelé', 'party' => 'Party', 'member' => 'Členové part', 'player' => 'Hráči', 'game' => 'Hry', 'link' => 'Hry v partách',
-        'addon' => 'Rozšíření', 'character' => 'Postavy', 'tag' => 'Tagy', 'session' => 'Seance', 'play' => 'Zápisy', 'result' => 'Výsledky',
+        'addon' => 'Rozšíření', 'character' => 'Postavy', 'tag' => 'Tagy zápisů', 'gametag' => 'Tagy her', 'session' => 'Seance', 'play' => 'Zápisy', 'result' => 'Výsledky',
     ];
 
     public function __construct(
