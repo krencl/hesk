@@ -12,12 +12,17 @@
   --ok: #1f8f4d;
   --bg: #eee;
   --surface: #fff;
-  --max-width: 400px;
+  --max-width: 100vw;
   --header-height: 4rem;
   --image-size: 7.2rem;
   --image-size-small: 4rem;
   --radius: 0.1rem;
   --animation: 0.3s;
+}
+
+/* Maximální šířka (okno v mobilní šířce zabírá celou obrazovku) platí až od desktopu */
+@media (min-width: 576px) {
+  :root { --max-width: 400px; }
 }
 
 * { box-sizing: border-box; }
