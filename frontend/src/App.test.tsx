@@ -73,6 +73,7 @@ describe('App gating', () => {
   it('keeps the user signed in and shows an error when logging out fails', async () => {
     mockApi({ '/me': { body: ME }, '/parties': { body: [PARTY] }, 'POST /auth/logout': { status: 500, body: { error: 'Odhlášení selhalo.' } }, '/parties/3/games?sort=activity&limit=21&offset=0': { body: [] } });
     renderApp();
+    await screen.findByRole('searchbox', { name: 'Hledat hru' }); // přesměrování / → /games zavírá menu, počkáme na něj
     fireEvent.click(await screen.findByRole('button', { name: /Menu – Pátek/ }));
     fireEvent.click(screen.getByRole('button', { name: 'Odhlásit se' }));
     expect(await screen.findByText('Odhlášení selhalo.')).toBeInTheDocument();
