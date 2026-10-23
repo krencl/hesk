@@ -76,8 +76,8 @@ class BggCatalog
 
             return ['results' => self::sorted($results), 'bgg' => self::BGG_UNAVAILABLE];
         }
+        $this->rememberAll($items);
         foreach ($items as $item) {
-            $this->remember($item);
             if (!isset($seen[$item->id])) {
                 $results[] = ['source' => 'bgg', 'name' => $item->name, 'year' => $item->year, 'bggId' => $item->id, 'gameId' => null, 'imageUrl' => $item->imageUrl];
                 $seen[$item->id] = true;
@@ -142,23 +142,43 @@ class BggCatalog
             throw new DomainException('Hra na BoardGameGeek neexistuje.');
         }
 
-        $entry = $this->remember($item);
+        $entry = $this->rememberAll([$item])[$item->id];
         $entry->setImageUrl($item->imageUrl);
         $this->em->flush();
 
         return ['bggId' => $bggId, 'name' => $entry->getName(), 'bggImageUrl' => $entry->getImageUrl()];
     }
 
-    private function remember(BggItem $item): BggGame
+    /**
+     * Uloží hry z BGG do cache: opakovaná položka se bere jednou (první vyhrává), existující řádky se načtou jedním
+     * dotazem a jen obnoví, nové se založí.
+     *
+     * @param list<BggItem> $items
+     *
+     * @return array<int, BggGame> záznamy cache podle BGG id
+     */
+    private function rememberAll(array $items): array
     {
-        $entry = $this->cache->findOneBy(['bggId' => $item->id]);
-        if (null === $entry) {
-            $entry = new BggGame($item->id, $item->name, $item->year);
-            $this->em->persist($entry);
-        } else {
-            $entry->refresh($item->name, $item->year);
+        $unique = [];
+        foreach ($items as $item) {
+            $unique[$item->id] ??= $item;
+        }
+        if ([] === $unique) {
+            return [];
         }
 
-        return $entry;
+        $entries = [];
+        foreach ($this->cache->findBy(['bggId' => array_keys($unique)]) as $existing) {
+            $entries[$existing->getBggId()] = $existing;
+        }
+        foreach ($unique as $id => $item) {
+            if (isset($entries[$id])) {
+                $entries[$id]->refresh($item->name, $item->year);
+            } else {
+                $this->em->persist($entries[$id] = new BggGame($id, $item->name, $item->year));
+            }
+        }
+
+        return $entries;
     }
 }

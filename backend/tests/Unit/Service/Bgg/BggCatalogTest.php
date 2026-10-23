@@ -76,6 +76,11 @@ final class BggCatalogTest extends TestCase
             return null;
         });
 
+        $cache->method('findBy')->willReturnCallback(fn (array $criteria): array => array_values(array_filter(
+            $all(),
+            static fn (BggGame $e): bool => \in_array($e->getBggId(), (array) $criteria['bggId'], true),
+        )));
+
         return new BggCatalog($games, $cache, new FakeBggClient(), $this->mockEm([], $this->calls), new NullLogger());
     }
 
@@ -107,6 +112,24 @@ final class BggCatalogTest extends TestCase
         $second = $this->catalog()->search($this->party, 'catan');
         self::assertSame([['cache', 'Catan'], ['party', 'Catan vlastní'], ['cache', 'Catan: Seafarers']], self::brief($second));
         self::assertSame('unavailable', $second['bgg']);
+    }
+
+    public function testDuplicatedBggItemIsCachedOnceAndExistingRowsAreRefreshed(): void
+    {
+        FakeBggClient::$games = [
+            5 => new BggItem(5, 'Azul', 2017),
+            6 => new BggItem(6, 'Azul: Summer Pavilion', 2019),
+        ];
+        FakeBggClient::$duplicate = true;
+        $known = new BggGame(6, 'Azul Summer', 2018);
+        $this->cached = [$known];
+
+        $result = $this->catalog()->search($this->party, 'azul');
+
+        self::assertSame([['bgg', 'Azul'], ['cache', 'Azul Summer']], self::brief($result), 'hra se nabídne jen jednou');
+        $created = array_values(array_filter($this->calls['persist'], static fn (object $e): bool => $e instanceof BggGame));
+        self::assertSame([5], array_map(static fn (BggGame $b): int => $b->getBggId(), $created), 'duplicitní položka = jeden záznam, existující se nezakládá znovu');
+        self::assertSame('Azul: Summer Pavilion', $known->getName(), 'existující záznam se obnoví');
     }
 
     public function testCatalogGamesOfThePartyOthersAreOfferedBetweenThePartyAndTheCacheWithTheirIds(): void

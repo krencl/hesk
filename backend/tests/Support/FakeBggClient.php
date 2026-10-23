@@ -16,6 +16,8 @@ final class FakeBggClient extends BggClient
     /** @var array<int, BggItem> */
     public static array $games = [];
     public static bool $down = false;
+    /** Hledání vrátí každou hru dvakrát (BGG občas opakuje položky). */
+    public static bool $duplicate = false;
     public static int $searchCalls = 0;
     public static int $thingCalls = 0;
     public static int $imageCalls = 0;
@@ -23,7 +25,7 @@ final class FakeBggClient extends BggClient
     public static function reset(): void
     {
         self::$games = [];
-        self::$down = false;
+        self::$down = self::$duplicate = false;
         self::$searchCalls = self::$thingCalls = self::$imageCalls = 0;
     }
 
@@ -41,10 +43,12 @@ final class FakeBggClient extends BggClient
         ++self::$searchCalls;
         $this->guard();
 
-        return array_values(array_map(
+        $found = array_values(array_map(
             static fn (BggItem $g): BggItem => new BggItem($g->id, $g->name, $g->year),
             array_filter(self::$games, static fn (BggItem $g): bool => str_contains(mb_strtolower($g->name), mb_strtolower($query))),
         ));
+
+        return self::$duplicate ? [...$found, ...$found] : $found;
     }
 
     public function thing(int $id): ?BggItem
