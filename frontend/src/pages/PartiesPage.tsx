@@ -31,7 +31,7 @@ export function PartiesPage() {
   return (
     <section className="page">
       <PageTitle>Správa part</PageTitle>
-      <ul className="list">
+      <ul className="list party-list">
         {parties.map((p) => (
           <li key={p.id} className={`party-row${p.id === activeParty?.id ? ' selected' : ''}`} aria-current={p.id === activeParty?.id ? 'true' : undefined}>
             <Link to={`/parties/${p.id}`} className="party-link">

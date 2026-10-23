@@ -372,6 +372,7 @@ fieldset.plain { display: contents; border: 0; margin: 0; padding: 0; min-width:
 .guest-add { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 0.5rem; margin-top: 0.5rem; }
 
 /* Správa part a detail party */
+.party-list { margin-top: 1rem; }
 .party-row { display: flex; align-items: center; gap: 0.5rem; padding-right: 1rem; border-left: 0.2rem solid transparent; }
 .party-row.selected { background: #e8f0fb; border-left-color: var(--main); }
 .party-link { flex: 1; min-width: 0; display: flex; flex-direction: column; padding: 0.5rem 0.8rem; color: inherit; text-decoration: none; }
