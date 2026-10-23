@@ -28,6 +28,7 @@ Primárně architektonická rozhodnutí (ADR). Aplikační dokumentace je zámě
 | [0022](adr/0022-backend-tests-without-database.md) | Backendové testy bez databáze (mocky místo SQLite) |
 | [0023](adr/0023-shared-game-catalog.md) | Sdílený katalog her: hra je jedna pro všechny party, vazba party↔hra, správce her |
 | [0024](adr/0024-game-tags-and-stats-filter.md) | Tagy her (v katalogu) a filtr statistik podle nich |
+| [0025](adr/0025-name-comparison.md) | Porovnávání jmen podle `NameKey` (bez velikosti písmen i diakritiky, jako kolace DB), 409 při porušení unikátu |
 
 Poznámky ke vzoru z předchozích verzí: [prototype-notes.md](prototype-notes.md).
 
