@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { lazy, useEffect } from 'react';
 import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import { clearAfterLoginPath, peekAfterLoginPath, rememberAfterLoginPath } from './lib/afterLogin';
 import { AppProvider, useActiveParty, useCurrentUserQuery } from './AppContext';
@@ -8,9 +8,7 @@ import { RequireWriter } from './components/RequireWriter';
 import { LoadingSplash, ServerDownSplash } from './components/Splash';
 import { ToastProvider } from './components/Toasts';
 import { TooltipLayer } from './components/TooltipLayer';
-import { GameCheatsheetPage } from './pages/GameCheatsheetPage';
 import { GameDetailPage } from './pages/GameDetailPage';
-import { GameFormPage } from './pages/GameFormPage';
 import { GameListPage } from './pages/GameListPage';
 import { GamesPage } from './pages/GamesPage';
 import { JoinPage } from './pages/JoinPage';
@@ -24,6 +22,10 @@ import { PartyEditPage } from './pages/PartyEditPage';
 import { PartyGuestsPage } from './pages/PartyGuestsPage';
 import { SettingsPage } from './pages/SettingsPage';
 import { StatsPage } from './pages/StatsPage';
+
+// Formulář hry a cheatsheet táhnou marked, DOMPurify a react-easy-crop; zbytek aplikace je nepotřebuje, proto se načítají až při otevření.
+const GameFormPage = lazy(() => import('./pages/GameFormPage').then((m) => ({ default: m.GameFormPage })));
+const GameCheatsheetPage = lazy(() => import('./pages/GameCheatsheetPage').then((m) => ({ default: m.GameCheatsheetPage })));
 
 /** Starý odkaz `/stats` vede na statistiky aktivní party (`/parties/:id/stats`). */
 function StatsRedirect() {

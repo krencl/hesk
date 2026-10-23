@@ -1,11 +1,12 @@
 import { useIsFetching, useIsMutating, useQueryClient } from '@tanstack/react-query';
-import { useState } from 'react';
+import { Suspense, useState } from 'react';
 import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useApp } from '../AppContext';
 import { api } from '../api';
 import { pathForSwitchedParty } from '../lib/partyPath';
 import { canWrite } from '../lib/roles';
 import { Icon } from './Icon';
+import { ListSkeleton } from './Skeleton';
 
 export function Layout() {
   const { me, activeParty, parties, setActiveParty } = useApp();
@@ -64,7 +65,9 @@ export function Layout() {
       </header>
 
       <main>
-        <Outlet />
+        <Suspense fallback={<ListSkeleton rows={3} withImage={false} />}>
+          <Outlet />
+        </Suspense>
       </main>
 
       <nav className={`menu${menuOpen ? ' visible' : ''}`} aria-label="Menu" aria-hidden={!menuOpen} inert={!menuOpen}>
