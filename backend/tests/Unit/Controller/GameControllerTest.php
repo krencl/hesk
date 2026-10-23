@@ -10,7 +10,9 @@ use App\Dto\GameLinkRequest;
 use App\Dto\GamePlayersRequest;
 use App\Dto\GameRequest;
 use App\Dto\NamedItemRequest;
+use App\Domain\NamedItems;
 use App\Entity\Game;
+use App\Entity\GameTag;
 use App\Entity\GameSession;
 use App\Entity\Party;
 use App\Entity\Play;
@@ -19,6 +21,7 @@ use App\Entity\User;
 use App\Enum\PartyRole;
 use App\Enum\ScoreType;
 use App\Repository\GameRepository;
+use App\Repository\GameTagRepository;
 use App\Repository\PlayRepository;
 use App\Service\CoverStorage;
 use App\Service\Presenter;
@@ -51,11 +54,16 @@ final class GameControllerTest extends TestCase
 
     private function controller(?GameRepository $games = null, ?PlayRepository $plays = null, ?CoverStorage $covers = null, array $known = []): GameController
     {
+        // tagy: repozitář sahá do DB, tady každému (očištěnému) názvu vznikne nový tag
+        $tags = $this->createStub(GameTagRepository::class);
+        $tags->method('findOrCreate')->willReturnCallback(static fn (array $names): array => array_map(static fn (string $n): GameTag => new GameTag($n), NamedItems::uniqueNames($names)));
+
         return new GameController(
             new Presenter(),
             $this->mockEm($known, $this->calls),
             $plays ?? $this->createStub(PlayRepository::class),
             $games ?? $this->createStub(GameRepository::class),
+            $tags,
             $covers ?? $this->createStub(CoverStorage::class),
         );
     }

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Tests\Unit\Service;
 
 use App\Domain\Exception\DomainException;
+use App\Domain\NamedItems;
 use App\Domain\ResultCalculator;
 use App\Dto\PlayRequest;
 use App\Dto\PlayerRequest;
@@ -18,12 +19,12 @@ use App\Entity\User;
 use App\Enum\ScoreType;
 use App\Repository\GameSessionRepository;
 use App\Repository\PlayRepository;
+use App\Repository\PlayTagRepository;
 use App\Service\PlayService;
 use App\Service\SessionAssigner;
 use App\Tests\Support\Fixtures;
 use App\Tests\Support\DoctrineMocks;
 use Doctrine\ORM\EntityManagerInterface;
-use Doctrine\ORM\EntityRepository;
 use PHPUnit\Framework\TestCase;
 
 /** Zápisy: databáze (EntityManager, repozitáře) je mock, ověřuje se logika služby a to, co se ukládá. */
@@ -70,13 +71,22 @@ final class PlayServiceTest extends TestCase
         $playRepo = $this->createStub(PlayRepository::class);
         $playRepo->method('findBySession')->willReturnCallback(fn (): array => $this->playsInSession);
 
-        $tags = $this->createStub(EntityRepository::class);
-        $tags->method('findOneBy')->willReturnCallback(fn (array $criteria): ?PlayTag => $this->knownTags[$criteria['name']] ?? null);
+        // repozitář tagů sahá do DB; tady „najde“ jen $knownTags a zbytek spáruje skutečná logika (NamedItems::resolve)
+        $tags = $this->createStub(PlayTagRepository::class);
+        $tags->method('findOrCreate')->willReturnCallback(fn (Party $party, array $names): array => NamedItems::resolve(
+            $names,
+            $this->knownTags,
+            static fn (PlayTag $t): string => $t->getName(),
+            function (string $name) use ($party): PlayTag {
+                $this->em->persist($tag = new PlayTag($party, $name));
+
+                return $tag;
+            },
+        ));
 
         $this->em = $this->mockEm([$this->game, ...Fixtures::persist($this->party)->getPlayers()->toArray(), ...$known], $this->calls);
-        $this->em->method('getRepository')->willReturn($tags);
 
-        return new PlayService($this->em, new ResultCalculator(), new SessionAssigner($sessionRepo), $playRepo);
+        return new PlayService($this->em, new ResultCalculator(), new SessionAssigner($sessionRepo), $playRepo, $tags);
     }
 
     private function d(string $s): \DateTimeImmutable
@@ -153,6 +163,18 @@ final class PlayServiceTest extends TestCase
         self::assertEqualsCanonicalizing(['víkend', 'Doma'], array_map(static fn (PlayTag $t): string => $t->getName(), $play->getTags()->toArray()));
         $created = array_filter($this->calls['persist'], static fn (object $e): bool => $e instanceof PlayTag);
         self::assertSame(['Doma'], array_map(static fn (PlayTag $t): string => $t->getName(), array_values($created)), 'existující tag se znovu nezakládá');
+    }
+
+    public function testTagsDifferingOnlyInCaseOrAccentsAreOneTag(): void
+    {
+        $this->knownTags['víkend'] = $weekend = Fixtures::id(new PlayTag($this->party, 'víkend'));
+
+        $play = $this->service()->create($this->party, $this->request('2026-03-01', [[$this->anna, 1.0]], ['tags' => ['Doma', 'doma', 'Vikend', 'DOMA']]));
+
+        self::assertSame(['Doma', 'víkend'], array_map(static fn (PlayTag $t): string => $t->getName(), $play->getTags()->toArray()));
+        self::assertContains($weekend, $play->getTags()->toArray(), 'existující tag se použije, i když se liší diakritikou');
+        $created = array_filter($this->calls['persist'], static fn (object $e): bool => $e instanceof PlayTag);
+        self::assertCount(1, $created, 'Doma/doma/DOMA = jediný nový tag');
     }
 
     public function testAddonsAndCharactersMustBelongToTheGame(): void

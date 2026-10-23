@@ -6,6 +6,8 @@ namespace App\Tests\Unit\EventListener;
 
 use App\Domain\Exception\DomainException;
 use App\EventListener\ApiExceptionListener;
+use Doctrine\DBAL\Driver\Exception as DriverException;
+use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpKernel\Event\ExceptionEvent;
@@ -35,6 +37,21 @@ final class ApiExceptionListenerTest extends TestCase
 
         self::assertSame(422, $response->getStatusCode());
         self::assertSame(['error' => 'Hráč nepatří do této party.'], json_decode((string) $response->getContent(), true));
+    }
+
+    public function testUniqueConstraintViolationIs409WithoutLeakingSql(): void
+    {
+        $driver = new class('Duplicate entry \'Honza\' for key \'player.UNIQ\'') extends \Exception implements DriverException {
+            public function getSQLState(): ?string
+            {
+                return '23000';
+            }
+        };
+
+        $response = $this->handle(new UniqueConstraintViolationException($driver, null))->getResponse();
+
+        self::assertSame(409, $response->getStatusCode());
+        self::assertSame(['error' => 'Záznam se stejným názvem už existuje.'], json_decode((string) $response->getContent(), true));
     }
 
     /** @return iterable<string, array{\Throwable, int}> */

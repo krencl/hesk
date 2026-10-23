@@ -148,6 +148,70 @@ final class PartyTest extends TestCase
         $party->addGuest(' honza ');
     }
 
+    /** @return iterable<string, array{string, string}> */
+    public static function equivalentNames(): iterable
+    {
+        yield 'velikost písmen' => ['Honza', 'honza'];
+        yield 'diakritika a velikost' => ['Čeněk', 'čeněk'];
+        yield 'jen diakritika' => ['Šimon', 'Simon'];
+        yield 'opačně' => ['Simon', 'Šimon'];
+        yield 'okolní mezery' => ['Eva', ' EVA '];
+    }
+
+    #[\PHPUnit\Framework\Attributes\DataProvider('equivalentNames')]
+    public function testNamesDifferingOnlyInCaseOrAccentsCollideLikeInTheDatabase(string $existing, string $new): void
+    {
+        $party = Party::create('Hrajeme', new User('g1', 'a@example.com'));
+        $guest = $party->addGuest($existing);
+
+        self::assertTrue($party->isPlayerNameTaken($new));
+        self::assertFalse($party->isPlayerNameTaken($new, $guest), 'sám sebe hráč neblokuje');
+        try {
+            $party->addGuest($new);
+            self::fail('addGuest musí duplicitu odmítnout');
+        } catch (DomainException) {
+        }
+        $other = $party->addGuest('Jiný');
+        $this->expectException(DomainException::class);
+        $party->renamePlayer($other, $new);
+    }
+
+    public function testGuestCanBeRenamedToAnotherSpellingOfItsOwnName(): void
+    {
+        $party = Party::create('Hrajeme', new User('g1', 'a@example.com'));
+        $guest = $party->addGuest('Simon');
+
+        $party->renamePlayer($guest, 'Šimon');
+
+        self::assertSame('Šimon', $guest->getName());
+    }
+
+    public function testMemberPlayerNameAvoidsAccentInsensitiveCollisions(): void
+    {
+        $creator = new User('g1', 'a@example.com');
+        $creator->setNickname('Anna');
+        $party = Party::create('Hrajeme', $creator);
+        $party->addGuest('Šimon');
+        $simon = new User('g2', 'b@example.com');
+        $simon->setNickname('Simon');
+
+        $party->addMember($simon);
+
+        self::assertSame('Simon 2', $party->findPlayerFor($simon)?->getName());
+    }
+
+    public function testSyncPlayerNameRespectsAccentInsensitiveCollisions(): void
+    {
+        $user = new User('g1', 'a@example.com');
+        $party = Party::create('Hrajeme', $user);
+        $party->addGuest('Šimon');
+
+        $user->setNickname('Simon');
+        $party->syncPlayerName($user);
+
+        self::assertSame('a', $party->findPlayerFor($user)?->getName(), 'jméno je obsazené, hráč zůstává');
+    }
+
     public function testSyncPlayerNameFollowsNicknameUnlessTaken(): void
     {
         $user = new User('g1', 'a@example.com');

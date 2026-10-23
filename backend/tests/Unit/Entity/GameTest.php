@@ -54,6 +54,19 @@ final class GameTest extends TestCase
         self::assertSame($kept, $game->getAddons()->first(), 'existing addon instance is preserved');
     }
 
+    public function testAddonsDifferingOnlyInAccentsAreDuplicatesAndMatchTheExistingOne(): void
+    {
+        $game = $this->game();
+        $this->update($game, self::named(['Čaj', 'caj', 'Dráha']));
+        self::assertSame(['Čaj', 'Dráha'], $this->names($game->getAddons()));
+
+        $kept = $game->getAddons()->first();
+        $this->update($game, self::named(['CAJ']));
+
+        self::assertSame($kept, $game->getAddons()->first(), 'párování podle názvu ignoruje diakritiku');
+        self::assertSame(['CAJ'], $this->names($game->getAddons()));
+    }
+
     public function testItemWithIdIsRenamedInsteadOfRecreated(): void
     {
         $game = $this->game();

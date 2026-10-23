@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Entity;
 
 use App\Domain\Exception\DomainException;
+use App\Domain\NameKey;
+use App\Domain\NamedItems;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
@@ -64,25 +66,17 @@ class PartyGame
     /**
      * Hráči hry jako pojmenované položky (jako postavy): s `id` se hráč party přejmenuje, bez `id` se spáruje
      * podle jména s hráčem party, jinak vznikne nový host. Odebraný hráč zůstává v partě, jen přestane být hráčem hry.
-     * Prázdná a opakovaná jména se zahodí.
+     * Prázdná a opakovaná jména (bez ohledu na velikost písmen a diakritiku, {@see NameKey}) se zahodí.
      *
      * @param list<array{id: ?int, name: string}> $items
      */
     public function syncPlayers(array $items): void
     {
-        $wanted = [];
-        $seen = [];
-        foreach ($items as $item) {
-            $name = trim($item['name']);
-            $key = mb_strtolower($name);
-            if ('' === $name || isset($seen[$key])) {
-                continue;
-            }
-            if (mb_strlen($name) > 100) {
+        $wanted = NamedItems::normalize($items);
+        foreach ($wanted as $item) {
+            if (mb_strlen($item['name']) > 100) {
                 throw new DomainException('Jméno hráče hry může mít nejvýš 100 znaků.');
             }
-            $seen[$key] = true;
-            $wanted[] = ['id' => $item['id'] ?? null, 'name' => $name];
         }
 
         $resolved = [];
@@ -121,8 +115,9 @@ class PartyGame
 
             throw new DomainException('Hráč nepatří do této party.');
         }
+        $key = NameKey::of($name);
         foreach ($this->party->getPlayers() as $player) {
-            if (0 === strcasecmp($player->getName(), $name)) {
+            if (NameKey::of($player->getName()) === $key) {
                 return $player;
             }
         }

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Legacy;
 
+use App\Domain\NameKey;
 use App\Domain\PartyShortName;
 use Doctrine\DBAL\Connection;
 
@@ -257,7 +258,7 @@ final class LegacyImporter
         foreach ($d['partyUsers'] as $m) {
             $members[(int) $m['party_id']][(int) $m['user_id']] = true;
         }
-        $used = []; // nová parta => malé jméno => true (v tomto běhu)
+        $used = []; // nová parta => klíč jména (NameKey) => true (v tomto běhu)
         foreach ($pairs as [$legacyId, $legacyPartyId]) {
             $partyId = $this->map('party', (string) $legacyPartyId);
             if (null === $partyId || !isset($d['players'][$legacyId])) {
@@ -274,11 +275,11 @@ final class LegacyImporter
             if ($linkedToAccount) {
                 $name = (string) $this->target->fetchOne('SELECT name FROM player WHERE id = ?', [$mappedId]);
             } else {
-                for ($i = 2; isset($used[$partyId][mb_strtolower($name)]) || $this->nameTakenByOther($partyId, $name, $mappedId); ++$i) {
+                for ($i = 2; isset($used[$partyId][NameKey::of($name)]) || $this->nameTakenByOther($partyId, $name, $mappedId); ++$i) {
                     $name = "$base $i";
                 }
             }
-            $used[$partyId][mb_strtolower($name)] = true;
+            $used[$partyId][NameKey::of($name)] = true;
 
             $legacyUserId = $d['userPlayer'][$legacyId] ?? null;
             $userId = null !== $legacyUserId && isset($members[$legacyPartyId][$legacyUserId]) ? $this->map('user', (string) $legacyUserId) : null;

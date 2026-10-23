@@ -12,9 +12,9 @@ use App\Entity\Game;
 use App\Entity\Party;
 use App\Entity\Play;
 use App\Entity\PlayResult;
-use App\Entity\PlayTag;
 use App\Entity\Player;
 use App\Repository\PlayRepository;
+use App\Repository\PlayTagRepository;
 use Doctrine\ORM\EntityManagerInterface;
 
 /** Vytváření, úprava a mazání zápisů včetně přiřazení do seancí. */
@@ -25,6 +25,7 @@ final class PlayService
         private readonly ResultCalculator $calculator,
         private readonly SessionAssigner $sessions,
         private readonly PlayRepository $plays,
+        private readonly PlayTagRepository $tags,
     ) {
     }
 
@@ -142,24 +143,7 @@ final class PlayService
         $play->setGame($game);
         $play->replaceResults($results);
         $play->setAddons($addons);
-        $play->setTags(array_map(fn (string $n): PlayTag => $this->findOrCreateTag($party, $n), $this->cleanNames($req->tags)));
+        $play->setTags($this->tags->findOrCreate($party, $req->tags));
         $play->setNotes($req->notes);
-    }
-
-    /** @return list<string> */
-    private function cleanNames(array $names): array
-    {
-        return array_values(array_unique(array_filter(array_map('trim', $names), static fn (string $n): bool => '' !== $n)));
-    }
-
-    private function findOrCreateTag(Party $party, string $name): PlayTag
-    {
-        $tag = $this->em->getRepository(PlayTag::class)->findOneBy(['party' => $party, 'name' => $name]);
-        if (!$tag) {
-            $tag = new PlayTag($party, $name);
-            $this->em->persist($tag);
-        }
-
-        return $tag;
     }
 }

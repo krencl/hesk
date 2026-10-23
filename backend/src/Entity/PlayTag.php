@@ -4,9 +4,10 @@ declare(strict_types=1);
 
 namespace App\Entity;
 
+use App\Repository\PlayTagRepository;
 use Doctrine\ORM\Mapping as ORM;
 
-#[ORM\Entity]
+#[ORM\Entity(repositoryClass: PlayTagRepository::class)]
 #[ORM\Table(name: 'play_tag')]
 #[ORM\UniqueConstraint(columns: ['party_id', 'name'])]
 class PlayTag

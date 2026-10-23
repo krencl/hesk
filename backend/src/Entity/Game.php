@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Entity;
 
+use App\Domain\NameKey;
+use App\Domain\NamedItems;
 use App\Enum\ScoreType;
 use App\Repository\GameRepository;
 use Doctrine\Common\Collections\ArrayCollection;
@@ -157,7 +159,7 @@ class Game
     /**
      * Synchronizuje pojmenované položky: existující podle `id` přejmenuje, chybějící odebere, nové přidá.
      * Položky bez `id` se spáruje s existující stejného názvu (aby zůstaly vazby z odehraných her).
-     * Prázdné a opakované názvy se zahodí.
+     * Prázdné a opakované názvy (bez ohledu na velikost písmen a diakritiku, {@see NameKey}) se zahodí.
      *
      * @template T of GameAddon|GameCharacter
      *
@@ -167,17 +169,7 @@ class Game
      */
     private function sync(Collection $collection, array $items, callable $create): void
     {
-        $seen = [];
-        $wanted = [];
-        foreach ($items as $item) {
-            $name = trim($item['name']);
-            $key = mb_strtolower($name);
-            if ('' === $name || isset($seen[$key])) {
-                continue;
-            }
-            $seen[$key] = true;
-            $wanted[] = ['id' => $item['id'] ?? null, 'name' => $name];
-        }
+        $wanted = NamedItems::normalize($items);
 
         $existing = $collection->toArray();
         $kept = [];
@@ -198,7 +190,7 @@ class Game
         }
         foreach ($unmatched as $i) {
             foreach ($existing as $e) {
-                if (!\in_array($e, $kept, true) && mb_strtolower($e->getName()) === mb_strtolower($wanted[$i]['name'])) {
+                if (!\in_array($e, $kept, true) && NameKey::of($e->getName()) === NameKey::of($wanted[$i]['name'])) {
                     $kept[$i] = $e;
                     break;
                 }

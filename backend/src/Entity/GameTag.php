@@ -4,10 +4,11 @@ declare(strict_types=1);
 
 namespace App\Entity;
 
+use App\Repository\GameTagRepository;
 use Doctrine\ORM\Mapping as ORM;
 
-/** Štítek hry ve sdíleném katalogu (např. „rychlovka“, „strategická“); jiný než `Tag` u zápisů (místo, příležitost). */
-#[ORM\Entity]
+/** Štítek hry ve sdíleném katalogu (např. „rychlovka“, „strategická“); jiný než `PlayTag` u zápisů (místo, příležitost). */
+#[ORM\Entity(repositoryClass: GameTagRepository::class)]
 class GameTag
 {
     #[ORM\Id, ORM\GeneratedValue, ORM\Column]

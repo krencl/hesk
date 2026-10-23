@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Entity;
 
 use App\Domain\Exception\DomainException;
+use App\Domain\NameKey;
 use App\Domain\PartyShortName;
 use App\Enum\PartyRole;
 use App\Repository\PartyRepository;
@@ -91,12 +92,29 @@ class Party
     public function findMember(User $user): ?PartyMember
     {
         foreach ($this->members as $member) {
-            if ($member->getUser() === $user || (null !== $user->getId() && $member->getUser()->getId() === $user->getId())) {
+            if (self::sameUser($member->getUser(), $user)) {
                 return $member;
             }
         }
 
         return null;
+    }
+
+    public function findMemberByUserId(int $userId): ?PartyMember
+    {
+        foreach ($this->members as $member) {
+            if ($member->getUser()->getId() === $userId) {
+                return $member;
+            }
+        }
+
+        return null;
+    }
+
+    /** Stejný účet: tatáž instance, nebo (u načtených z DB) stejné id. */
+    private static function sameUser(User $a, User $b): bool
+    {
+        return $a === $b || (null !== $b->getId() && $a->getId() === $b->getId());
     }
 
     /** @return Collection<int, Player> */
@@ -150,7 +168,7 @@ class Party
     {
         foreach ($this->players as $player) {
             $linked = $player->getUser();
-            if ($linked && ($linked === $user || (null !== $user->getId() && $linked->getId() === $user->getId()))) {
+            if ($linked && self::sameUser($linked, $user)) {
                 return $player;
             }
         }
@@ -172,17 +190,28 @@ class Party
     public function addGuest(string $name): Player
     {
         $name = trim($name);
-        foreach ($this->players as $player) {
-            if (0 === strcasecmp($player->getName(), $name)) {
-                throw new DomainException('Hráč s tímto jménem už v partě existuje.');
-            }
+        if ($this->isPlayerNameTaken($name)) {
+            throw new DomainException('Hráč s tímto jménem už v partě existuje.');
         }
         $this->players->add($player = new Player($this, $name));
 
         return $player;
     }
 
-    /** Přejmenuje hosta; jméno musí být v partě volné (velikost písmen se nerozlišuje) a člena s účtem přejmenovat nejde. */
+    /** Je jméno mezi hráči party už obsazené? Porovnává se podle {@see NameKey} (bez ohledu na velikost písmen a diakritiku, jako DB); `$except` je hráč, který se přejmenovává. */
+    public function isPlayerNameTaken(string $name, ?Player $except = null): bool
+    {
+        $key = NameKey::of($name);
+        foreach ($this->players as $player) {
+            if ($player !== $except && NameKey::of($player->getName()) === $key) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /** Přejmenuje hosta; jméno musí být v partě volné (velikost písmen ani diakritika se nerozlišují) a člena s účtem přejmenovat nejde. */
     public function renamePlayer(Player $player, string $name): void
     {
         $name = trim($name);
@@ -192,10 +221,8 @@ class Party
         if ('' === $name) {
             throw new DomainException('Jméno nesmí být prázdné.');
         }
-        foreach ($this->players as $other) {
-            if ($other !== $player && 0 === strcasecmp($other->getName(), $name)) {
-                throw new DomainException('Hráč s tímto jménem už v partě existuje.');
-            }
+        if ($this->isPlayerNameTaken($name, $player)) {
+            throw new DomainException('Hráč s tímto jménem už v partě existuje.');
         }
         $player->rename($name);
     }
@@ -208,19 +235,16 @@ class Party
         if (!$player || !$nickname || $player->getName() === $nickname) {
             return;
         }
-        foreach ($this->players as $other) {
-            if ($other !== $player && 0 === strcasecmp($other->getName(), $nickname)) {
-                return;
-            }
+        if ($this->isPlayerNameTaken($nickname, $player)) {
+            return;
         }
         $player->rename($nickname);
     }
 
     private function uniquePlayerName(string $base): string
     {
-        $taken = array_map(static fn (Player $p): string => mb_strtolower($p->getName()), $this->players->toArray());
         $name = $base;
-        for ($i = 2; \in_array(mb_strtolower($name), $taken, true); ++$i) {
+        for ($i = 2; $this->isPlayerNameTaken($name); ++$i) {
             $name = $base.' '.$i;
         }
 

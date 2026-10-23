@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\EventListener;
 
 use App\Domain\Exception\DomainException;
+use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
 use Symfony\Component\EventDispatcher\Attribute\AsEventListener;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Response;
@@ -27,6 +28,10 @@ final class ApiExceptionListener
 
         if ($e instanceof DomainException) {
             $status = Response::HTTP_UNPROCESSABLE_ENTITY;
+        } elseif ($e instanceof UniqueConstraintViolationException) {
+            // pojistka: duplicitu názvu, kterou nezachytila doménová kontrola (např. jiná kolace DB), nevracíme jako 500
+            $status = Response::HTTP_CONFLICT;
+            $payload = ['error' => 'Záznam se stejným názvem už existuje.'];
         } elseif ($e instanceof HttpExceptionInterface) {
             $status = $e->getStatusCode();
             $previous = $e->getPrevious();
