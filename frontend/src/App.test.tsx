@@ -1,6 +1,6 @@
-import { fireEvent, screen } from '@testing-library/react';
+import { fireEvent, screen, waitFor } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { GAME, mockApi, ME, PARTY, renderApp } from './test/helpers';
+import { GAME, mockApi, ME, PARTY, renderApp, requestedUrls } from './test/helpers';
 
 afterEach(() => { vi.unstubAllGlobals(); sessionStorage.clear(); });
 
@@ -25,6 +25,37 @@ describe('App gating', () => {
     });
     renderApp();
     expect(await screen.findByRole('link', { name: 'Vytvořit partu' })).toBeInTheDocument();
+  });
+
+  it('shows a splash instead of the empty-party prompt while parties fail to load', async () => {
+    mockApi({ '/me': { body: ME }, '/parties': { status: 500, body: { error: 'boom' } } });
+    renderApp();
+    expect(await screen.findByText(/Server je nedostupný/)).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'Vytvořit partu' })).not.toBeInTheDocument();
+  });
+
+  it('shows a loading splash (not the empty-party prompt) while parties are loading', async () => {
+    let release: () => void = () => {};
+    const gate = new Promise<void>((resolve) => { release = resolve; });
+    const fetchMock = mockApi({ '/me': { body: ME }, '/parties': { body: [] } });
+    const inner = fetchMock.getMockImplementation()!;
+    fetchMock.mockImplementation(async (url: string, init?: RequestInit) => {
+      if (url === '/api/parties') await gate;
+      return inner(url, init);
+    });
+    renderApp();
+    expect(await screen.findByText('Načítám…')).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'Vytvořit partu' })).not.toBeInTheDocument();
+    release();
+    expect(await screen.findByRole('link', { name: 'Vytvořit partu' })).toBeInTheDocument();
+  });
+
+  it('keeps the invitation target through a StrictMode double render', async () => {
+    sessionStorage.setItem('hesk.afterLogin', '/join/tok1');
+    const fetchMock = mockApi({ '/me': { body: ME }, '/parties': { body: [PARTY] }, 'POST /invitations/tok1/accept': { body: PARTY } });
+    renderApp('/', { strict: true });
+    await waitFor(() => expect(requestedUrls(fetchMock)).toContain('/invitations/tok1/accept'));
+    await waitFor(() => expect(sessionStorage.getItem('hesk.afterLogin')).toBeNull());
   });
 
   it('renders the active party in the top bar and the game list as the home page', async () => {

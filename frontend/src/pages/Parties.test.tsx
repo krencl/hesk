@@ -39,7 +39,8 @@ describe('party management (/parties)', () => {
     mockApi(base);
     renderApp('/parties');
     fireEvent.click(await screen.findByRole('button', { name: /^Menu – / }));
-    fireEvent.click(screen.getByRole('button', { name: 'Přepnout' }));
+    // stránka správy part má vlastní tlačítka „Přepnout“, proto jen v menu
+    fireEvent.click(within(screen.getByRole('navigation', { name: 'Menu' })).getByRole('button', { name: 'Přepnout' }));
     expect(screen.getByRole('heading', { name: 'Vyber partu' })).toHaveClass('primary');
   });
 

@@ -1,5 +1,6 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { render } from '@testing-library/react';
+import { StrictMode } from 'react';
 import { MemoryRouter } from 'react-router-dom';
 import { vi } from 'vitest';
 import { App } from '../App';
@@ -27,13 +28,14 @@ export function mockApi(routes: MockRoutes) {
 
 export const requestedUrls = (fetchMock: ReturnType<typeof mockApi>) => fetchMock.mock.calls.map((c) => String(c[0]).replace('/api', ''));
 
-export function renderApp(path = '/') {
+export function renderApp(path = '/', { strict = false }: { strict?: boolean } = {}) {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-  return render(
+  const tree = (
     <QueryClientProvider client={client}>
       <MemoryRouter initialEntries={[path]}><App /></MemoryRouter>
-    </QueryClientProvider>,
+    </QueryClientProvider>
   );
+  return render(strict ? <StrictMode>{tree}</StrictMode> : tree);
 }
 
 export const ME = { id: 1, nickname: 'Anna', email: 'a@b.cz', hasNickname: true, roles: ['ROLE_USER'] };

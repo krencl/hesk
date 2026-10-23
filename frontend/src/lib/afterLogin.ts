@@ -9,12 +9,20 @@ export function rememberAfterLoginPath(path: string): void {
   }
 }
 
-export function consumeAfterLoginPath(): string | null {
+/** Zapamatovaná cesta, aniž by se smazala (bezpečné volat při renderu). */
+export function peekAfterLoginPath(): string | null {
   try {
-    const path = sessionStorage.getItem(KEY);
-    if (path) sessionStorage.removeItem(KEY);
-    return path;
+    return sessionStorage.getItem(KEY);
   } catch {
     return null;
+  }
+}
+
+/** Smaže zapamatovanou cestu; volat až po přesměrování (efekt), ne při renderu. */
+export function clearAfterLoginPath(): void {
+  try {
+    sessionStorage.removeItem(KEY);
+  } catch {
+    // nic se nestane, cesta se jen při dalším přihlášení použije znovu
   }
 }

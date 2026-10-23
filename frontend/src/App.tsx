@@ -1,9 +1,11 @@
+import { useEffect } from 'react';
 import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
-import { consumeAfterLoginPath, rememberAfterLoginPath } from './lib/afterLogin';
+import { clearAfterLoginPath, peekAfterLoginPath, rememberAfterLoginPath } from './lib/afterLogin';
 import { AppProvider, useActiveParty, useCurrentUserQuery } from './AppContext';
 import { Layout } from './components/Layout';
 import { RequireParty } from './components/RequireParty';
 import { RequireWriter } from './components/RequireWriter';
+import { LoadingSplash, ServerDownSplash } from './components/Splash';
 import { ToastProvider } from './components/Toasts';
 import { TooltipLayer } from './components/TooltipLayer';
 import { GameCheatsheetPage } from './pages/GameCheatsheetPage';
@@ -42,8 +44,14 @@ function AppContent() {
   const { data: me, isPending, isError } = useCurrentUserQuery();
   const { pathname } = useLocation();
 
-  if (isPending) return <div className="splash">Načítám…</div>;
-  if (isError) return <div className="splash">Server je nedostupný. Zkus to prosím později.</div>;
+  // Cíl po přihlášení (pozvánka) se maže až po přesměrování, ne při renderu – StrictMode renderuje dvakrát.
+  const pending = me?.hasNickname ? peekAfterLoginPath() : null;
+  useEffect(() => {
+    if (pending && pending === pathname) clearAfterLoginPath();
+  }, [pending, pathname]);
+
+  if (isPending) return <LoadingSplash />;
+  if (isError) return <ServerDownSplash />;
   if (!me) {
     // Po přihlášení přes Google se vracíme na kořen; cílovou stránku (např. pozvánku) si proto pamatujeme.
     rememberAfterLoginPath(pathname);
@@ -51,7 +59,6 @@ function AppContent() {
   }
   if (!me.hasNickname) return <NicknamePage first />;
 
-  const pending = consumeAfterLoginPath();
   if (pending && pending !== pathname) return <Navigate to={pending} replace />;
 
   return (

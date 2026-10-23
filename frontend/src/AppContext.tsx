@@ -3,6 +3,7 @@ import { createContext, type ReactNode, useCallback, useContext, useMemo, useSta
 import { api } from './api';
 import { ApiError } from './api/client';
 import type { Me, Party } from './api/types';
+import { LoadingSplash, ServerDownSplash } from './components/Splash';
 import { loadActivePartyId, resolveActiveParty, saveActivePartyId } from './lib/activeParty';
 
 interface AppState {
@@ -44,9 +45,10 @@ export function useCurrentUserQuery() {
 export function AppProvider({ me, children }: { me: Me; children: ReactNode }) {
   const queryClient = useQueryClient();
   const [storedId, setStoredId] = useState<number | null>(loadActivePartyId);
-  const { data: parties = [] } = useQuery({ queryKey: ['parties'], queryFn: api.parties });
+  const partiesQuery = useQuery({ queryKey: ['parties'], queryFn: api.parties });
+  const parties = partiesQuery.data;
 
-  const activeParty = useMemo(() => resolveActiveParty(parties, storedId), [parties, storedId]);
+  const activeParty = useMemo(() => (parties ? resolveActiveParty(parties, storedId) : null), [parties, storedId]);
 
   const setActiveParty = useCallback(
     (id: number) => {
@@ -57,6 +59,8 @@ export function AppProvider({ me, children }: { me: Me; children: ReactNode }) {
     [queryClient],
   );
 
-  const value = useMemo(() => ({ me, parties, activeParty, setActiveParty }), [me, parties, activeParty, setActiveParty]);
+  const value = useMemo(() => ({ me, parties: parties ?? [], activeParty, setActiveParty }), [me, parties, activeParty, setActiveParty]);
+  // Bez seznamu part by se zbytečně ukázalo „Zatím nejsi v žádné partě“; chyba dalšího načtení už stávající data neschová.
+  if (!parties) return partiesQuery.isError ? <ServerDownSplash /> : <LoadingSplash />;
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }
