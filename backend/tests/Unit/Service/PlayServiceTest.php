@@ -17,13 +17,13 @@ use App\Entity\PlayResult;
 use App\Entity\PlayTag;
 use App\Entity\User;
 use App\Enum\ScoreType;
-use App\Repository\GameSessionRepository;
 use App\Repository\PlayRepository;
 use App\Repository\PlayTagRepository;
 use App\Service\PlayService;
 use App\Service\SessionAssigner;
 use App\Tests\Support\Fixtures;
 use App\Tests\Support\DoctrineMocks;
+use App\Tests\Support\InMemorySessions;
 use Doctrine\ORM\EntityManagerInterface;
 use PHPUnit\Framework\TestCase;
 
@@ -31,6 +31,7 @@ use PHPUnit\Framework\TestCase;
 final class PlayServiceTest extends TestCase
 {
     use DoctrineMocks;
+    use InMemorySessions;
 
     private User $anna;
     private User $bob;
@@ -44,6 +45,10 @@ final class PlayServiceTest extends TestCase
     private array $knownTags = [];
     private \ArrayObject $calls;
     private EntityManagerInterface $em;
+    /** Vyhledávání seancí vidí jen to, co už se uložilo (flush), jako databáze; jinak hranice v paměti. */
+    private bool $databaseView = false;
+    /** @var list<array{GameSession, \DateTimeImmutable, \DateTimeImmutable}> seance a jejich hranice při posledním flushi */
+    private array $committed = [];
 
     protected function setUp(): void
     {
@@ -55,19 +60,55 @@ final class PlayServiceTest extends TestCase
         $this->sessions = [];
         $this->playsInSession = [];
         $this->knownTags = [];
-        $this->calls = new \ArrayObject();
+        $this->databaseView = false;
+        $this->committed = [];
+        $this->calls = new class extends \ArrayObject {
+            public ?\Closure $onFlush = null;
+
+            public function offsetSet(mixed $key, mixed $value): void
+            {
+                parent::offsetSet($key, $value);
+                if ('flush' === $key) {
+                    ($this->onFlush)?->__invoke();
+                }
+            }
+        };
+        $this->calls->onFlush = fn () => $this->commitSessions();
+    }
+
+    /** @return list<GameSession> seance, které by „v databázi“ byly: z fixtures plus uložené službou (a nesmazané) */
+    private function liveSessions(): array
+    {
+        $removed = $this->calls['remove'] ?? [];
+        $all = [...$this->sessions, ...array_filter($this->calls['persist'] ?? [], static fn (object $e): bool => $e instanceof GameSession)];
+
+        return array_values(array_unique(array_filter($all, static fn (GameSession $s): bool => !\in_array($s, $removed, true)), \SORT_REGULAR));
+    }
+
+    /** Zapamatuje si hranice seancí, jak by je po flushi viděla databáze. */
+    private function commitSessions(): void
+    {
+        $this->committed = array_map(static fn (GameSession $s): array => [$s, $s->getStartedAt(), $s->getEndedAt()], $this->liveSessions());
     }
 
     private function service(array $known = []): PlayService
     {
-        $sessionRepo = $this->createStub(GameSessionRepository::class);
-        // seance „v databázi“: ty z fixtures plus ty, které služba v průběhu testu uložila (a nesmazala)
-        $sessionRepo->method('findByParty')->willReturnCallback(function (): array {
-            $removed = $this->calls['remove'] ?? [];
-            $all = [...$this->sessions, ...array_filter($this->calls['persist'] ?? [], static fn (object $e): bool => $e instanceof GameSession)];
+        $sessionRepo = $this->sessionRepository(
+            fn (): array => $this->databaseView ? array_column($this->committed, 0) : $this->liveSessions(),
+            function (GameSession $s, \DateTimeImmutable $start, \DateTimeImmutable $end): bool {
+                if (!$this->databaseView) {
+                    return $s->accepts($start, $end);
+                }
+                [$from, $to] = GameSession::acceptanceWindow($start, $end);
+                foreach ($this->committed as [$known, $startedAt, $endedAt]) {
+                    if ($known === $s) {
+                        return $endedAt >= $from && $startedAt <= $to;
+                    }
+                }
 
-            return array_values(array_unique(array_filter($all, static fn (GameSession $s): bool => !\in_array($s, $removed, true)), \SORT_REGULAR));
-        });
+                return false;
+            },
+        );
         $playRepo = $this->createStub(PlayRepository::class);
         $playRepo->method('findBySession')->willReturnCallback(fn (): array => $this->playsInSession);
 
@@ -143,6 +184,27 @@ final class PlayServiceTest extends TestCase
         $later = $this->service()->create($this->party, $this->request('2026-03-20', [[$this->anna, 1.0]]));
         self::assertNotSame($existing, $later->getSession());
         self::assertSame(8, $later->getSession()->getNumber());
+    }
+
+    public function testMovedPlayIsRegroupedAgainstTheSavedBoundsOfTheShrunkSession(): void
+    {
+        $this->databaseView = true;
+        $service = $this->service();
+        $first = Fixtures::id($service->create($this->party, $this->request('2026-03-01', [[$this->anna, 1.0]])));
+        $second = Fixtures::id($service->create($this->party, new PlayRequest($this->game->getId(), $this->d('2026-03-02T17:00:00+00:00'), $this->d('2026-03-02T18:00:00+00:00'), $this->request('2026-03-02', [[$this->anna, 2.0]])->players)));
+        $session = $first->getSession();
+        self::assertSame($session, $second->getSession());
+        $this->sessions = [$session];
+        $this->playsInSession = [$first, $second];
+        $this->commitSessions();
+
+        // Bez druhého zápisu seance končí 2026-03-01 19:00, takže 2026-03-02 21:00 už je víc než 24 h po jejím konci
+        // (uložený konec před přepočtem, 2026-03-02 18:00, by zápis nesprávně pustil zpět).
+        $service->update($second, new PlayRequest($this->game->getId(), $this->d('2026-03-02T21:00:00+00:00'), $this->d('2026-03-02T22:00:00+00:00'), $this->request('2026-03-02', [[$this->anna, 2.0]])->players));
+
+        self::assertNotSame($session, $second->getSession());
+        self::assertSame(2, $second->getSession()->getNumber());
+        self::assertEquals($this->d('2026-03-01T19:00:00+00:00'), $session->getEndedAt());
     }
 
     public function testExplicitSessionNumberJoinsOrCreatesSession(): void

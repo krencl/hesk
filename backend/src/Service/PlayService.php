@@ -60,6 +60,8 @@ final class PlayService
         // Seance přepočítáme z jejích zápisů (bez upravovaného) a upravený zápis zařadíme znovu.
         $others = array_filter($this->plays->findBySession($oldSession), static fn (Play $p): bool => $p !== $play);
         $emptied = $this->sessions->recalculate($oldSession, $others);
+        // hledání seance se ptá databáze, takže přepočtené hranice staré seance musí být uložené, než se zápis zařadí znovu
+        $this->em->flush();
         $newSession = $this->sessions->assign($party, $req->startedAt, $req->endedAt, $req->sessionNumber);
         $this->em->persist($newSession);
         if ($emptied && $newSession === $oldSession) {

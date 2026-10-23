@@ -10,12 +10,14 @@ use App\Entity\Play;
 use App\Entity\Game;
 use App\Entity\User;
 use App\Enum\ScoreType;
-use App\Repository\GameSessionRepository;
 use App\Service\SessionAssigner;
+use App\Tests\Support\InMemorySessions;
 use PHPUnit\Framework\TestCase;
 
 final class SessionAssignerTest extends TestCase
 {
+    use InMemorySessions;
+
     private Party $party;
 
     protected function setUp(): void
@@ -31,10 +33,7 @@ final class SessionAssignerTest extends TestCase
     /** @param list<GameSession> $existing */
     private function assigner(array $existing): SessionAssigner
     {
-        $repo = $this->createStub(GameSessionRepository::class);
-        $repo->method('findByParty')->willReturn($existing);
-
-        return new SessionAssigner($repo);
+        return new SessionAssigner($this->sessionRepository(static fn (): array => $existing));
     }
 
     public function testCreatesNewSessionWhenNoneExists(): void

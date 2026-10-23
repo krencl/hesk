@@ -32,6 +32,14 @@ final class GameSessionTest extends TestCase
         self::assertFalse($s->accepts(new \DateTimeImmutable('2026-01-04 10:00'), new \DateTimeImmutable('2026-01-04 11:00')));
     }
 
+    public function testAcceptanceWindowIsTheMaxGapAroundThePlay(): void
+    {
+        [$from, $to] = GameSession::acceptanceWindow(new \DateTimeImmutable('2026-01-05 18:00'), new \DateTimeImmutable('2026-01-05 19:30'));
+
+        self::assertEquals(new \DateTimeImmutable('2026-01-04 18:00'), $from);
+        self::assertEquals(new \DateTimeImmutable('2026-01-06 19:30'), $to);
+    }
+
     public function testExtendKeepsWidestBounds(): void
     {
         $s = $this->session('2026-01-01 18:00', '2026-01-01 20:00');

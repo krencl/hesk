@@ -23,12 +23,10 @@ final class SessionAssigner
     public function assign(Party $party, \DateTimeImmutable $start, \DateTimeImmutable $end, ?int $number = null): GameSession
     {
         if (null !== $number) {
-            foreach ($this->sessions->findByParty($party) as $session) {
-                if ($session->getNumber() === $number) {
-                    $session->extendTo($start, $end);
+            if (null !== $session = $this->sessions->findOneByNumber($party, $number)) {
+                $session->extendTo($start, $end);
 
-                    return $session;
-                }
+                return $session;
             }
 
             return new GameSession($party, $number, $start, $end);
@@ -59,15 +57,11 @@ final class SessionAssigner
     /** @return array{session: ?GameSession, number: int} nalezená seance a číslo pro případ, že se bude zakládat nová */
     private function match(Party $party, \DateTimeImmutable $start, \DateTimeImmutable $end): array
     {
-        $lastNumber = 0;
-        foreach ($this->sessions->findByParty($party) as $session) {
-            if ($session->accepts($start, $end)) {
-                return ['session' => $session, 'number' => $session->getNumber()];
-            }
-            $lastNumber = max($lastNumber, $session->getNumber());
-        }
+        $session = $this->sessions->findAccepting($party, $start, $end);
 
-        return ['session' => null, 'number' => $lastNumber + 1];
+        return null !== $session
+            ? ['session' => $session, 'number' => $session->getNumber()]
+            : ['session' => null, 'number' => $this->sessions->maxNumber($party) + 1];
     }
 
     /** Po smazání/přesunu zápisu přepočítá hranice seance; prázdnou seanci vrátí jako ke smazání. */

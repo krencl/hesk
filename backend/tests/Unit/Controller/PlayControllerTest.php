@@ -14,13 +14,13 @@ use App\Entity\PlayResult;
 use App\Entity\PlayTag;
 use App\Entity\User;
 use App\Enum\PartyRole;
-use App\Repository\GameSessionRepository;
 use App\Repository\PlayRepository;
 use App\Service\PlayService;
 use App\Service\Presenter;
 use App\Service\SessionAssigner;
 use App\Tests\Support\ControllerHarness;
 use App\Tests\Support\Fixtures;
+use App\Tests\Support\InMemorySessions;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Security\Core\Exception\AccessDeniedException;
@@ -28,6 +28,8 @@ use Symfony\Component\Security\Core\Exception\AccessDeniedException;
 /** Zápisy v API: služby a repozitáře jsou mocky, kontroler se spouští přímo, ale pod skutečným voterem. */
 final class PlayControllerTest extends TestCase
 {
+    use InMemorySessions;
+
     private User $anna;
     private User $bob;
     private User $eve;
@@ -62,10 +64,7 @@ final class PlayControllerTest extends TestCase
 
     private function controller(?PlayService $service = null, ?PlayRepository $plays = null, array $sessions = []): PlayController
     {
-        $sessionRepo = $this->createStub(GameSessionRepository::class);
-        $sessionRepo->method('findByParty')->willReturn($sessions);
-
-        return new PlayController(new Presenter(), $service ?? $this->createStub(PlayService::class), $plays ?? $this->createStub(PlayRepository::class), new SessionAssigner($sessionRepo));
+        return new PlayController(new Presenter(), $service ?? $this->createStub(PlayService::class), $plays ?? $this->createStub(PlayRepository::class), new SessionAssigner($this->sessionRepository(static fn (): array => $sessions)));
     }
 
     public function testListReturnsPresentedPlaysAndPassesPaging(): void

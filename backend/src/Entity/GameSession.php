@@ -59,12 +59,26 @@ class GameSession
         return $this->endedAt;
     }
 
-    /** Patří zápis (interval) do této seance? */
-    public function accepts(\DateTimeImmutable $start, \DateTimeImmutable $end): bool
+    /**
+     * Meze, mezi kterými musí seance být, aby do ní zápis (interval) patřil: seance musí končit nejdřív v `$from`
+     * a začínat nejpozději v `$to` (tj. od zápisu je nejvýš {@see self::MAX_GAP}). Stejná pravidla používá
+     * {@see self::accepts()} i dotaz `GameSessionRepository::findAccepting()`.
+     *
+     * @return array{0: \DateTimeImmutable, 1: \DateTimeImmutable} [from, to]
+     */
+    public static function acceptanceWindow(\DateTimeImmutable $start, \DateTimeImmutable $end): array
     {
         $gap = \DateInterval::createFromDateString(self::MAX_GAP);
 
-        return $start <= $this->endedAt->add($gap) && $end >= $this->startedAt->sub($gap);
+        return [$start->sub($gap), $end->add($gap)];
+    }
+
+    /** Patří zápis (interval) do této seance? */
+    public function accepts(\DateTimeImmutable $start, \DateTimeImmutable $end): bool
+    {
+        [$from, $to] = self::acceptanceWindow($start, $end);
+
+        return $this->endedAt >= $from && $this->startedAt <= $to;
     }
 
     public function extendTo(\DateTimeImmutable $start, \DateTimeImmutable $end): void
