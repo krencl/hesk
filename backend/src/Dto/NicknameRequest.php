@@ -9,7 +9,7 @@ use Symfony\Component\Validator\Constraints as Assert;
 final readonly class NicknameRequest
 {
     public function __construct(
-        #[Assert\NotBlank, Assert\Length(min: 2, max: 100)]
+        #[Assert\NotBlank(normalizer: 'trim'), Assert\Length(min: 2, max: 100, normalizer: 'trim')]
         public string $nickname = '',
     ) {
     }

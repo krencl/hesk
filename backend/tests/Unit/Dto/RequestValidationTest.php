@@ -97,6 +97,8 @@ final class RequestValidationTest extends TestCase
         self::assertTrue($this->invalid(new GameRequest(name: 'Zlá', bggId: -1)));
         self::assertTrue($this->invalid(new GameRequest(name: 'Zlá', bggId: 0)));
         self::assertTrue($this->invalid(new GameRequest(name: '')));
+        self::assertTrue($this->invalid(new GameRequest(name: "  \t ")), 'název z mezer není název');
+        self::assertFalse($this->invalid(new GameRequest(name: ' '.str_repeat('x', 150).' ')), 'délka se měří po oříznutí mezer');
         self::assertTrue($this->invalid(new GameRequest(name: str_repeat('x', 151))));
         self::assertTrue($this->invalid(new GameRequest(name: 'Hra', shortName: str_repeat('x', 51))));
         self::assertTrue($this->invalid(new GameRequest(name: 'Hra', addons: [new NamedItemRequest('')])), 'položky se validují taky');
@@ -109,6 +111,9 @@ final class RequestValidationTest extends TestCase
         self::assertFalse($this->invalid(new BggImportRequest(13)));
         self::assertTrue($this->invalid(new NicknameRequest('X')), 'přezdívka má aspoň 2 znaky');
         self::assertTrue($this->invalid(new NicknameRequest('')));
+        self::assertTrue($this->invalid(new NicknameRequest('   ')), 'přezdívka z mezer není přezdívka');
+        self::assertTrue($this->invalid(new NicknameRequest(' X ')), 'dva znaky se počítají bez okolních mezer');
+        self::assertFalse($this->invalid(new NicknameRequest(' Xena ')));
         self::assertFalse($this->invalid(new NicknameRequest('Xena')));
         self::assertTrue($this->invalid(new DevLoginRequest('není e-mail')));
         self::assertFalse($this->invalid(new DevLoginRequest('x@example.com')));

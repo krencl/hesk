@@ -17,7 +17,7 @@ final readonly class GameRequest
      * @param list<string>           $tags       tagy hry v partě
      */
     public function __construct(
-        #[Assert\NotBlank, Assert\Length(max: 150)]
+        #[Assert\NotBlank(normalizer: 'trim'), Assert\Length(max: 150, normalizer: 'trim')]
         public string $name = '',
         public ScoreType $scoreType = ScoreType::MostPoints,
         #[Assert\Regex(pattern: CoverStorage::URL_PATTERN, message: 'Obrázek hry se musí nahrát (adresa nesedí).')]
