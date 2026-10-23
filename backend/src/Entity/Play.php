@@ -30,8 +30,8 @@ class Play
     #[ORM\JoinTable(name: 'play_addon')]
     private Collection $addons;
 
-    /** @var Collection<int, Tag> */
-    #[ORM\ManyToMany(targetEntity: Tag::class)]
+    /** @var Collection<int, PlayTag> */
+    #[ORM\ManyToMany(targetEntity: PlayTag::class)]
     #[ORM\JoinTable(name: 'play_play_tag')]
     private Collection $tags;
 
@@ -126,13 +126,13 @@ class Play
         $this->addons = new ArrayCollection($addons);
     }
 
-    /** @return Collection<int, Tag> */
+    /** @return Collection<int, PlayTag> */
     public function getTags(): Collection
     {
         return $this->tags;
     }
 
-    /** @param list<Tag> $tags */
+    /** @param list<PlayTag> $tags */
     public function setTags(array $tags): void
     {
         $this->tags = new ArrayCollection($tags);

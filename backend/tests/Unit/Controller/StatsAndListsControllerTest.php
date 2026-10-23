@@ -9,7 +9,7 @@ use App\Controller\StatsController;
 use App\Controller\TagController;
 use App\Entity\GameSession;
 use App\Entity\Party;
-use App\Entity\Tag;
+use App\Entity\PlayTag;
 use App\Entity\User;
 use App\Repository\GameSessionRepository;
 use App\Repository\PlayRepository;

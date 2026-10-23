@@ -7,7 +7,7 @@ namespace App\Controller;
 use App\Entity\GameTag;
 use App\Entity\Party;
 use App\Entity\PartyGame;
-use App\Entity\Tag;
+use App\Entity\PlayTag;
 use App\Security\PartyVoter;
 use App\Service\Presenter;
 use Doctrine\ORM\EntityManagerInterface;
@@ -29,7 +29,7 @@ final class TagController extends ApiController
     {
         $names = array_map(
             static fn (array $row): string => $row['name'],
-            $this->em->createQueryBuilder()->select('t.name')->from(Tag::class, 't')->where('t.party = :party')->setParameter('party', $party)->getQuery()->getArrayResult(),
+            $this->em->createQueryBuilder()->select('t.name')->from(PlayTag::class, 't')->where('t.party = :party')->setParameter('party', $party)->getQuery()->getArrayResult(),
         );
         usort($names, static fn (string $a, string $b): int => strcasecmp($a, $b));
 

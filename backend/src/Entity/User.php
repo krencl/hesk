@@ -9,7 +9,7 @@ use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Security\Core\User\UserInterface;
 
 #[ORM\Entity]
-#[ORM\Table(name: 'app_user')]
+#[ORM\Table(name: 'user')]
 class User implements UserInterface
 {
     /** Správce sdíleného katalogu her: smí upravovat a mazat hry (ADR 0023). */

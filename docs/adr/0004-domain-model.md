@@ -5,7 +5,7 @@ Stav: přijato (2026-10-02)
 Vychází z `/hesk-dev-old/SPECIFICATION.md`; terminologie: v kódu *Play* = „game play entry“ (zápis), *GameSession* = seance, *Party* = parta.
 
 ## Entity
-`User` · `Party` + `PartyMember(role)` + `PartyInvitation` · `Player` · `Game` + `GameAddon` · `Tag` · `GameSession` · `Play` + `PlayResult`.
+`User` · `Party` + `PartyMember(role)` + `PartyInvitation` · `Player` · `Game` + `GameAddon` · `PlayTag` · `GameSession` · `Play` + `PlayResult`.
 
 ## Rozhodnutí
 - **Hry a tagy patří partě** (`party_id`), nejsou globální. Jednoduchá autorizace, žádné kolize mezi partami; cena: stejná hra se zakládá v každé partě zvlášť. (Původní produkční app měla globální katalog.)

@@ -1,6 +1,6 @@
 security:
     providers:
-        app_user_provider:
+        user_provider:
             entity:
                 class: App\Entity\User
                 property: email
@@ -11,7 +11,7 @@ security:
             security: false
         main:
             lazy: true
-            provider: app_user_provider
+            provider: user_provider
             custom_authenticators:
                 - App\Security\SessionLoginAuthenticator
             entry_point: App\Security\JsonEntryPoint

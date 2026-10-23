@@ -11,7 +11,7 @@ use App\Entity\GameSession;
 use App\Entity\Party;
 use App\Entity\Play;
 use App\Entity\PlayResult;
-use App\Entity\Tag;
+use App\Entity\PlayTag;
 use App\Entity\User;
 use App\Enum\PartyRole;
 use App\Repository\GameSessionRepository;
@@ -177,7 +177,7 @@ final class PlayControllerTest extends TestCase
     {
         $last = $this->play('2026-03-01T20:00:00+00:00', 5);
         $last->replaceResults([new PlayResult($last, Fixtures::player($this->party, $this->bob), 1.0, 1, true)]);
-        $last->setTags([new Tag($this->party, 'liga'), new Tag($this->party, 'Doma')]);
+        $last->setTags([new PlayTag($this->party, 'liga'), new PlayTag($this->party, 'Doma')]);
         $session = $last->getSession();
         $plays = $this->createStub(PlayRepository::class);
         $plays->method('findLastInSession')->willReturnCallback(static fn (GameSession $s): ?Play => $s === $session ? $last : null);

@@ -13,7 +13,7 @@ use App\Entity\GameSession;
 use App\Entity\Party;
 use App\Entity\Play;
 use App\Entity\PlayResult;
-use App\Entity\Tag;
+use App\Entity\PlayTag;
 use App\Entity\User;
 use App\Enum\ScoreType;
 use App\Repository\GameSessionRepository;
@@ -39,7 +39,7 @@ final class PlayServiceTest extends TestCase
     private array $sessions = [];
     /** @var list<Play> */
     private array $playsInSession = [];
-    /** @var array<string, Tag> */
+    /** @var array<string, PlayTag> */
     private array $knownTags = [];
     private \ArrayObject $calls;
     private EntityManagerInterface $em;
@@ -71,7 +71,7 @@ final class PlayServiceTest extends TestCase
         $playRepo->method('findBySession')->willReturnCallback(fn (): array => $this->playsInSession);
 
         $tags = $this->createStub(EntityRepository::class);
-        $tags->method('findOneBy')->willReturnCallback(fn (array $criteria): ?Tag => $this->knownTags[$criteria['name']] ?? null);
+        $tags->method('findOneBy')->willReturnCallback(fn (array $criteria): ?PlayTag => $this->knownTags[$criteria['name']] ?? null);
 
         $this->em = $this->mockEm([$this->game, ...Fixtures::persist($this->party)->getPlayers()->toArray(), ...$known], $this->calls);
         $this->em->method('getRepository')->willReturn($tags);
@@ -146,13 +146,13 @@ final class PlayServiceTest extends TestCase
 
     public function testTagsAreTrimmedDeduplicatedAndOnlyNewOnesAreCreated(): void
     {
-        $this->knownTags['víkend'] = Fixtures::id(new Tag($this->party, 'víkend'));
+        $this->knownTags['víkend'] = Fixtures::id(new PlayTag($this->party, 'víkend'));
 
         $play = $this->service()->create($this->party, $this->request('2026-03-01', [[$this->anna, 1.0]], ['tags' => ['víkend', ' Doma ', 'Doma', ' ']]));
 
-        self::assertEqualsCanonicalizing(['víkend', 'Doma'], array_map(static fn (Tag $t): string => $t->getName(), $play->getTags()->toArray()));
-        $created = array_filter($this->calls['persist'], static fn (object $e): bool => $e instanceof Tag);
-        self::assertSame(['Doma'], array_map(static fn (Tag $t): string => $t->getName(), array_values($created)), 'existující tag se znovu nezakládá');
+        self::assertEqualsCanonicalizing(['víkend', 'Doma'], array_map(static fn (PlayTag $t): string => $t->getName(), $play->getTags()->toArray()));
+        $created = array_filter($this->calls['persist'], static fn (object $e): bool => $e instanceof PlayTag);
+        self::assertSame(['Doma'], array_map(static fn (PlayTag $t): string => $t->getName(), array_values($created)), 'existující tag se znovu nezakládá');
     }
 
     public function testAddonsAndCharactersMustBelongToTheGame(): void

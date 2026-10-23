@@ -114,7 +114,7 @@ final class LegacyImportTest extends KernelTestCase
     private function snapshot(): array
     {
         $out = [];
-        foreach (['app_user', 'party', 'party_member', 'player', 'game', 'party_game', 'party_game_player', 'game_tag', 'game_game_tag', 'game_addon', 'game_character', 'play_tag', 'game_session', 'play', 'play_addon', 'play_play_tag', 'play_result', 'legacy_map'] as $t) {
+        foreach (['user', 'party', 'party_member', 'player', 'game', 'party_game', 'party_game_player', 'game_tag', 'game_game_tag', 'game_addon', 'game_character', 'play_tag', 'game_session', 'play', 'play_addon', 'play_play_tag', 'play_result', 'legacy_map'] as $t) {
             $out[$t] = $this->rowCount($t);
         }
 
@@ -127,7 +127,7 @@ final class LegacyImportTest extends KernelTestCase
 
         self::assertSame(2, $report->entities['user']['created']);
         self::assertSame(['Pá', 'Ví'], array_column($this->rows('SELECT short_name FROM party ORDER BY id'), 'short_name'), 'party short names are generated from the names');
-        self::assertSame(['Anna', 'Bob'], array_column($this->rows('SELECT nickname FROM app_user ORDER BY id'), 'nickname'), 'nicknames come from the linked legacy player');
+        self::assertSame(['Anna', 'Bob'], array_column($this->rows('SELECT nickname FROM user ORDER BY id'), 'nickname'), 'nicknames come from the linked legacy player');
         self::assertSame([['role' => 'admin'], ['role' => 'member'], ['role' => 'admin']], $this->rows('SELECT role FROM party_member ORDER BY party_id, user_id'), 'owner -> admin, user -> member');
 
         // hráči: jeden na dvojici (hráč, parta), shodná jména dostanou číslo, hráč s účtem je s ním propojený
@@ -180,7 +180,7 @@ final class LegacyImportTest extends KernelTestCase
         // rozšíření a tag zápisu
         self::assertSame(['Power Up'], $this->target->fetchFirstColumn('SELECT a.name FROM play_addon pa JOIN game_addon a ON a.id = pa.game_addon_id WHERE pa.play_id = 1001'));
         self::assertSame([], $this->target->fetchFirstColumn('SELECT 1 FROM play_addon WHERE play_id = 1000'), 'base version is not an extension');
-        self::assertSame(['víkend'], $this->target->fetchFirstColumn('SELECT t.name FROM play_play_tag pt JOIN play_tag t ON t.id = pt.tag_id WHERE pt.play_id = 1001'));
+        self::assertSame(['víkend'], $this->target->fetchFirstColumn('SELECT t.name FROM play_play_tag pt JOIN play_tag t ON t.id = pt.play_tag_id WHERE pt.play_id = 1001'));
     }
 
     public function testRepeatedImportChangesNothing(): void
@@ -199,7 +199,7 @@ final class LegacyImportTest extends KernelTestCase
     {
         $this->import();
         // věci vzniklé jen v nové aplikaci
-        $this->target->insert('app_user', ['email' => 'nova@example.com', 'nickname' => 'Nova', 'created_at' => '2026-01-01 00:00:00']);
+        $this->target->insert('user', ['email' => 'nova@example.com', 'nickname' => 'Nova', 'created_at' => '2026-01-01 00:00:00']);
         $this->target->insert('party', ['name' => 'Jen v nové', 'short_name' => 'Je', 'created_at' => '2026-01-01 00:00:00']);
         $newParty = (int) $this->target->lastInsertId();
 
@@ -235,7 +235,7 @@ final class LegacyImportTest extends KernelTestCase
         // co vzniklo jen v nové aplikaci, zůstalo
         self::assertSame(1, $this->rowCount('party') - 2);
         self::assertSame($newParty, (int) $this->target->fetchOne("SELECT id FROM party WHERE name = 'Jen v nové'"));
-        self::assertSame(1, (int) $this->target->fetchOne("SELECT COUNT(*) FROM app_user WHERE email = 'nova@example.com'"));
+        self::assertSame(1, (int) $this->target->fetchOne("SELECT COUNT(*) FROM user WHERE email = 'nova@example.com'"));
     }
 
     public function testExistingRowsAreAdoptedWhenTheMappingIsLost(): void
@@ -257,7 +257,7 @@ final class LegacyImportTest extends KernelTestCase
 
         self::assertTrue($report->dryRun);
         self::assertGreaterThan(0, $report->total('created'));
-        foreach (['app_user', 'party', 'player', 'game', 'play', 'play_result', 'legacy_map'] as $table) {
+        foreach (['user', 'party', 'player', 'game', 'play', 'play_result', 'legacy_map'] as $table) {
             self::assertSame(0, $this->rowCount($table), $table);
         }
     }
@@ -265,7 +265,7 @@ final class LegacyImportTest extends KernelTestCase
     public function testAccountsAndIdsOfTheNewAppAreRespected(): void
     {
         // účet se stejným e-mailem a vlastní přezdívkou i Google ID se převezme beze změny
-        $this->target->insert('app_user', ['email' => 'Anna@Example.com', 'nickname' => 'Annie', 'google_id' => 'g-123', 'created_at' => '2025-05-05 05:05:05']);
+        $this->target->insert('user', ['email' => 'Anna@Example.com', 'nickname' => 'Annie', 'google_id' => 'g-123', 'created_at' => '2025-05-05 05:05:05']);
         $existingUser = (int) $this->target->lastInsertId();
         // zápis nové aplikace obsadil id, které má ve staré aplikaci jiný zápis
         $this->target->insert('party', ['id' => 50, 'name' => 'Cizí', 'short_name' => 'Ci', 'created_at' => '2025-01-01 00:00:00']);
@@ -278,8 +278,8 @@ final class LegacyImportTest extends KernelTestCase
 
         $this->import();
 
-        self::assertSame(1, (int) $this->target->fetchOne("SELECT COUNT(*) FROM app_user WHERE LOWER(email) = 'anna@example.com'"));
-        self::assertEquals(['Annie', 'g-123', '2025-05-05 05:05:05'], array_values($this->rows('SELECT nickname, google_id, created_at FROM app_user WHERE id = ?', [$existingUser])[0]));
+        self::assertSame(1, (int) $this->target->fetchOne("SELECT COUNT(*) FROM user WHERE LOWER(email) = 'anna@example.com'"));
+        self::assertEquals(['Annie', 'g-123', '2025-05-05 05:05:05'], array_values($this->rows('SELECT nickname, google_id, created_at FROM user WHERE id = ?', [$existingUser])[0]));
         self::assertSame(50, (int) $this->target->fetchOne('SELECT party_id FROM play WHERE id = 1000'), 'the play of the new app keeps its id');
         $imported = (int) $this->target->fetchOne("SELECT new_id FROM legacy_map WHERE entity = 'play' AND legacy_key = '1000'");
         self::assertNotSame(1000, $imported);

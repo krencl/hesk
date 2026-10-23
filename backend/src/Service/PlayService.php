@@ -12,7 +12,7 @@ use App\Entity\Game;
 use App\Entity\Party;
 use App\Entity\Play;
 use App\Entity\PlayResult;
-use App\Entity\Tag;
+use App\Entity\PlayTag;
 use App\Entity\Player;
 use App\Repository\PlayRepository;
 use Doctrine\ORM\EntityManagerInterface;
@@ -142,7 +142,7 @@ final class PlayService
         $play->setGame($game);
         $play->replaceResults($results);
         $play->setAddons($addons);
-        $play->setTags(array_map(fn (string $n): Tag => $this->findOrCreateTag($party, $n), $this->cleanNames($req->tags)));
+        $play->setTags(array_map(fn (string $n): PlayTag => $this->findOrCreateTag($party, $n), $this->cleanNames($req->tags)));
         $play->setNotes($req->notes);
     }
 
@@ -152,11 +152,11 @@ final class PlayService
         return array_values(array_unique(array_filter(array_map('trim', $names), static fn (string $n): bool => '' !== $n)));
     }
 
-    private function findOrCreateTag(Party $party, string $name): Tag
+    private function findOrCreateTag(Party $party, string $name): PlayTag
     {
-        $tag = $this->em->getRepository(Tag::class)->findOneBy(['party' => $party, 'name' => $name]);
+        $tag = $this->em->getRepository(PlayTag::class)->findOneBy(['party' => $party, 'name' => $name]);
         if (!$tag) {
-            $tag = new Tag($party, $name);
+            $tag = new PlayTag($party, $name);
             $this->em->persist($tag);
         }
 

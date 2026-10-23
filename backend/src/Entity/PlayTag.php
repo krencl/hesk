@@ -9,7 +9,7 @@ use Doctrine\ORM\Mapping as ORM;
 #[ORM\Entity]
 #[ORM\Table(name: 'play_tag')]
 #[ORM\UniqueConstraint(columns: ['party_id', 'name'])]
-class Tag
+class PlayTag
 {
     #[ORM\Id, ORM\GeneratedValue, ORM\Column]
     private ?int $id = null;

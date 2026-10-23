@@ -144,18 +144,18 @@ final class LegacyImporter
         foreach ($d['users'] as $u) {
             $email = (string) $u['email'];
             $existing = $this->map('user', (string) $u['id']);
-            $id = $this->upsert('user', (string) $u['id'], 'app_user', fn () => $this->findId('SELECT id FROM app_user WHERE LOWER(email) = LOWER(?)', [$email]), ['email' => $email], (int) $u['id'], $this->createdAt($u['created_at']));
+            $id = $this->upsert('user', (string) $u['id'], 'user', fn () => $this->findId('SELECT id FROM user WHERE LOWER(email) = LOWER(?)', [$email]), ['email' => $email], (int) $u['id'], $this->createdAt($u['created_at']));
             // přezdívku a Google účet z nové aplikace nepřepisujeme; vyplníme jen chybějící
-            $row = $this->target->fetchAssociative('SELECT nickname, google_id FROM app_user WHERE id = ?', [$id]);
+            $row = $this->target->fetchAssociative('SELECT nickname, google_id FROM user WHERE id = ?', [$id]);
             $fill = [];
             if (null === $row['nickname'] && null !== $u['nickname'] && '' !== trim((string) $u['nickname'])) {
                 $fill['nickname'] = trim((string) $u['nickname']);
             }
-            if (null === $row['google_id'] && !empty($u['google_id']) && 0 === (int) $this->target->fetchOne('SELECT COUNT(*) FROM app_user WHERE google_id = ?', [$u['google_id']])) {
+            if (null === $row['google_id'] && !empty($u['google_id']) && 0 === (int) $this->target->fetchOne('SELECT COUNT(*) FROM user WHERE google_id = ?', [$u['google_id']])) {
                 $fill['google_id'] = $u['google_id'];
             }
             if ($fill) {
-                $this->target->update('app_user', $fill, ['id' => $id]);
+                $this->target->update('user', $fill, ['id' => $id]);
                 if (null !== $existing) {
                     $this->report->count('user', 'updated');
                 }
@@ -480,7 +480,7 @@ final class LegacyImporter
             }
             $this->syncLinks('play_addon', 'game_addon_id', $playId, null === $addon ? [] : [$addon]);
             $tagIds = array_values(array_filter(array_map(fn (int $t) => $this->map('tag', "$t:$legacyParty"), $tagsByRound[$roundId] ?? [])));
-            $this->syncLinks('play_play_tag', 'tag_id', $playId, $tagIds);
+            $this->syncLinks('play_play_tag', 'play_tag_id', $playId, $tagIds);
 
             $this->importResults($d, $r, $playId, $partyId, $gameId);
         }
