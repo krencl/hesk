@@ -1,4 +1,5 @@
 import { fireEvent, render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { useState } from 'react';
 import { describe, expect, it } from 'vitest';
 import { SelectPopup } from './SelectPopup';
@@ -47,6 +48,18 @@ describe('SelectPopup', () => {
     fireEvent.change(screen.getByRole('searchbox'), { target: { value: '' } });
     fireEvent.click(screen.getByRole('option', { name: 'Všechny' }));
     expect(screen.getByRole('button', { name: 'Sezení' })).toHaveTextContent('Všechny');
+  });
+
+  it('picks an option from the keyboard (options are real buttons)', async () => {
+    const user = userEvent.setup();
+    render(<Harness initial={69} />);
+    open();
+    const option = screen.getByRole('option', { name: '12' });
+    expect(option.tagName).toBe('BUTTON');
+    option.focus();
+    await user.keyboard('{Enter}');
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Sezení' })).toHaveTextContent('12');
   });
 
   it('closes by the cross and by Escape without changing the value, returning the focus to the button', () => {

@@ -90,13 +90,15 @@ export function SelectPopup<T extends string | number | null>({ title, value, op
                   const selected = o.value === value;
                   const faded = selected && o !== pinned && !matching.includes(o);
                   return (
-                    <li key={String(o.value)} role="option" aria-selected={selected} className={`select-option${faded ? ' faded' : ''}`} onClick={() => choose(o.value)}>
-                      <Icon name={selected ? 'radio_button_checked' : 'radio_button_unchecked'} className="select-option-icon" />
-                      {o.label}
+                    <li key={String(o.value)} role="presentation">
+                      <button type="button" role="option" aria-selected={selected} className={`select-option${faded ? ' faded' : ''}`} onClick={() => choose(o.value)}>
+                        <Icon name={selected ? 'radio_button_checked' : 'radio_button_unchecked'} className="select-option-icon" />
+                        {o.label}
+                      </button>
                     </li>
                   );
                 })}
-                {matching.length === 0 && <li className="select-popup-empty">Nic nenalezeno.</li>}
+                {matching.length === 0 && <li role="presentation" className="select-popup-empty">Nic nenalezeno.</li>}
               </ul>
             </div>
             {/* křížek na místě kulatého tlačítka party (jako ve starém prototypu, kde se tlačítko při výběru mění na zavírací) */}

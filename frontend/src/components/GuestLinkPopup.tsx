@@ -94,12 +94,14 @@ export function GuestLinkPopup({ partyId, guest, members, onClose }: Props) {
             <p className="confirm-text">Vyber člena, na kterého přejdou zápisy hosta ({playsLabel(guest.playCount)}).</p>
             <ul className="select-popup-list" role="listbox" aria-label="Členové">
               {members.map((m) => (
-                <li key={m.userId} role="option" aria-selected={false} className="select-option" onClick={() => { setMember(m); setStep('confirm'); }}>
-                  <Icon name="radio_button_unchecked" className="select-option-icon" />
-                  {m.nickname ?? 'člen'} <small className="muted">{ROLE_LABELS[m.role]}</small>
+                <li key={m.userId} role="presentation">
+                  <button type="button" role="option" aria-selected={false} className="select-option" onClick={() => { setMember(m); setStep('confirm'); }}>
+                    <Icon name="radio_button_unchecked" className="select-option-icon" />
+                    {m.nickname ?? 'člen'} <small className="muted">{ROLE_LABELS[m.role]}</small>
+                  </button>
                 </li>
               ))}
-              {members.length === 0 && <li className="select-popup-empty">V partě není žádný člen.</li>}
+              {members.length === 0 && <li role="presentation" className="select-popup-empty">V partě není žádný člen.</li>}
             </ul>
           </>
         )}

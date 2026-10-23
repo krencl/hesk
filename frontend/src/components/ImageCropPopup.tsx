@@ -27,6 +27,7 @@ export function ImageCropPopup({ src, onConfirm, onCancel, busy = false, error =
 
   useEffect(() => {
     const previous = document.activeElement as HTMLElement | null;
+    cancelRef.current?.focus(); // bez zaostření uvnitř popupu by Esc na dialogu nikdy nezabral
     return () => previous?.focus?.();
   }, []);
 
