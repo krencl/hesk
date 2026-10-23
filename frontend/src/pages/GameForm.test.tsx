@@ -161,15 +161,52 @@ describe('game form (/games/:id/edit)', () => {
     });
 
     it('removes the game from the party only, after confirmation', async () => {
-      vi.spyOn(window, 'confirm').mockReturnValue(true);
+      const confirm = vi.spyOn(window, 'confirm');
       const fetchMock = mockApi({ ...asMember, 'DELETE /parties/3/games/5': { status: 204, body: null } });
       renderApp('/games/5/edit');
       await waitFor(() => expect(screen.getByLabelText('Název')).toHaveValue('King of Tokyo'));
 
       fireEvent.click(screen.getByRole('button', { name: 'Odebrat z party' }));
+      expect(screen.getByRole('alertdialog', { name: 'Odebrat hru z party?' })).toBeInTheDocument();
+      expect(screen.getByText('Hra zůstane v databázi her.')).toBeInTheDocument();
+      expect(fetchMock.mock.calls.some(([, init]) => init?.method === 'DELETE')).toBe(false);
+      fireEvent.click(screen.getByRole('button', { name: 'Odebrat' }));
+      expect(confirm).not.toHaveBeenCalled();
 
       await waitFor(() => expect(fetchMock.mock.calls.some(([u, init]) => init?.method === 'DELETE' && String(u) === '/api/parties/3/games/5')).toBe(true));
       expect(fetchMock.mock.calls.some(([u, init]) => init?.method === 'DELETE' && String(u) === '/api/games/5')).toBe(false);
+    });
+  });
+
+  describe('loading the game to edit', () => {
+    it('explains a missing game instead of showing an empty form', async () => {
+      mockApi({ ...routes, '/parties/3/games/5': { status: 404, body: { error: 'nf' } } });
+      renderApp('/games/5/edit');
+      expect(await screen.findByText('Tahle hra neexistuje nebo k ní nemáš přístup.')).toBeInTheDocument();
+      expect(screen.queryByLabelText('Název')).not.toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: 'Uložit' })).not.toBeInTheDocument();
+      expect(screen.getByRole('link', { name: 'Zpět' })).toHaveAttribute('href', '/manage/games');
+    });
+
+    it('shows the error and no editable form when the load fails, so saving cannot wipe the game', async () => {
+      const fetchMock = mockApi({ ...routes, '/parties/3/games/5': { status: 500, body: { error: 'Server se zhroutil' } } });
+      renderApp('/games/5/edit');
+      expect(await screen.findByRole('alert')).toHaveTextContent('Server se zhroutil');
+      expect(screen.queryByLabelText('Název')).not.toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: 'Uložit' })).not.toBeInTheDocument();
+      expect(fetchMock.mock.calls.some(([, init]) => init?.method === 'PUT')).toBe(false);
+    });
+
+    it('asks for confirmation before deleting the game from the catalog', async () => {
+      const fetchMock = mockApi({ ...routes, 'DELETE /games/5': { status: 204, body: null } });
+      renderApp('/games/5/edit');
+      await waitFor(() => expect(screen.getByLabelText('Název')).toHaveValue('King of Tokyo'));
+      fireEvent.click(screen.getByRole('button', { name: 'Smazat hru z databáze' }));
+      fireEvent.click(screen.getByRole('button', { name: 'Zrušit' }));
+      expect(fetchMock.mock.calls.some(([, init]) => init?.method === 'DELETE')).toBe(false);
+      fireEvent.click(screen.getByRole('button', { name: 'Smazat hru z databáze' }));
+      fireEvent.click(screen.getByRole('button', { name: 'Smazat' }));
+      await waitFor(() => expect(fetchMock.mock.calls.some(([u, init]) => init?.method === 'DELETE' && String(u) === '/api/games/5')).toBe(true));
     });
   });
 

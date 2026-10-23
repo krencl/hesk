@@ -1,40 +1,27 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { type FormEvent, useEffect, useRef, useState } from 'react';
+import { type FormEvent, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useActiveParty, useApp } from '../AppContext';
 import { api, bggImageProxyUrl } from '../api';
+import { qk } from '../api/queryKeys';
 import type { BggPreparedGame, Game, GameInput } from '../api/types';
 import { Actions } from '../components/Actions';
 import { BggGameSearch } from '../components/BggGameSearch';
+import { ConfirmPopup } from '../components/ConfirmPopup';
 import { ErrorMessage } from '../components/ErrorMessage';
 import { GameImage } from '../components/GameImage';
 import { ImageCropPopup } from '../components/ImageCropPopup';
 import { NamedListEditor } from '../components/NamedListEditor';
+import { EmptyState, isNotFound, LoadingOrError } from '../components/PageState';
 import { PageTitle } from '../components/PageTitle';
 import { SafeHtml } from '../components/SafeHtml';
 import { TagInput } from '../components/TagInput';
 import { renderCheatSheet } from '../lib/cheatSheet';
 import { type CropArea, cropToBlob } from '../lib/cropImage';
-import { type EditItem, fromEditItems, toEditItems } from '../lib/namedItems';
+import { emptyFormState, type FormState, toFormState, toGameInput } from '../lib/gameForm';
 import { canManageGames } from '../lib/roles';
 import { SCORE_TYPE_LABELS, SCORE_TYPES } from '../lib/scoring';
 import { useGame } from '../lib/useGame';
-
-interface FormState {
-  name: string;
-  shortName: string;
-  scoreType: GameInput['scoreType'];
-  imageUrl: string;
-  description: string;
-  cheatSheet: string;
-  addons: EditItem[];
-  characters: EditItem[];
-  players: EditItem[];
-  tags: string[];
-  bggId: number | null;
-}
-
-const EMPTY: FormState = { name: '', shortName: '', scoreType: 'most_points', imageUrl: '', description: '', cheatSheet: '', addons: [], characters: [], players: [], tags: [], bggId: null };
 
 /**
  * Formulář hry (přidání / úprava); vstupuje se do něj ze správy her. Hra je sdílená mezi partami (ADR 0023): sdílené údaje
@@ -42,66 +29,88 @@ const EMPTY: FormState = { name: '', shortName: '', scoreType: 'most_points', im
  */
 export function GameFormPage() {
   const { id } = useParams();
-  const gameId = id ? Number(id) : null;
+  return id ? <EditGame gameId={Number(id)} /> : <NewGame />;
+}
+
+/** Úprava: formulář se ukáže až s načtenou hrou (při chybě by prázdný formulář po uložení smazal rozšíření, postavy, tagy i hráče hry). */
+function EditGame({ gameId }: { gameId: number }) {
+  const game = useGame(gameId);
+  if (isNotFound(game.error)) return <EmptyState message="Tahle hra neexistuje nebo k ní nemáš přístup." backTo="/manage/games" backLabel="Zpět" />;
+  if (!game.data) return <LoadingOrError error={game.error} rows={3} withImage={false} />;
+  // `key`: při přechodu na jinou hru se formulář musí založit znovu, jeho stav se kopíruje z dat jen jednou
+  return <GameForm key={game.data.id} gameId={gameId} initial={toFormState(game.data)} />;
+}
+
+/** Nová hra začíná hledáním; formulář se ukáže po výběru hry z BGG nebo po „Založit vlastní hru“. */
+function NewGame() {
+  const party = useActiveParty();
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const [start, setStart] = useState<{ form: FormState; bggImage: string | null } | null>(null);
+
+  /** Hra z katalogu je v partě: rovnou se otevře její detail, nic se nezakládá. */
+  const linked = async (game: Game) => {
+    await queryClient.invalidateQueries({ queryKey: qk.games(party.id) });
+    navigate(`/games/${game.id}`);
+  };
+
+  if (start) return <GameForm gameId={null} initial={start.form} initialBggImage={start.bggImage} />;
+  return (
+    <section className="page">
+      <PageTitle>Přidat hru</PageTitle>
+      <BggGameSearch
+        partyId={party.id}
+        onPick={(game: BggPreparedGame) => setStart({ form: emptyFormState({ name: game.name, bggId: game.bggId }), bggImage: game.bggImageUrl })}
+        onLinked={linked}
+        onCustom={(name) => setStart({ form: emptyFormState({ name }), bggImage: null })}
+      />
+    </section>
+  );
+}
+
+interface FormProps {
+  /** `null` = nová hra. */
+  gameId: number | null;
+  initial: FormState;
+  /** Originál obrázku na BGG CDN: jen náhled, lokálně se uloží až výřez z ořezového editoru. */
+  initialBggImage?: string | null;
+}
+
+type Confirming = 'unlink' | 'delete';
+
+function GameForm({ gameId, initial, initialBggImage = null }: FormProps) {
   const party = useActiveParty();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { me } = useApp();
-  const existing = useGame(gameId);
   // Jen správce her upravuje sdílené údaje; ostatním jsou pole zamčená (hráči hry patří partě a jdou měnit vždy).
   const readOnly = gameId !== null && !canManageGames(me);
-  const [form, setForm] = useState<FormState>(EMPTY);
-  // Vybraný soubor čeká v editoru na oříznutí (object URL; po zavření se uvolní).
-  const [cropSrc, setCropSrc] = useState<string | null>(null);
-  // Nová hra začíná hledáním; formulář se ukáže po výběru hry z BGG nebo po „Založit vlastní hru“.
-  const [started, setStarted] = useState(gameId !== null);
-  // Originál obrázku na BGG CDN: jen náhled, lokálně se uloží až výřez z ořezového editoru.
-  const [bggImage, setBggImage] = useState<string | null>(null);
+  const [form, setForm] = useState<FormState>(() => initial);
+  // Vybraný soubor čeká v editoru na oříznutí (object URL; po zavření se uvolní). Hra z BGG otevře ořez hned
+  // (zrušením zůstane náhled a tlačítko níž).
+  const [cropSrc, setCropSrc] = useState<string | null>(() => (initialBggImage ? bggImageProxyUrl(initialBggImage) : null));
+  const [bggImage, setBggImage] = useState<string | null>(initialBggImage);
+  const [confirming, setConfirming] = useState<Confirming | null>(null);
   const fileInput = useRef<HTMLInputElement>(null);
-  const gameTags = useQuery({ queryKey: ['gameTags'], queryFn: api.gameTags });
+  const gameTags = useQuery({ queryKey: qk.gameTags(), queryFn: api.gameTags });
+  const cheatSheetHtml = useMemo(() => (form.cheatSheet.trim() ? renderCheatSheet(form.cheatSheet) : ''), [form.cheatSheet]);
 
-  useEffect(() => {
-    const g = existing.data;
-    if (g) {
-      setForm({
-        name: g.name,
-        shortName: g.shortName ?? '',
-        scoreType: g.scoreType,
-        imageUrl: g.imageUrl ?? '',
-        description: g.description ?? '',
-        cheatSheet: g.cheatSheet ?? '',
-        addons: toEditItems(g.addons),
-        characters: toEditItems(g.characters),
-        players: toEditItems(g.players),
-        tags: g.tags,
-        bggId: g.bggId,
-      });
-    }
-  }, [existing.data]);
-
-  const done = async (target: string) => {
-    await queryClient.invalidateQueries({ queryKey: ['games', party.id] });
-    await queryClient.invalidateQueries({ queryKey: ['game', gameId] });
-    await queryClient.invalidateQueries({ queryKey: ['gameTags'] });
-    await queryClient.invalidateQueries({ queryKey: ['partyGameTags'] });
-    await queryClient.invalidateQueries({ queryKey: ['stats', party.id] });
+  /** Po uložení zneplatní, co se hrou změnilo; hra, která z party zmizela, se z cache zahodí (nemá smysl ji načítat znovu). */
+  const done = async (target: string, { gone = false } = {}) => {
+    if (gone && gameId !== null) queryClient.removeQueries({ queryKey: qk.game(gameId) });
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: qk.games(party.id) }),
+      ...(gone || gameId === null ? [] : [queryClient.invalidateQueries({ queryKey: qk.game(gameId) })]),
+      queryClient.invalidateQueries({ queryKey: qk.gameTags() }),
+      queryClient.invalidateQueries({ queryKey: qk.partyGameTags() }),
+      queryClient.invalidateQueries({ queryKey: qk.stats(party.id) }),
+      queryClient.invalidateQueries({ queryKey: qk.players(party.id) }), // hráči hry se zakládají jako hosté
+    ]);
     navigate(target);
   };
   const save = useMutation({
     mutationFn: async () => {
-      const input: GameInput = {
-        name: form.name.trim(),
-        shortName: form.shortName.trim() || null,
-        scoreType: form.scoreType,
-        imageUrl: form.imageUrl.trim() || null,
-        description: form.description.trim() || null,
-        cheatSheet: form.cheatSheet.trim() || null,
-        addons: fromEditItems(form.addons),
-        characters: fromEditItems(form.characters),
-        players: fromEditItems(form.players),
-        tags: form.tags,
-        bggId: form.bggId,
-      };
+      const input: GameInput = toGameInput(form);
       if (gameId === null) return api.createGame(party.id, input);
       if (!readOnly) await api.updateGame(gameId, input);
       return api.setGamePlayers(party.id, gameId, input.players);
@@ -125,41 +134,14 @@ export function GameFormPage() {
     if (fileInput.current) fileInput.current.value = ''; // stejný soubor jde vybrat znovu
     if (file) setCropSrc(URL.createObjectURL(file));
   };
-  const pickBgg = (game: BggPreparedGame) => {
-    setForm({ ...EMPTY, name: game.name, bggId: game.bggId });
-    setBggImage(game.bggImageUrl);
-    setStarted(true);
-    // uživatel obrázek potvrdí a ořízne hned (zrušením zůstane náhled a tlačítko níž)
-    if (game.bggImageUrl) setCropSrc(bggImageProxyUrl(game.bggImageUrl));
-  };
-  /** Hra z katalogu je v partě: rovnou se otevře její detail, nic se nezakládá. */
-  const linked = async (game: Game) => {
-    await queryClient.invalidateQueries({ queryKey: ['games', party.id] });
-    navigate(`/games/${game.id}`);
-  };
-  const startCustom = (name: string) => {
-    setForm({ ...EMPTY, name });
-    setStarted(true);
-  };
-  const unlink = useMutation({ mutationFn: () => api.unlinkGame(party.id, gameId!), onSuccess: () => done('/manage/games') });
-  const remove = useMutation({ mutationFn: () => api.deleteGame(gameId!), onSuccess: () => done('/manage/games') });
+  const unlink = useMutation({ mutationFn: () => api.unlinkGame(party.id, gameId!), onSuccess: () => done('/manage/games', { gone: true }) });
+  const remove = useMutation({ mutationFn: () => api.deleteGame(gameId!), onSuccess: () => done('/manage/games', { gone: true }) });
 
   const submit = (e: FormEvent) => {
     e.preventDefault();
     save.mutate();
   };
   const set = (changes: Partial<FormState>) => setForm((f) => ({ ...f, ...changes }));
-
-  if (gameId !== null && existing.isPending) return <p className="muted pad">Načítám…</p>;
-
-  if (!started) {
-    return (
-      <section className="page">
-        <PageTitle>Přidat hru</PageTitle>
-        <BggGameSearch partyId={party.id} onPick={pickBgg} onLinked={linked} onCustom={startCustom} />
-      </section>
-    );
-  }
   const preview = form.imageUrl.trim() || bggImage;
 
   return (
@@ -231,10 +213,10 @@ export function GameFormPage() {
         <fieldset className="plain" disabled={readOnly}>
           <label>Cheatsheet (Markdown nebo HTML)<textarea rows={6} value={form.cheatSheet} onChange={(e) => set({ cheatSheet: e.target.value })} /></label>
         </fieldset>
-        {form.cheatSheet.trim() && (
+        {cheatSheetHtml && (
           <details>
             <summary>Náhled cheatsheetu</summary>
-            <SafeHtml html={renderCheatSheet(form.cheatSheet)} />
+            <SafeHtml html={cheatSheetHtml} />
           </details>
         )}
         <ErrorMessage error={save.error ?? unlink.error ?? remove.error} />
@@ -247,14 +229,42 @@ export function GameFormPage() {
             onCancel={closeCrop}
           />
         )}
+        {confirming === 'unlink' && (
+          <ConfirmPopup
+            title="Odebrat hru z party?"
+            confirmLabel="Odebrat"
+            destructive
+            onCancel={() => setConfirming(null)}
+            onConfirm={() => {
+              unlink.mutate();
+              setConfirming(null);
+            }}
+          >
+            <p>Hra zůstane v databázi her.</p>
+          </ConfirmPopup>
+        )}
+        {confirming === 'delete' && (
+          <ConfirmPopup
+            title="Smazat hru z databáze všech part?"
+            confirmLabel="Smazat"
+            destructive
+            onCancel={() => setConfirming(null)}
+            onConfirm={() => {
+              remove.mutate();
+              setConfirming(null);
+            }}
+          >
+            <p>Hra zmizí z katalogu všech part a nejde to vrátit zpět. Hru s odehranými zápisy nelze smazat.</p>
+          </ConfirmPopup>
+        )}
         <Actions>
           <button className="btn" type="submit" disabled={save.isPending}>Uložit</button>
           <Link className="btn outline-secondary" to="/manage/games">Zpět</Link>
         </Actions>
         {gameId && (
           <p className="subtle-action">
-            <button type="button" className="link subtle" onClick={() => window.confirm('Odebrat hru z party? Hra zůstane v databázi her.') && unlink.mutate()}>Odebrat z party</button>
-            {!readOnly && <> · <button type="button" className="link subtle" onClick={() => window.confirm('Smazat hru z databáze všech part?') && remove.mutate()}>Smazat hru z databáze</button></>}
+            <button type="button" className="link subtle" onClick={() => setConfirming('unlink')}>Odebrat z party</button>
+            {!readOnly && <> · <button type="button" className="link subtle" onClick={() => setConfirming('delete')}>Smazat hru z databáze</button></>}
           </p>
         )}
       </form>
