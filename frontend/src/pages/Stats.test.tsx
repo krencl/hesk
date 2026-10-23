@@ -124,4 +124,44 @@ describe('statistics', () => {
     fireEvent.click(await screen.findByRole('button', { name: 'Přidat Azul (jen s ním)' }));
     expect(await screen.findByRole('button', { name: 'Azul: jen s ním' })).toHaveTextContent('+ Azul');
   });
+
+  it('lives under /parties/:id/stats, takes the filter from the address and can clear it', async () => {
+    const fetchMock = mockApi({
+      '/me': { body: ME },
+      '/parties': { body: [PARTY] },
+      '/parties/3/game-tags': { body: ['Rychlovka', 'Strategie'] },
+      '/parties/3/games/2': { body: { ...GAME, id: 2, name: 'Azul' } },
+      '/parties/3/stats': { body: { wins: [], topGames: [{ gameId: 2, name: 'Azul', shortName: null, plays: 4 }, { gameId: 3, name: 'Caverna', shortName: null, plays: 2 }] } },
+      '/parties/3/stats?tags%5B%5D=Rychlovka&excludeTags%5B%5D=Strategie&games%5B%5D=2': { body: { wins: [], topGames: [{ gameId: 2, name: 'Azul', shortName: null, plays: 4 }] } },
+    });
+    renderApp('/parties/3/stats?games=2&tags=Rychlovka&excludeTags=Strategie');
+
+    expect(await screen.findByRole('button', { name: 'Azul: jen s ním' })).toHaveTextContent('+ Azul');
+    expect(screen.getByRole('button', { name: 'Rychlovka: jen s ním' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Strategie: bez něj' })).toBeInTheDocument();
+    expect(requestedUrls(fetchMock)).toContain('/parties/3/stats?tags%5B%5D=Rychlovka&excludeTags%5B%5D=Strategie&games%5B%5D=2');
+    expect(screen.queryByText('Caverna')).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Zrušit filtr' }));
+    expect(await screen.findByText('Caverna')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Zrušit filtr' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Azul: jen s ním' })).not.toBeInTheDocument();
+  });
+
+  it('redirects the old /stats to the active party and refuses a party the user is not in', async () => {
+    mockApi({
+      '/me': { body: ME },
+      '/parties': { body: [PARTY] },
+      '/parties/3/stats': { body: { wins: [], topGames: [{ gameId: 2, name: 'Azul', shortName: null, plays: 4 }] } },
+    });
+    renderApp('/stats');
+    expect(await screen.findByRole('heading', { name: /Pátek/ })).toBeInTheDocument();
+    expect(await screen.findByText('Azul')).toBeInTheDocument();
+  });
+
+  it('shows a message for a party that is not among the user\'s parties', async () => {
+    mockApi({ '/me': { body: ME }, '/parties': { body: [PARTY] } });
+    renderApp('/parties/99/stats');
+    expect(await screen.findByText('Tuhle partu nevidíš, nebo neexistuje.')).toBeInTheDocument();
+  });
 });

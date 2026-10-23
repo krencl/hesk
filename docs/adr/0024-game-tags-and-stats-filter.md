@@ -14,7 +14,10 @@ Stará aplikace měla dva druhy tagů: tagy zápisů (`tag.type = round`, např.
 - **Import** (ADR 0012) přenáší `tag_game` ke hrám v katalogu (převzetí podle názvu, klíč vazby `gametag` = staré id tagu); tagy se jen přidávají, ruční změny v nové aplikaci neodebírá.
 - Migrace `Version20261028000000`.
 
+- **Adresa a sdílení:** statistiky jsou na `/parties/:id/stats` (ID party je v adrese, stránka se řídí adresou, ne aktivní partou; cizí nebo neexistující parta ukáže hlášku; `/stats` přesměruje na aktivní partu, přepnutí party v menu přesune stránku pod novou partu bez filtru). Filtr je v parametrech adresy (opakované `games`, `excludeGames` = id her, `tags`, `excludeTags` = názvy), takže jde sdílet odkazem; změny filtru přepisují adresu (`replace`, bez záznamů v historii). V adrese jsou jen id her, názvy štítků se dohledají (`GET /parties/{id}/games/{gameId}`, `Hra #id` než dorazí). Štítky mají stálé pořadí (hry podle id, tagy podle názvu), aby při přepnutí „+“ ↔ „−“ neskákaly.
+- **Zrušení filtru:** je-li nějaký filtr nastaven, je mezi štítky tlačítko „Zrušit filtr“. Vyřazení („−“) je červené (`--error`), výběr „+“ modrý.
+
 ## Důsledky
 - Změna tagů hry se projeví ve všech partách; člen party tagy sdílené hry nemění (jen správce her).
-- Filtr stavu není v URL ani se neukládá; po opuštění stránky se vynuluje.
+- Rozepsaný text hledání a otevřená nabídka se do adresy neukládají, jen vybrané štítky.
 - Tagy zápisů se do filtru statistik zatím nepromítají (stará aplikace to uměla – `roundTag`); lze doplnit stejným způsobem.

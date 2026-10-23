@@ -1,6 +1,6 @@
 import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import { consumeAfterLoginPath, rememberAfterLoginPath } from './lib/afterLogin';
-import { AppProvider, useCurrentUserQuery } from './AppContext';
+import { AppProvider, useActiveParty, useCurrentUserQuery } from './AppContext';
 import { Layout } from './components/Layout';
 import { RequireParty } from './components/RequireParty';
 import { RequireWriter } from './components/RequireWriter';
@@ -22,6 +22,12 @@ import { PartyEditPage } from './pages/PartyEditPage';
 import { PartyGuestsPage } from './pages/PartyGuestsPage';
 import { SettingsPage } from './pages/SettingsPage';
 import { StatsPage } from './pages/StatsPage';
+
+/** Starý odkaz `/stats` vede na statistiky aktivní party (`/parties/:id/stats`). */
+function StatsRedirect() {
+  const party = useActiveParty();
+  return <Navigate to={`/parties/${party.id}/stats`} replace />;
+}
 
 export function App() {
   return (
@@ -56,6 +62,7 @@ function AppContent() {
           <Route path="/parties/:id" element={<PartyDetailPage />} />
           <Route path="/parties/:id/edit" element={<PartyEditPage />} />
           <Route path="/parties/:id/guests" element={<PartyGuestsPage />} />
+          <Route path="/parties/:id/stats" element={<StatsPage />} />
           <Route path="/join/:token" element={<JoinPage />} />
           <Route path="/settings" element={<SettingsPage />} />
           <Route element={<RequireParty />}>
@@ -70,7 +77,7 @@ function AppContent() {
             <Route path="/games/:id/cheatsheet" element={<GameCheatsheetPage />} />
             <Route path="/games/:id/new-play" element={<NewPlayPage />} />
             <Route path="/plays/:id/edit" element={<EditPlayPage />} />
-            <Route path="/stats" element={<StatsPage />} />
+            <Route path="/stats" element={<StatsRedirect />} />
           </Route>
           <Route path="*" element={<Navigate to="/" replace />} />
         </Route>

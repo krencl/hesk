@@ -97,7 +97,7 @@ export function Layout() {
                 <button type="button" className="btn small outline" onClick={() => setChangingParty(true)}>Přepnout</button>
               </h4>
               <ul className="menu-list">
-                <li><NavLink to="/stats" onClick={closeMenu}>Statistiky</NavLink></li>
+                <li><NavLink to={activeParty ? `/parties/${activeParty.id}/stats` : '/stats'} onClick={closeMenu}>Statistiky</NavLink></li>
                 {activeParty && <li><NavLink to={`/parties/${activeParty.id}`} onClick={closeMenu}>Spravovat</NavLink></li>}
               </ul>
             </>

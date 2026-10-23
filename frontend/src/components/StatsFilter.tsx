@@ -42,7 +42,7 @@ export function StatsFilter({ partyId, items, onChange, query, onQueryChange, op
   const modeButtons = (item: FilterItem) => (
     <>
       <button type="button" className="btn small" aria-label={`Přidat ${item.name} (jen s ním)`} onClick={() => pick(item, 'include')}>+</button>
-      <button type="button" className="btn small secondary" aria-label={`Přidat ${item.name} (vyřadit)`} onClick={() => pick(item, 'exclude')}>−</button>
+      <button type="button" className="btn small negative" aria-label={`Přidat ${item.name} (vyřadit)`} onClick={() => pick(item, 'exclude')}>−</button>
     </>
   );
   const needle = normalize(text);
@@ -88,6 +88,10 @@ export function StatsFilter({ partyId, items, onChange, query, onQueryChange, op
               </span>
             );
           })}
+          <button type="button" className="chip" onMouseDown={(e) => e.preventDefault()} onClick={() => onChange([])}>
+            <Icon name="filter_alt_off" />
+            Zrušit filtr
+          </button>
         </div>
       )}
 
