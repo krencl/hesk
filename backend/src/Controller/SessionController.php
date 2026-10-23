@@ -26,11 +26,6 @@ final class SessionController extends ApiController
     {
         $sessions = $this->sessions->findBy(['party' => $party], ['number' => 'DESC']);
 
-        return new JsonResponse(array_map(static fn ($s): array => [
-            'id' => $s->getId(),
-            'number' => $s->getNumber(),
-            'startedAt' => $s->getStartedAt()->format(\DATE_ATOM),
-            'endedAt' => $s->getEndedAt()->format(\DATE_ATOM),
-        ], $sessions));
+        return new JsonResponse(array_map($this->presenter->session(...), $sessions));
     }
 }

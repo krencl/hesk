@@ -5,10 +5,17 @@ declare(strict_types=1);
 namespace App\Service;
 
 use App\Entity\Game;
+use App\Entity\GameAddon;
+use App\Entity\GameCharacter;
+use App\Entity\GameSession;
+use App\Entity\GameTag;
 use App\Entity\Party;
 use App\Entity\PartyGame;
+use App\Entity\PartyMember;
 use App\Entity\Play;
 use App\Entity\PlayResult;
+use App\Entity\PlayTag;
+use App\Entity\Player;
 use App\Entity\User;
 
 /** Převod entit na pole pro JSON odpovědi API. */
@@ -37,12 +44,12 @@ final class Presenter
     public function partyDetail(Party $party, User $viewer): array
     {
         return $this->party($party, $viewer) + ['members' => array_values(array_map(
-            fn ($m): array => ['userId' => $m->getUser()->getId(), 'nickname' => $m->getUser()->getNickname(), 'role' => $m->getRole()->value],
+            fn (PartyMember $m): array => ['userId' => $m->getUser()->getId(), 'nickname' => $m->getUser()->getNickname(), 'role' => $m->getRole()->value],
             $party->getMembers()->toArray(),
         ))];
     }
 
-    public function player(\App\Entity\Player $player): array
+    public function player(Player $player): array
     {
         return ['id' => $player->getId(), 'name' => $player->getName(), 'hasAccount' => null !== $player->getUser(), 'visible' => $player->isVisible()];
     }
@@ -59,26 +66,32 @@ final class Presenter
             'description' => $game->getDescription(),
             'cheatSheet' => $game->getCheatSheet(),
             'shortName' => $game->getShortName(),
-            'addons' => array_values(array_map(
-                static fn ($a): array => ['id' => $a->getId(), 'name' => $a->getName()],
-                $game->getAddons()->toArray(),
-            )),
-            'characters' => array_values(array_map(
-                static fn ($c): array => ['id' => $c->getId(), 'name' => $c->getName()],
-                $game->getCharacters()->toArray(),
-            )),
-            'players' => array_values(array_map(
-                static fn ($p): array => ['id' => $p->getId(), 'name' => $p->getName()],
-                null === $link ? [] : $link->getPlayers()->toArray(),
-            )),
+            'addons' => $this->namedItems($game->getAddons()),
+            'characters' => $this->namedItems($game->getCharacters()),
+            'players' => $this->namedItems(null === $link ? [] : $link->getPlayers()),
             'tags' => $this->gameTagNames($game),
         ];
+    }
+
+    /**
+     * @param iterable<GameAddon|GameCharacter|Player> $items
+     *
+     * @return list<array{id: int|null, name: string}>
+     */
+    private function namedItems(iterable $items): array
+    {
+        $result = [];
+        foreach ($items as $item) {
+            $result[] = ['id' => $item->getId(), 'name' => $item->getName()];
+        }
+
+        return $result;
     }
 
     /** @return list<string> */
     private function gameTagNames(Game $game): array
     {
-        $names = array_map(static fn ($t): string => $t->getName(), $game->getTags()->toArray());
+        $names = array_map(static fn (GameTag $t): string => $t->getName(), $game->getTags()->toArray());
         usort($names, static fn (string $a, string $b): int => strcasecmp($a, $b));
 
         return $names;
@@ -115,6 +128,17 @@ final class Presenter
         ];
     }
 
+    /** Seance party (bez zápisů). */
+    public function session(GameSession $session): array
+    {
+        return [
+            'id' => $session->getId(),
+            'number' => $session->getNumber(),
+            'startedAt' => $session->getStartedAt()->format(\DATE_ATOM),
+            'endedAt' => $session->getEndedAt()->format(\DATE_ATOM),
+        ];
+    }
+
     public function play(Play $play): array
     {
         $results = $play->getResults()->toArray();
@@ -128,8 +152,8 @@ final class Presenter
             'startedAt' => $play->getStartedAt()->format(\DATE_ATOM),
             'endedAt' => $play->getEndedAt()->format(\DATE_ATOM),
             'notes' => $play->getNotes(),
-            'addons' => array_values(array_map(static fn ($a): array => ['id' => $a->getId(), 'name' => $a->getName()], $play->getAddons()->toArray())),
-            'tags' => array_values(array_map(static fn ($t): string => $t->getName(), $play->getTags()->toArray())),
+            'addons' => $this->namedItems($play->getAddons()),
+            'tags' => array_values(array_map(static fn (PlayTag $t): string => $t->getName(), $play->getTags()->toArray())),
             'results' => array_map(static fn (PlayResult $r): array => [
                 'playerId' => $r->getPlayer()->getId(),
                 'name' => $r->getPlayer()->getName(),

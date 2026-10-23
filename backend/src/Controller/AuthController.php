@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Dto\DevLoginRequest;
 use App\Dto\NicknameRequest;
+use App\Entity\Party;
 use App\Entity\User;
 use App\Service\Presenter;
 use Doctrine\ORM\EntityManagerInterface;
@@ -60,7 +62,7 @@ final class AuthController extends ApiController
 
     /** Pouze pro vývoj a testy: přihlášení bez Googlu. */
     #[Route('/api/auth/dev-login', methods: ['POST'])]
-    public function devLogin(#[MapRequestPayload] \App\Dto\DevLoginRequest $req): Response
+    public function devLogin(#[MapRequestPayload] DevLoginRequest $req): Response
     {
         if (!\in_array($this->getParameter('kernel.environment'), ['dev', 'test'], true)) {
             throw $this->createNotFoundException();
@@ -88,7 +90,7 @@ final class AuthController extends ApiController
     {
         $user = $this->currentUser();
         $user->setNickname(trim($req->nickname));
-        foreach ($this->em->getRepository(\App\Entity\Party::class)->findByMember($user) as $party) {
+        foreach ($this->em->getRepository(Party::class)->findByMember($user) as $party) {
             $party->syncPlayerName($user);
         }
         $this->em->flush();

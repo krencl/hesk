@@ -15,6 +15,7 @@ use App\Entity\Player;
 use App\Entity\User;
 use App\Security\PartyVoter;
 use App\Service\GuestMerger;
+use App\Service\Presenter;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Response;
@@ -24,7 +25,7 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 
 final class PartyController extends ApiController
 {
-    public function __construct(\App\Service\Presenter $presenter, private readonly EntityManagerInterface $em, private readonly GuestMerger $merger)
+    public function __construct(Presenter $presenter, private readonly EntityManagerInterface $em, private readonly GuestMerger $merger)
     {
         parent::__construct($presenter);
     }

@@ -8,6 +8,7 @@ use App\Controller\ApiController;
 use App\Entity\User;
 use App\Security\PartyVoter;
 use Symfony\Component\DependencyInjection\ParameterBag\ParameterBag;
+use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\DependencyInjection\ServiceLocator;
 use Symfony\Component\Security\Core\Authentication\Token\Storage\TokenStorage;
 use Symfony\Component\Security\Core\Authentication\Token\UsernamePasswordToken;
@@ -81,7 +82,7 @@ final class ControllerHarness
     }
 
     /** @return array<mixed> */
-    public static function json(\Symfony\Component\HttpFoundation\Response $response): array
+    public static function json(Response $response): array
     {
         return json_decode((string) $response->getContent(), true, flags: \JSON_THROW_ON_ERROR);
     }

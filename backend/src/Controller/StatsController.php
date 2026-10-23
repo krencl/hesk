@@ -47,7 +47,7 @@ final class StatsController extends ApiController
      */
     private function names(Request $request, string $key): array
     {
-        $names = array_filter(array_map(static fn (mixed $n): string => trim((string) $n), (array) $request->query->all($key)), static fn (string $n): bool => '' !== $n);
+        $names = array_filter(array_map(static fn (mixed $n): string => trim((string) $n), $request->query->all($key)), static fn (string $n): bool => '' !== $n);
 
         return array_values(array_unique($names));
     }
@@ -55,6 +55,6 @@ final class StatsController extends ApiController
     /** @return list<int> */
     private function ids(Request $request, string $key): array
     {
-        return array_values(array_unique(array_map('intval', array_filter((array) $request->query->all($key), static fn (mixed $v): bool => is_numeric($v)))));
+        return array_values(array_unique(array_map('intval', array_filter($request->query->all($key), static fn (mixed $v): bool => is_numeric($v)))));
     }
 }

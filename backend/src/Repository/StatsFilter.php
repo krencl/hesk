@@ -23,9 +23,4 @@ final readonly class StatsFilter
         public array $excludeGames = [],
     ) {
     }
-
-    public function isEmpty(): bool
-    {
-        return [] === $this->includeTags && [] === $this->excludeTags && [] === $this->includeGames && [] === $this->excludeGames;
-    }
 }

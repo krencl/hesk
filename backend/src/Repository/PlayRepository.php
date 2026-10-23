@@ -11,6 +11,7 @@ use App\Entity\Play;
 use App\Entity\PlayResult;
 use App\Entity\Player;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
+use Doctrine\ORM\Query;
 use Doctrine\Persistence\ManagerRegistry;
 
 /** @extends ServiceEntityRepository<Play> */
@@ -198,7 +199,7 @@ class PlayRepository extends ServiceEntityRepository
         return $dql;
     }
 
-    private function bindFilter(\Doctrine\ORM\Query $query, StatsFilter $filter): \Doctrine\ORM\Query
+    private function bindFilter(Query $query, StatsFilter $filter): Query
     {
         foreach (['include' => [$filter->includeGames, $filter->includeTags], 'exclude' => [$filter->excludeGames, $filter->excludeTags]] as $suffix => [$games, $tags]) {
             if ([] !== $games) {

@@ -27,13 +27,9 @@ final class TagController extends ApiController
     #[IsGranted(PartyVoter::VIEW, 'party')]
     public function list(Party $party): JsonResponse
     {
-        $names = array_map(
-            static fn (array $row): string => $row['name'],
+        return new JsonResponse($this->sorted(
             $this->em->createQueryBuilder()->select('t.name')->from(PlayTag::class, 't')->where('t.party = :party')->setParameter('party', $party)->getQuery()->getArrayResult(),
-        );
-        usort($names, static fn (string $a, string $b): int => strcasecmp($a, $b));
-
-        return new JsonResponse($names);
+        ));
     }
 
     /** Tagy her, které má aspoň jedna hra zařazená v partě (filtr statistik). */

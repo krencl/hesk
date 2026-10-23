@@ -7,6 +7,7 @@ namespace App\Tests\Unit\Service\Bgg;
 use App\Domain\Exception\DomainException;
 use App\Entity\BggGame;
 use App\Entity\Game;
+use App\Entity\Party;
 use App\Entity\User;
 use App\Enum\ScoreType;
 use App\Repository\BggGameRepository;
@@ -25,7 +26,7 @@ final class BggCatalogTest extends TestCase
 {
     use DoctrineMocks;
 
-    private \App\Entity\Party $party;
+    private Party $party;
     /** @var list<Game> hry party, které by našel repozitář */
     private array $partyGames = [];
     /** @var list<Game> hry z katalogu, které party nemá a které by našel repozitář */
