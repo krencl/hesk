@@ -44,16 +44,11 @@ final class PlayControllerTest extends TestCase
         Fixtures::member($this->party, $this->bob);
     }
 
-    private function d(string $s): \DateTimeImmutable
-    {
-        return new \DateTimeImmutable($s);
-    }
-
     private function play(string $start = '2026-03-01T18:00:00+00:00', int $number = 1): Play
     {
         $game = Fixtures::game($this->party);
-        $session = Fixtures::id(new GameSession($this->party, $number, $this->d($start), $this->d($start)));
-        $play = Fixtures::id(new Play($this->party, $game, $this->d($start), $this->d($start), $session));
+        $session = Fixtures::id(new GameSession($this->party, $number, Fixtures::date($start), Fixtures::date($start)));
+        $play = Fixtures::id(new Play($this->party, $game, Fixtures::date($start), Fixtures::date($start), $session));
         $play->replaceResults([
             new PlayResult($play, Fixtures::player($this->party, $this->anna), 80.0, 2, false),
             new PlayResult($play, Fixtures::player($this->party, $this->bob), 90.0, 1, true, true),

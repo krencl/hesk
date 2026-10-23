@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\Tests\Unit\Service;
+namespace App\Tests\Unit\Service\Bgg;
 
 use App\Service\Bgg\BggClient;
 use App\Service\Bgg\BggUnavailableException;

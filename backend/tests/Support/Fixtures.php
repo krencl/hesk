@@ -28,6 +28,11 @@ final class Fixtures
         return $entity;
     }
 
+    public static function date(string $s): \DateTimeImmutable
+    {
+        return new \DateTimeImmutable($s);
+    }
+
     public static function user(string $nickname, ?string $email = null): User
     {
         $user = new User('g-'.$nickname, $email ?? strtolower($nickname).'@example.com');

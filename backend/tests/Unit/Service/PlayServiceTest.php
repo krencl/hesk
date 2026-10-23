@@ -130,18 +130,13 @@ final class PlayServiceTest extends TestCase
         return new PlayService($this->em, new ResultCalculator(), new SessionAssigner($sessionRepo), $playRepo, $tags);
     }
 
-    private function d(string $s): \DateTimeImmutable
-    {
-        return new \DateTimeImmutable($s);
-    }
-
     /** @param list<array{0: User, 1?: ?float, 2?: bool}> $players */
     private function request(string $day, array $players, array $extra = []): PlayRequest
     {
         return new PlayRequest(
             gameId: $extra['gameId'] ?? $this->game->getId(),
-            startedAt: $this->d("{$day}T18:00:00+00:00"),
-            endedAt: $this->d("{$day}T19:00:00+00:00"),
+            startedAt: Fixtures::date("{$day}T18:00:00+00:00"),
+            endedAt: Fixtures::date("{$day}T19:00:00+00:00"),
             players: array_map(fn (array $p): PlayerRequest => new PlayerRequest(Fixtures::player($this->party, $p[0])->getId(), $p[1] ?? null, winner: $p[2] ?? null, characterId: $p[3] ?? null), $players),
             addonIds: $extra['addonIds'] ?? [],
             tags: $extra['tags'] ?? [],
@@ -174,12 +169,12 @@ final class PlayServiceTest extends TestCase
 
     public function testPlayWithin24HoursJoinsTheExistingSession(): void
     {
-        $existing = new GameSession($this->party, 7, $this->d('2026-03-01T18:00:00+00:00'), $this->d('2026-03-01T19:00:00+00:00'));
+        $existing = new GameSession($this->party, 7, Fixtures::date('2026-03-01T18:00:00+00:00'), Fixtures::date('2026-03-01T19:00:00+00:00'));
         $this->sessions = [$existing];
 
         $same = $this->service()->create($this->party, $this->request('2026-03-02', [[$this->anna, 1.0]]));
         self::assertSame($existing, $same->getSession());
-        self::assertEquals($this->d('2026-03-02T19:00:00+00:00'), $existing->getEndedAt(), 'seance se rozšíří');
+        self::assertEquals(Fixtures::date('2026-03-02T19:00:00+00:00'), $existing->getEndedAt(), 'seance se rozšíří');
 
         $later = $this->service()->create($this->party, $this->request('2026-03-20', [[$this->anna, 1.0]]));
         self::assertNotSame($existing, $later->getSession());
@@ -191,7 +186,7 @@ final class PlayServiceTest extends TestCase
         $this->databaseView = true;
         $service = $this->service();
         $first = Fixtures::id($service->create($this->party, $this->request('2026-03-01', [[$this->anna, 1.0]])));
-        $second = Fixtures::id($service->create($this->party, new PlayRequest($this->game->getId(), $this->d('2026-03-02T17:00:00+00:00'), $this->d('2026-03-02T18:00:00+00:00'), $this->request('2026-03-02', [[$this->anna, 2.0]])->players)));
+        $second = Fixtures::id($service->create($this->party, new PlayRequest($this->game->getId(), Fixtures::date('2026-03-02T17:00:00+00:00'), Fixtures::date('2026-03-02T18:00:00+00:00'), $this->request('2026-03-02', [[$this->anna, 2.0]])->players)));
         $session = $first->getSession();
         self::assertSame($session, $second->getSession());
         $this->sessions = [$session];
@@ -200,16 +195,16 @@ final class PlayServiceTest extends TestCase
 
         // Bez druhého zápisu seance končí 2026-03-01 19:00, takže 2026-03-02 21:00 už je víc než 24 h po jejím konci
         // (uložený konec před přepočtem, 2026-03-02 18:00, by zápis nesprávně pustil zpět).
-        $service->update($second, new PlayRequest($this->game->getId(), $this->d('2026-03-02T21:00:00+00:00'), $this->d('2026-03-02T22:00:00+00:00'), $this->request('2026-03-02', [[$this->anna, 2.0]])->players));
+        $service->update($second, new PlayRequest($this->game->getId(), Fixtures::date('2026-03-02T21:00:00+00:00'), Fixtures::date('2026-03-02T22:00:00+00:00'), $this->request('2026-03-02', [[$this->anna, 2.0]])->players));
 
         self::assertNotSame($session, $second->getSession());
         self::assertSame(2, $second->getSession()->getNumber());
-        self::assertEquals($this->d('2026-03-01T19:00:00+00:00'), $session->getEndedAt());
+        self::assertEquals(Fixtures::date('2026-03-01T19:00:00+00:00'), $session->getEndedAt());
     }
 
     public function testExplicitSessionNumberJoinsOrCreatesSession(): void
     {
-        $existing = new GameSession($this->party, 95, $this->d('2026-03-01T18:00:00+00:00'), $this->d('2026-03-01T19:00:00+00:00'));
+        $existing = new GameSession($this->party, 95, Fixtures::date('2026-03-01T18:00:00+00:00'), Fixtures::date('2026-03-01T19:00:00+00:00'));
         $this->sessions = [$existing];
 
         self::assertSame($existing, $this->service()->create($this->party, $this->request('2026-05-01', [[$this->anna, 1.0]], ['sessionNumber' => 95]))->getSession());
@@ -291,7 +286,7 @@ final class PlayServiceTest extends TestCase
     {
         $eve = Fixtures::user('Eve');
         $foreign = Fixtures::player(Fixtures::party($eve, 'Cizí'), $eve);
-        $request = new PlayRequest($this->game->getId(), $this->d('2026-03-01T18:00:00+00:00'), $this->d('2026-03-01T19:00:00+00:00'), [new PlayerRequest($foreign->getId(), 1.0)]);
+        $request = new PlayRequest($this->game->getId(), Fixtures::date('2026-03-01T18:00:00+00:00'), Fixtures::date('2026-03-01T19:00:00+00:00'), [new PlayerRequest($foreign->getId(), 1.0)]);
 
         $this->expectException(DomainException::class);
         $this->expectExceptionMessage('Hráč nepatří');
@@ -304,7 +299,7 @@ final class PlayServiceTest extends TestCase
         // bez skóre u hry s bodováním, dva začínající, hráč dvakrát, žádný hráč
         $annaId = Fixtures::player($this->party, $this->anna)->getId();
         $bobId = Fixtures::player($this->party, $this->bob)->getId();
-        $times = [$this->d('2026-03-01T18:00:00+00:00'), $this->d('2026-03-01T19:00:00+00:00')];
+        $times = [Fixtures::date('2026-03-01T18:00:00+00:00'), Fixtures::date('2026-03-01T19:00:00+00:00')];
         $invalid = [
             [new PlayerRequest($annaId)],
             [new PlayerRequest($annaId, 1.0, starting: true), new PlayerRequest($bobId, 2.0, starting: true)],
@@ -324,14 +319,14 @@ final class PlayServiceTest extends TestCase
     public function testManualWinnerAndStartingPlayerAreStored(): void
     {
         $service = $this->service();
-        $tied = $service->create($this->party, new PlayRequest($this->game->getId(), $this->d('2026-03-01T18:00:00+00:00'), $this->d('2026-03-01T19:00:00+00:00'), [
+        $tied = $service->create($this->party, new PlayRequest($this->game->getId(), Fixtures::date('2026-03-01T18:00:00+00:00'), Fixtures::date('2026-03-01T19:00:00+00:00'), [
             new PlayerRequest(Fixtures::player($this->party, $this->anna)->getId(), 50.0),
             new PlayerRequest(Fixtures::player($this->party, $this->bob)->getId(), 50.0, starting: true),
         ]));
         self::assertSame([true, true], array_map(static fn (PlayResult $r): bool => $r->isWinner(), $this->results($tied)), 'shoda skóre = vyhrají oba');
         self::assertSame(['Bob'], array_values(array_map(static fn (PlayResult $r): string => $r->getPlayer()->getName(), array_filter($this->results($tied), static fn (PlayResult $r): bool => $r->isStarting()))));
 
-        $manual = $service->create($this->party, new PlayRequest($this->game->getId(), $this->d('2026-03-01T20:00:00+00:00'), $this->d('2026-03-01T21:00:00+00:00'), [
+        $manual = $service->create($this->party, new PlayRequest($this->game->getId(), Fixtures::date('2026-03-01T20:00:00+00:00'), Fixtures::date('2026-03-01T21:00:00+00:00'), [
             new PlayerRequest(Fixtures::player($this->party, $this->anna)->getId(), 50.0, winner: true, starting: true),
             new PlayerRequest(Fixtures::player($this->party, $this->bob)->getId(), 50.0),
         ]));
@@ -429,7 +424,7 @@ final class PlayServiceTest extends TestCase
         $this->playsInSession = [$play];
         $this->calls->exchangeArray([]);
 
-        $bad = new PlayRequest($this->game->getId(), $this->d('2026-03-01T18:00:00+00:00'), $this->d('2026-03-01T19:00:00+00:00'), [new PlayerRequest(999999, 1.0)]);
+        $bad = new PlayRequest($this->game->getId(), Fixtures::date('2026-03-01T18:00:00+00:00'), Fixtures::date('2026-03-01T19:00:00+00:00'), [new PlayerRequest(999999, 1.0)]);
         try {
             $service->update($play, $bad);
             self::fail('Cizí hráč se musí odmítnout.');
@@ -466,6 +461,6 @@ final class PlayServiceTest extends TestCase
         $service->delete($second);
 
         self::assertSame([$second], $this->calls['remove']);
-        self::assertEquals($this->d('2026-03-01T19:00:00+00:00'), $session->getEndedAt());
+        self::assertEquals(Fixtures::date('2026-03-01T19:00:00+00:00'), $session->getEndedAt());
     }
 }

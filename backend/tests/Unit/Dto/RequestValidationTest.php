@@ -17,6 +17,7 @@ use App\Dto\PlayerNameRequest;
 use App\Dto\PlayerRequest;
 use App\Dto\UpdatePartyRequest;
 use App\Service\CoverStorage;
+use App\Tests\Support\Fixtures;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Validator\Validation;
@@ -35,11 +36,6 @@ final class RequestValidationTest extends TestCase
     private function invalid(object $dto): bool
     {
         return \count($this->validator->validate($dto)) > 0;
-    }
-
-    private function d(string $s): \DateTimeImmutable
-    {
-        return new \DateTimeImmutable($s);
     }
 
     public function testPartyNameAndShortNameAreRequiredAndLimited(): void
@@ -64,15 +60,15 @@ final class RequestValidationTest extends TestCase
     public function testPlayNeedsPlayersAndEndAfterStart(): void
     {
         $player = [new PlayerRequest(1, 1.0)];
-        $valid = new PlayRequest(1, $this->d('2026-03-01T18:00:00+00:00'), $this->d('2026-03-01T19:00:00+00:00'), $player);
+        $valid = new PlayRequest(1, Fixtures::date('2026-03-01T18:00:00+00:00'), Fixtures::date('2026-03-01T19:00:00+00:00'), $player);
         self::assertFalse($this->invalid($valid));
-        self::assertFalse($this->invalid(new PlayRequest(1, $this->d('2026-03-01T18:00:00+00:00'), $this->d('2026-03-01T18:00:00+00:00'), $player)), 'začátek = konec je v pořádku');
+        self::assertFalse($this->invalid(new PlayRequest(1, Fixtures::date('2026-03-01T18:00:00+00:00'), Fixtures::date('2026-03-01T18:00:00+00:00'), $player)), 'začátek = konec je v pořádku');
 
-        self::assertTrue($this->invalid(new PlayRequest(1, $this->d('2026-03-01T18:00:00+00:00'), $this->d('2026-03-01T19:00:00+00:00'), [])), 'žádný hráč');
-        self::assertTrue($this->invalid(new PlayRequest(1, $this->d('2026-03-01T19:00:00+00:00'), $this->d('2026-03-01T18:00:00+00:00'), $player)), 'konec před začátkem');
-        self::assertTrue($this->invalid(new PlayRequest(1, $this->d('2026-03-01T18:00:00+00:00'), $this->d('2026-03-01T19:00:00+00:00'), $player, sessionNumber: 0)), 'číslo seance musí být kladné');
-        self::assertTrue($this->invalid(new PlayRequest(1, $this->d('2026-03-01T18:00:00+00:00'), $this->d('2026-03-01T19:00:00+00:00'), $player, tags: [''])));
-        self::assertTrue($this->invalid(new PlayRequest(1, $this->d('2026-03-01T18:00:00+00:00'), $this->d('2026-03-01T19:00:00+00:00'), $player, tags: [str_repeat('x', 101)])));
+        self::assertTrue($this->invalid(new PlayRequest(1, Fixtures::date('2026-03-01T18:00:00+00:00'), Fixtures::date('2026-03-01T19:00:00+00:00'), [])), 'žádný hráč');
+        self::assertTrue($this->invalid(new PlayRequest(1, Fixtures::date('2026-03-01T19:00:00+00:00'), Fixtures::date('2026-03-01T18:00:00+00:00'), $player)), 'konec před začátkem');
+        self::assertTrue($this->invalid(new PlayRequest(1, Fixtures::date('2026-03-01T18:00:00+00:00'), Fixtures::date('2026-03-01T19:00:00+00:00'), $player, sessionNumber: 0)), 'číslo seance musí být kladné');
+        self::assertTrue($this->invalid(new PlayRequest(1, Fixtures::date('2026-03-01T18:00:00+00:00'), Fixtures::date('2026-03-01T19:00:00+00:00'), $player, tags: [''])));
+        self::assertTrue($this->invalid(new PlayRequest(1, Fixtures::date('2026-03-01T18:00:00+00:00'), Fixtures::date('2026-03-01T19:00:00+00:00'), $player, tags: [str_repeat('x', 101)])));
     }
 
     /** @return iterable<string, array{?string, bool}> */
