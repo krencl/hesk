@@ -80,14 +80,16 @@ final class PlayService
 
     public function delete(Play $play): void
     {
-        $session = $play->getSession();
-        $this->em->remove($play);
-        $this->em->flush();
-        $remaining = $this->plays->findBySession($session);
-        if ($this->sessions->recalculate($session, $remaining)) {
-            $this->em->remove($session);
-        }
-        $this->em->flush();
+        $this->em->wrapInTransaction(function () use ($play): void {
+            $session = $play->getSession();
+            $this->em->remove($play);
+            $this->em->flush();
+            $remaining = $this->plays->findBySession($session);
+            if ($this->sessions->recalculate($session, $remaining)) {
+                $this->em->remove($session);
+            }
+            $this->em->flush();
+        });
     }
 
     private function resolveGame(Party $party, PlayRequest $req): Game
