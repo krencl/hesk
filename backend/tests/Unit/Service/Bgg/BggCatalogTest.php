@@ -95,9 +95,9 @@ final class BggCatalogTest extends TestCase
         $this->partyGames = [$own];
 
         $first = $this->catalog()->search($this->party, 'catan');
-        self::assertSame([['party', 'Catan vlastní'], ['bgg', 'Catan'], ['bgg', 'Catan: Seafarers']], self::brief($first));
-        self::assertSame($own->getId(), $first['results'][0]['gameId']);
-        self::assertSame([13, 1995], [$first['results'][1]['bggId'], $first['results'][1]['year']]);
+        self::assertSame([['bgg', 'Catan'], ['party', 'Catan vlastní'], ['bgg', 'Catan: Seafarers']], self::brief($first), 'abecedně bez ohledu na zdroj');
+        self::assertSame($own->getId(), $first['results'][1]['gameId']);
+        self::assertSame([13, 1995], [$first['results'][0]['bggId'], $first['results'][0]['year']]);
         self::assertSame('used', $first['bgg']);
         self::assertSame(1, FakeBggClient::$searchCalls);
         self::assertCount(2, array_filter($this->calls['persist'], static fn (object $e): bool => $e instanceof BggGame), 'výsledky z API se uloží do cache');
@@ -105,7 +105,7 @@ final class BggCatalogTest extends TestCase
         // živé API padne: hry party a cache zůstanou, odpověď to jen oznámí
         FakeBggClient::$down = true;
         $second = $this->catalog()->search($this->party, 'catan');
-        self::assertSame([['party', 'Catan vlastní'], ['cache', 'Catan'], ['cache', 'Catan: Seafarers']], self::brief($second));
+        self::assertSame([['cache', 'Catan'], ['party', 'Catan vlastní'], ['cache', 'Catan: Seafarers']], self::brief($second));
         self::assertSame('unavailable', $second['bgg']);
     }
 
@@ -119,12 +119,12 @@ final class BggCatalogTest extends TestCase
 
         $result = $this->catalog()->search($this->party, 'tok');
 
-        self::assertSame([['party', 'Tokyo Highway'], ['catalog', 'Tokaido'], ['cache', 'Tokyo Metro']], self::brief($result));
-        self::assertSame($tokaido->getId(), $result['results'][1]['gameId'], 'hra z katalogu se zařadí do party podle id, formulář netřeba');
-        self::assertSame(123, $result['results'][1]['bggId']);
-        self::assertSame('/uploads/covers/abc.webp', $result['results'][1]['imageUrl']);
-        self::assertNull($result['results'][0]['imageUrl']);
-        self::assertArrayNotHasKey('prefill', $result['results'][1]);
+        self::assertSame([['catalog', 'Tokaido'], ['party', 'Tokyo Highway'], ['cache', 'Tokyo Metro']], self::brief($result));
+        self::assertSame($tokaido->getId(), $result['results'][0]['gameId'], 'hra z katalogu se zařadí do party podle id, formulář netřeba');
+        self::assertSame(123, $result['results'][0]['bggId']);
+        self::assertSame('/uploads/covers/abc.webp', $result['results'][0]['imageUrl']);
+        self::assertNull($result['results'][1]['imageUrl']);
+        self::assertArrayNotHasKey('prefill', $result['results'][0]);
     }
 
     public function testCatalogGameIsNotOfferedAgainFromTheCacheOrBgg(): void
@@ -136,10 +136,22 @@ final class BggCatalogTest extends TestCase
         $this->cached = [new BggGame(77, 'Lord of Tokyo', 2011), new BggGame(78, 'Tokyo Highway', 2015)];
 
         self::assertSame(
-            [['catalog', 'Vládce Tokia'], ['cache', 'Tokyo Highway'], ['bgg', 'Tokyo Subway']],
+            [['cache', 'Tokyo Highway'], ['bgg', 'Tokyo Subway'], ['catalog', 'Vládce Tokia']],
             self::brief($this->catalog()->search($this->party, 'tok')),
             'stejné bgg_id se nenabízí podruhé: hra už je v katalogu',
         );
+    }
+
+    public function testResultsAreSortedAlphabeticallyAcrossSourcesIgnoringCaseAndDiacritics(): void
+    {
+        FakeBggClient::$games = [1 => new BggItem(1, 'Čaj', 2000), 2 => new BggItem(2, 'Cesta', 2001)];
+        $this->partyGames = [Fixtures::game($this->party, 'cukr a'), Fixtures::game($this->party, 'Dáma a')];
+        $this->otherGames = [Fixtures::catalogGame('Cirkus a')];
+        $this->cached = [new BggGame(4, 'Černý Petr a', 1990)];
+
+        $names = array_column($this->catalog()->search($this->party, 'a')['results'], 'name');
+
+        self::assertSame(['Cesta', 'Cirkus a', 'cukr a', 'Čaj', 'Černý Petr a', 'Dáma a'], $names, 'česky: bez ohledu na velikost písmen, Č až za C');
     }
 
     public function testBggIsNotCalledWhenLocalSourcesAreEnough(): void

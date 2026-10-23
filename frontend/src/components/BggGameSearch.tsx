@@ -75,7 +75,7 @@ function Result({ result, disabled, onPick }: { result: BggSearchResult; disable
   }
   return (
     <GameListItem imageUrl={result.imageUrl} name={result.year ? `${result.name} (${result.year})` : result.name} disabled={disabled} onClick={onPick}>
-      {result.source === 'catalog' && <span className="secondary">Z lokální databáze</span>}
+      <span className="secondary">{result.source === 'catalog' ? 'Z lokální databáze' : 'Import z BoardGameGeek'}</span>
     </GameListItem>
   );
 }

@@ -208,8 +208,10 @@ describe('game form (/games/:id/edit)', () => {
       expect(own).toHaveClass('inactive');
       expect(own?.tagName).toBe('DIV');
       expect(screen.getByRole('button', { name: /Catan Junior/ })).toBeInTheDocument();
-      expect(screen.getByRole('button', { name: 'Catan (1995)' })).toBeInTheDocument();
-      expect(screen.getByRole('button', { name: 'Catan: Seafarers (1997)' })).toBeInTheDocument();
+      expect(screen.getAllByText('Import z BoardGameGeek')).toHaveLength(2); // výsledek z cache i z živého BGG
+      expect(screen.getAllByText('Z lokální databáze')).toHaveLength(1);
+      expect(screen.getByRole('button', { name: /Catan \(1995\)/ })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /Catan: Seafarers \(1997\)/ })).toBeInTheDocument();
       const covers = Array.from(screen.getByRole('list', { name: 'Nalezené hry' }).querySelectorAll('img'));
       expect(covers.map((img) => img.getAttribute('src'))).toEqual(['/uploads/covers/own.webp', '/uploads/covers/junior.webp', expect.stringContaining('cover-placeholder'), expect.stringContaining('cover-placeholder')]);
     });
@@ -257,7 +259,7 @@ describe('game form (/games/:id/edit)', () => {
       });
       renderApp('/games/new');
       await type('catan');
-      fireEvent.click(await screen.findByRole('button', { name: 'Catan (1995)' }));
+      fireEvent.click(await screen.findByRole('button', { name: /Catan \(1995\)/ }));
 
       // formulář je předvyplněný a hned se otevře ořez; ten čte obrázek přes náš server, ne přímo z CDN
       expect(await screen.findByRole('dialog', { name: 'Oříznout obrázek' })).toBeInTheDocument();
@@ -293,7 +295,7 @@ describe('game form (/games/:id/edit)', () => {
       });
       renderApp('/games/new');
       await type('catan');
-      fireEvent.click(await screen.findByRole('button', { name: 'Catan (1995)' }));
+      fireEvent.click(await screen.findByRole('button', { name: /Catan \(1995\)/ }));
       fireEvent.click(await screen.findByRole('button', { name: 'Zrušit' }));
       fireEvent.click(screen.getByRole('button', { name: 'Uložit' }));
       await waitFor(() => expect(sent(fetchMock, 'POST', '/parties/3/games')).toMatchObject({ name: 'Catan', bggId: 13, imageUrl: null }));

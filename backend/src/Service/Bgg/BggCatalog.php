@@ -66,7 +66,7 @@ class BggCatalog
         }
 
         if (\count($results) >= self::LOCAL_ENOUGH) {
-            return ['results' => $results, 'bgg' => self::BGG_SKIPPED];
+            return ['results' => self::sorted($results), 'bgg' => self::BGG_SKIPPED];
         }
 
         try {
@@ -74,7 +74,7 @@ class BggCatalog
         } catch (BggUnavailableException $e) {
             $this->logger->warning('BGG search failed: '.$e->getMessage());
 
-            return ['results' => $results, 'bgg' => self::BGG_UNAVAILABLE];
+            return ['results' => self::sorted($results), 'bgg' => self::BGG_UNAVAILABLE];
         }
         foreach ($items as $item) {
             $this->remember($item);
@@ -85,7 +85,33 @@ class BggCatalog
         }
         $this->em->flush();
 
-        return ['results' => $results, 'bgg' => self::BGG_USED];
+        return ['results' => self::sorted($results), 'bgg' => self::BGG_USED];
+    }
+
+    /**
+     * Výsledky abecedně podle názvu bez ohledu na zdroj (česky, bez ohledu na velikost písmen a diakritiku, je-li
+     * k dispozici `intl`); při shodě názvu podle roku a původního pořadí (hra party, katalog, cache, BGG).
+     *
+     * @template T of array{name: string, year: int|null}
+     *
+     * @param list<T> $results
+     *
+     * @return list<T>
+     */
+    private static function sorted(array $results): array
+    {
+        $collator = class_exists(\Collator::class) ? new \Collator('cs_CZ') : null;
+        $collator?->setStrength(\Collator::SECONDARY);
+        $indexed = array_map(null, array_keys($results), $results);
+        usort($indexed, static function (array $a, array $b) use ($collator): int {
+            [$ia, $ra] = $a;
+            [$ib, $rb] = $b;
+            $byName = $collator ? $collator->compare($ra['name'], $rb['name']) : strcmp(mb_strtolower($ra['name']), mb_strtolower($rb['name']));
+
+            return $byName ?: ($ra['year'] ?? 0) <=> ($rb['year'] ?? 0) ?: $ia <=> $ib;
+        });
+
+        return array_column($indexed, 1);
     }
 
     /**
