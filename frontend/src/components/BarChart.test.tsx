@@ -14,8 +14,14 @@ describe('BarChart', () => {
     expect(screen.getByText('Zatím žádná data.')).toBeInTheDocument();
   });
 
-  it('does not divide by zero when all values are 0', () => {
+  it('does not show entries with the value 0', () => {
+    render(<BarChart items={[{ key: 1, label: 'Anna', value: 3 }, { key: 2, label: 'Foxo', value: 0 }]} />);
+    expect(screen.getByRole('img', { name: 'Anna: 3' })).toBeInTheDocument();
+    expect(screen.queryByText('Foxo')).not.toBeInTheDocument();
+  });
+
+  it('shows the placeholder when every value is 0', () => {
     render(<BarChart items={[{ key: 1, label: 'Anna', value: 0 }]} />);
-    expect(screen.getByRole('img', { name: 'Anna: 0' })).toHaveStyle({ width: '0%' });
+    expect(screen.getByText('Zatím žádná data.')).toBeInTheDocument();
   });
 });
