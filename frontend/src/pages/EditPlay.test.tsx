@@ -89,8 +89,9 @@ describe('edit play (/plays/:id/edit)', () => {
     expect(save.compareDocumentPosition(del) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
 
     fireEvent.click(del);
+    expect(await screen.findByRole('alertdialog', { name: 'Smazat zápis?' })).toBeInTheDocument();
     expect(fetchMock.mock.calls.some(([, init]) => init?.method === 'DELETE')).toBe(false);
-    fireEvent.click(screen.getByRole('button', { name: 'Potvrď smazání' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Smazat' }));
     await waitFor(() => expect(fetchMock.mock.calls.some(([u, init]) => String(u) === '/api/plays/9' && init?.method === 'DELETE')).toBe(true));
     expect(await screen.findByRole('link', { name: 'Nový zápis' })).toBeInTheDocument();
   });
@@ -141,6 +142,15 @@ describe('edit play (/plays/:id/edit)', () => {
       fireEvent.click(screen.getByRole('button', { name: 'Zpět' }));
       expect(screen.getByRole('option', { name: 'Sobota' })).toBeInTheDocument();
     });
+  });
+
+  it('keeps the play when the delete confirmation is cancelled', async () => {
+    const fetchMock = mockApi({ ...routes, 'DELETE /plays/9': { status: 204, body: null } });
+    renderApp('/plays/9/edit');
+    fireEvent.click(await screen.findByRole('button', { name: 'Smazat zápis' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Zrušit' }));
+    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
+    expect(fetchMock.mock.calls.some(([, init]) => init?.method === 'DELETE')).toBe(false);
   });
 
   it('shows a friendly message for an unknown play', async () => {

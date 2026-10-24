@@ -5,6 +5,7 @@ import { useActiveParty, useApp } from '../AppContext';
 import { api } from '../api';
 import type { PlayInput } from '../api/types';
 import { ErrorMessage } from '../components/ErrorMessage';
+import { ConfirmPopup } from '../components/ConfirmPopup';
 import { MovePlayPopup } from '../components/MovePlayPopup';
 import { PlayForm } from '../components/PlayForm';
 import { EmptyState, LoadingOrError, isNotFound } from '../components/PageState';
@@ -60,10 +61,13 @@ export function EditPlayPage() {
     >
       <ErrorMessage error={remove.error} />
       <p className="subtle-action">
-        <button type="button" className={`link subtle${confirmDelete ? ' confirm' : ''}`} disabled={remove.isPending} onClick={() => (confirmDelete ? remove.mutate() : setConfirmDelete(true))}>
-          {confirmDelete ? 'Potvrď smazání' : 'Smazat zápis'}
-        </button>
+        <button type="button" className="link subtle" disabled={remove.isPending} onClick={() => setConfirmDelete(true)}>Smazat zápis</button>
       </p>
+      {confirmDelete && (
+        <ConfirmPopup title="Smazat zápis?" confirmLabel="Smazat" destructive onConfirm={() => { remove.mutate(); setConfirmDelete(false); }} onCancel={() => setConfirmDelete(false)}>
+          <p>Zápis hry {game.data.name} se nenávratně smaže včetně příspěvku do statistik.</p>
+        </ConfirmPopup>
+      )}
       {moveTargets.length > 0 && (
         <p className="subtle-action">
           <button type="button" className="link subtle" onClick={() => setMoving(true)}>Přesunout do jiné party</button>
