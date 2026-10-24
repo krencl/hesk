@@ -251,6 +251,36 @@ final class LegacyImportTest extends KernelTestCase
         self::assertSame($before, $this->snapshot());
     }
 
+    public function testTagsWithTheSameNameInTheOldAppAreMerged(): void
+    {
+        // stará aplikace dovoluje víc tagů se stejným jménem (jiná id); nová má jméno unikátní
+        $this->legacy->insert('tag', ['id' => 302, 'name' => 'Rychlovka']);
+        $this->legacy->insert('tag_game', ['tag_id' => 302, 'game_id' => 10]);
+        $this->legacy->insert('tag', ['id' => 303, 'name' => 'víkend']);
+        $this->legacy->insert('tag_round', ['tag_id' => 303, 'round_id' => 1000]);
+
+        $this->import();
+        $this->import();
+
+        self::assertSame(['Rychlovka'], $this->target->fetchFirstColumn('SELECT name FROM game_tag'));
+        self::assertSame(2, (int) $this->target->fetchOne('SELECT COUNT(*) FROM game_game_tag'), 'both games keep the merged tag');
+        self::assertSame(['víkend'], $this->target->fetchFirstColumn('SELECT name FROM play_tag'));
+        self::assertSame(2, (int) $this->target->fetchOne('SELECT COUNT(*) FROM play_play_tag'), 'both plays keep the merged tag');
+    }
+
+    public function testRenumberedTagsDoNotCollideWithTheStoredMapping(): void
+    {
+        $this->import();
+        // stará aplikace tagy přečíslovala: číslo 300 teď patří jinému jménu než při prvním importu
+        $this->legacy->update('tag', ['name' => 'Rychlovka'], ['id' => 300]);
+        $this->legacy->update('tag', ['name' => 'víkend'], ['id' => 301]);
+
+        $this->import();
+
+        self::assertSame(['Rychlovka'], $this->target->fetchFirstColumn('SELECT t.name FROM play_play_tag pt JOIN play_tag t ON t.id = pt.play_tag_id WHERE pt.play_id = 1001'));
+        self::assertSame(['víkend'], $this->target->fetchFirstColumn('SELECT t.name FROM game_game_tag x JOIN game_tag t ON t.id = x.game_tag_id JOIN game g ON g.id = x.game_id WHERE g.name = ? AND t.name = ?', ['Azul', 'víkend']));
+    }
+
     public function testDryRunWritesNothing(): void
     {
         $report = $this->import(dryRun: true);

@@ -66,6 +66,7 @@ final class LegacyImporter
     private function run(): void
     {
         $legacy = $this->readLegacy();
+        $this->forgetTagMappings();
         $this->deleteVanished($legacy);
         $this->importUsersAndParties($legacy);
         $this->importPlayers($legacy);
@@ -97,6 +98,7 @@ final class LegacyImporter
             'tagRounds' => $all('SELECT tag_id, round_id FROM tag_round'),
             'tagGames' => $all('SELECT tag_id, game_id FROM tag_game'),
         ];
+        $this->normalizeTags($d);
         $d['versionsById'] = $byId($d['versions']);
         $d['roundsById'] = $byId($d['rounds']);
         $d['playersByRound'] = [];
@@ -105,6 +107,45 @@ final class LegacyImporter
         }
 
         return $d;
+    }
+
+    /**
+     * Tagy se ve staré aplikaci identifikují jen číslem, které se může změnit (přečíslování) a které smí sdílet víc
+     * tagů se stejným jménem; v nové je jméno tagu unikátní (ADR 0025). Proto tag identifikuje klíč jména (NameKey):
+     * `tags` je pak klíč => jméno a odkazy `tag_id` v `tagRounds`/`tagGames` nesou klíč místo čísla.
+     *
+     * @param array<string, mixed> $d
+     */
+    private function normalizeTags(array &$d): void
+    {
+        $names = $d['tags'];
+        ksort($names);
+        $keyById = [];
+        $byKey = [];
+        foreach ($names as $id => $name) {
+            $key = NameKey::of((string) $name);
+            if ('' === $key) {
+                continue;
+            }
+            $keyById[$id] = (string) $key;
+            $byKey[$key] ??= trim((string) $name);
+        }
+        $d['tags'] = $byKey;
+        foreach (['tagRounds', 'tagGames'] as $links) {
+            $d[$links] = array_values(array_filter(array_map(
+                static fn (array $link) => isset($keyById[$link['tag_id']]) ? ['tag_id' => $keyById[$link['tag_id']]] + $link : null,
+                $d[$links],
+            )));
+        }
+    }
+
+    /** Mapování tagů se staví podle jmen znovu při každém běhu (stará čísla tagů by se mohla srazit s novými). */
+    private function forgetTagMappings(): void
+    {
+        $this->target->executeStatement("DELETE FROM legacy_map WHERE entity IN ('gametag', 'tag')");
+        foreach (['gametag', 'tag'] as $entity) {
+            unset($this->map[$entity], $this->mapped[$entity]);
+        }
     }
 
     // ------------------------------------------------------------------ smazané ve staré aplikaci
@@ -405,7 +446,7 @@ final class LegacyImporter
         $partyByRound = array_column($d['rounds'], 'party_id', 'id');
         foreach ($d['tagRounds'] as $tr) {
             if (isset($partyByRound[$tr['round_id']])) {
-                $tagPairs[$tr['tag_id'].':'.$partyByRound[$tr['round_id']]] = [(int) $tr['tag_id'], (int) $partyByRound[$tr['round_id']]];
+                $tagPairs[$tr['tag_id'].':'.$partyByRound[$tr['round_id']]] = [(string) $tr['tag_id'], (int) $partyByRound[$tr['round_id']]];
             }
         }
         ksort($tagPairs, \SORT_NATURAL);
@@ -451,7 +492,7 @@ final class LegacyImporter
     {
         $tagsByRound = [];
         foreach ($d['tagRounds'] as $tr) {
-            $tagsByRound[(int) $tr['round_id']][] = (int) $tr['tag_id'];
+            $tagsByRound[(int) $tr['round_id']][] = (string) $tr['tag_id'];
         }
 
         foreach ($d['rounds'] as $r) {
@@ -480,7 +521,7 @@ final class LegacyImporter
                 $addon = $this->map('addon', (string) $version['id']);
             }
             $this->syncLinks('play_addon', 'game_addon_id', $playId, null === $addon ? [] : [$addon]);
-            $tagIds = array_values(array_filter(array_map(fn (int $t) => $this->map('tag', "$t:$legacyParty"), $tagsByRound[$roundId] ?? [])));
+            $tagIds = array_values(array_unique(array_filter(array_map(fn (string $t) => $this->map('tag', "$t:$legacyParty"), $tagsByRound[$roundId] ?? []))));
             $this->syncLinks('play_play_tag', 'play_tag_id', $playId, $tagIds);
 
             $this->importResults($d, $r, $playId, $partyId, $gameId);
