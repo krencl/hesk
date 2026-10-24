@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Repository;
 
+use App\Entity\Party;
 use App\Entity\PartyGame;
 use App\Entity\Player;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
@@ -15,6 +16,20 @@ class PartyGameRepository extends ServiceEntityRepository
     public function __construct(ManagerRegistry $registry)
     {
         parent::__construct($registry, PartyGame::class);
+    }
+
+    /**
+     * Id hráčů, kteří jsou „vlastním hráčem hry“ aspoň v jedné hře party; ve správě party se nepočítají mezi hosty.
+     *
+     * @return list<int>
+     */
+    public function gamePlayerIds(Party $party): array
+    {
+        $rows = $this->getEntityManager()->createQuery('SELECT DISTINCT p.id AS id FROM '.PartyGame::class.' pg JOIN pg.players p WHERE pg.party = :party')
+            ->setParameter('party', $party)
+            ->getScalarResult();
+
+        return array_map('intval', array_column($rows, 'id'));
     }
 
     /**

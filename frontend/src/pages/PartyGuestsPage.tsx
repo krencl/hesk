@@ -36,7 +36,8 @@ export function PartyGuestsPage() {
       await refresh();
     },
   });
-  const guests = (players.data ?? []).filter((p) => !p.hasAccount);
+  // hráči her (např. Boss) se spravují ve formuláři hry, ne tady
+  const guests = (players.data ?? []).filter((p) => !p.hasAccount && !p.gamePlayer);
   const patchGuest = (id: number, changes: { name?: string; visible?: boolean }) => setEdited((all) => ({ ...all, [id]: { ...all[id], ...changes } }));
   // jen skutečně změněná pole (vrácení na původní hodnotu není změna)
   const changesOf = (g: { id: number; name: string; visible: boolean }) => {

@@ -38,8 +38,9 @@ final class PlayerController extends ApiController
         usort($players, static fn (Player $a, Player $b): int => strcasecmp($a->getName(), $b->getName()));
 
         $counts = $this->plays->playCountsByPlayer($party);
+        $gamePlayers = array_flip($this->partyGames->gamePlayerIds($party));
 
-        return new JsonResponse(array_map(fn (Player $p): array => $this->presenter->player($p) + ['playCount' => $counts[$p->getId()] ?? 0], $players));
+        return new JsonResponse(array_map(fn (Player $p): array => $this->presenter->player($p) + ['playCount' => $counts[$p->getId()] ?? 0, 'gamePlayer' => isset($gamePlayers[$p->getId()])], $players));
     }
 
     #[Route('/api/parties/{id}/players', requirements: ['id' => '\d+'], methods: ['POST'])]

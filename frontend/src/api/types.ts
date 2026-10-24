@@ -120,6 +120,8 @@ export interface Player {
   visible: boolean;
   /** Počet zápisů, ve kterých hráč hrál (jen v seznamu hráčů party). */
   playCount: number;
+  /** Hráč některé hry party (protivník v kooperativní hře): patří hře, ne správě hostů (jen v seznamu hráčů party). */
+  gamePlayer: boolean;
 }
 
 export interface PlayResult {

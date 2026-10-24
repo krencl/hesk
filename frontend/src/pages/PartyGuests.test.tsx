@@ -19,6 +19,13 @@ const base = {
 };
 
 describe('party guests (/parties/:id/guests)', () => {
+  it('does not list game players (they belong to the game, not to guest management)', async () => {
+    mockApi({ ...base, '/parties/3/players': { body: [...PLAYERS, { id: 4, name: 'Boss', hasAccount: false, visible: true, playCount: 5, gamePlayer: true }] } });
+    renderApp('/parties/3/guests');
+    expect(await screen.findByLabelText('Jméno hosta Bob')).toBeInTheDocument();
+    expect(screen.queryByLabelText('Jméno hosta Boss')).not.toBeInTheDocument();
+  });
+
   it('lists only guests with their play counts; deleting is offered only for unused ones', async () => {
     mockApi(base);
     renderApp('/parties/3/guests');

@@ -359,6 +359,15 @@ describe('new play', () => {
     expect(screen.queryByLabelText('Skrytý')).not.toBeInTheDocument();
   });
 
+  it('does not offer a player of another game among the guests', async () => {
+    mockApi({ ...routes, '/parties/3/players': { body: [...players, { id: 8, name: 'Cizí boss', hasAccount: false, visible: true, gamePlayer: true }] } });
+    renderApp('/games/1/new-play');
+    await screen.findByRole('heading', { name: 'Nový zápis' });
+    fireEvent.click(screen.getByRole('button', { name: 'Přidat hosty' }));
+    expect(screen.getByLabelText('Host')).toBeInTheDocument();
+    expect(screen.queryByLabelText('Cizí boss')).not.toBeInTheDocument();
+  });
+
   it('lets the user pick the winner of a tie and the starting player', async () => {
     const fetchMock = mockApi(routes);
     renderApp('/games/1/new-play');

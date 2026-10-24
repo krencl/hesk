@@ -13,4 +13,4 @@ Hráč hry (protivník v kooperativních hrách, ADR 0011) byl jeden a ve formul
 
 ## Důsledky
 - Přejmenování hráče hry ve formuláři hry přejmenuje hráče party všude (i ve starých zápisech), stejně jako přejmenování postavy.
-- Hráč založený z formuláře hry je běžný host party a objeví se i v běžném výběru hostů; skrýt ho jde ve správě hostů.
+- Hráč založený z formuláře hry je v databázi běžný `Player` bez účtu, ale **ve správě party (záložka Hosté) se nezobrazuje**: `GET /api/parties/{id}/players` u každého hráče vrací `gamePlayer` (je hráčem aspoň jedné hry party, `PartyGameRepository::gamePlayerIds`) a Hosté takové hráče vynechá. Spravuje se jen ve formuláři hry. Ve formuláři zápisu je vidět vždy jen u své hry (jako člen party, předvybraný a první); v zápisech jiných her se mezi hosty nenabízí (už vybraný zůstává). Odebráním z hráčů hry se z něj zase stane obyčejný host.

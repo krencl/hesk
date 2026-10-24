@@ -107,11 +107,11 @@ export function PlayForm({ game, initial, heading, submitLabel, saving, error, c
   // Hlavní hráči (členové s účtem) jsou vidět vždy, hosté až po „Přidat hosty“ (vybraní hosté ale vždy).
   // Host, který je ve správě hostů skrytý, se nenabízí; pokud už v zápisu hraje (úprava zápisu), zůstává vidět.
   const isSelected = (id: number) => draft.players.some((p) => p.playerId === id);
-  // Vlastní hráči hry (kooperativní hry) jsou vidět vždy a první.
+  // Vlastní hráči hry (kooperativní hry) jsou vidět vždy a první; hráči jiných her se mezi hosty nenabízejí.
   const isGamePlayer = (id: number) => game.players.some((p) => p.id === id);
   const rank = (m: { id: number; hasAccount: boolean }) => (isGamePlayer(m.id) ? 0 : m.hasAccount ? 1 : 2);
   const visible = (players.data ?? [])
-    .filter((m) => isGamePlayer(m.id) || m.hasAccount || isSelected(m.id) || (showGuests && m.visible))
+    .filter((m) => isGamePlayer(m.id) || m.hasAccount || isSelected(m.id) || (showGuests && m.visible && !m.gamePlayer))
     .sort((a, b) => rank(a) - rank(b));
 
   return (

@@ -37,6 +37,8 @@ final class PlayerControllerTest extends TestCase
     /** @var array<int, int> hráč => počet zápisů (to, co by vrátil repozitář) */
     private array $counts = [];
     private ?PartyGame $playedGame = null;
+    /** @var list<int> hráči, kteří jsou hráči nějaké hry party */
+    private array $gamePlayerIds = [];
 
     protected function setUp(): void
     {
@@ -47,6 +49,7 @@ final class PlayerControllerTest extends TestCase
         $this->calls = new \ArrayObject();
         $this->counts = [];
         $this->playedGame = null;
+        $this->gamePlayerIds = [];
     }
 
     private function controller(?GuestMerger $merger = null): PlayerController
@@ -55,6 +58,7 @@ final class PlayerControllerTest extends TestCase
         $plays->method('playCountsByPlayer')->willReturnCallback(fn (): array => $this->counts);
         $plays->method('countForPlayer')->willReturnCallback(fn (Player $p): int => $this->counts[$p->getId()] ?? 0);
         $partyGames = $this->createStub(PartyGameRepository::class);
+        $partyGames->method('gamePlayerIds')->willReturnCallback(fn (): array => $this->gamePlayerIds);
         $partyGames->method('findByPlayer')->willReturnCallback(fn (): array => null === $this->playedGame ? [] : [$this->playedGame]);
 
         return new PlayerController(new Presenter(), $this->mockEm([], $this->calls), $plays, $partyGames, $merger ?? $this->createStub(GuestMerger::class));
@@ -75,6 +79,17 @@ final class PlayerControllerTest extends TestCase
         self::assertSame([true, true, false, true], array_column($list, 'visible'));
         self::assertSame([true, false, false, false], array_column($list, 'hasAccount'));
         self::assertSame($dora->getId(), $list[3]['id']);
+    }
+
+    public function testListMarksGamePlayersSoTheyAreNotManagedAsGuests(): void
+    {
+        $boss = Fixtures::guest($this->party, 'Boss');
+        $dora = Fixtures::guest($this->party, 'Dora');
+        $this->gamePlayerIds = [$boss->getId()];
+
+        $list = ControllerHarness::json(ControllerHarness::as($this->anna)->call($this->controller(), 'list', ['party' => $this->party]));
+
+        self::assertSame(['Boss' => true, 'Dora' => false], array_column(array_map(static fn (array $p): array => ['name' => $p['name'], 'gamePlayer' => $p['gamePlayer']], array_filter($list, static fn (array $p): bool => !$p['hasAccount'])), 'gamePlayer', 'name'));
     }
 
     public function testStrangerCannotListOrAddGuests(): void
