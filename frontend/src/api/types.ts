@@ -147,6 +147,13 @@ export interface Play {
   results: PlayResult[];
 }
 
+/** Odpověď na přesun zápisu: zápis, cílová parta a jména hostů, kteří v ní kvůli přesunu vznikli. */
+export interface MovedPlay {
+  play: Play;
+  party: { id: number; name: string };
+  createdGuests: string[];
+}
+
 export interface PlayerInput {
   playerId: number;
   score?: number | null;

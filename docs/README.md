@@ -31,6 +31,7 @@ Primárně architektonická rozhodnutí (ADR). Aplikační dokumentace je zámě
 | [0025](adr/0025-name-comparison.md) | Porovnávání jmen podle `NameKey` (bez velikosti písmen i diakritiky, jako kolace DB), 409 při porušení unikátu |
 | [0026](adr/0026-squashed-initial-migration.md) | Jedna úvodní migrace místo historie (před prvním nasazením) |
 | [0027](adr/0027-closed-registration.md) | Uzavřená registrace: nový účet jen s pozvánkou |
+| [0028](adr/0028-move-play-between-parties.md) | Přesun zápisu do jiné party (správce obou part, hráči podle účtu/jména, noví hosté) |
 
 Poznámky ke vzoru z předchozích verzí: [prototype-notes.md](prototype-notes.md).
 

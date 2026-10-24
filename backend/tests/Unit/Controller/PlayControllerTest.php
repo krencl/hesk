@@ -6,6 +6,7 @@ namespace App\Tests\Unit\Controller;
 
 use App\Controller\PlayController;
 use App\Domain\Exception\DomainException;
+use App\Dto\MovePlayRequest;
 use App\Dto\PlayRequest;
 use App\Entity\GameSession;
 use App\Entity\Party;
@@ -14,7 +15,9 @@ use App\Entity\PlayResult;
 use App\Entity\PlayTag;
 use App\Entity\User;
 use App\Enum\PartyRole;
+use App\Repository\PartyRepository;
 use App\Repository\PlayRepository;
+use App\Service\PlayMover;
 use App\Service\PlayService;
 use App\Service\Presenter;
 use App\Service\SessionAssigner;
@@ -57,9 +60,12 @@ final class PlayControllerTest extends TestCase
         return $play;
     }
 
-    private function controller(?PlayService $service = null, ?PlayRepository $plays = null, array $sessions = []): PlayController
+    private function controller(?PlayService $service = null, ?PlayRepository $plays = null, array $sessions = [], ?PlayMover $mover = null, array $parties = []): PlayController
     {
-        return new PlayController(new Presenter(), $service ?? $this->createStub(PlayService::class), $plays ?? $this->createStub(PlayRepository::class), new SessionAssigner($this->sessionRepository(static fn (): array => $sessions)));
+        $partyRepo = $this->createStub(PartyRepository::class);
+        $partyRepo->method('find')->willReturnCallback(static fn (int $id): ?Party => array_values(array_filter($parties, static fn (Party $p): bool => $p->getId() === $id))[0] ?? null);
+
+        return new PlayController(new Presenter(), $service ?? $this->createStub(PlayService::class), $plays ?? $this->createStub(PlayRepository::class), new SessionAssigner($this->sessionRepository(static fn (): array => $sessions)), $mover ?? $this->createStub(PlayMover::class), $partyRepo);
     }
 
     public function testListReturnsPresentedPlaysAndPassesPaging(): void
@@ -197,6 +203,53 @@ final class PlayControllerTest extends TestCase
                 self::fail('Chybějící nebo neplatný čas se musí odmítnout.');
             } catch (DomainException) {
                 $this->addToAssertionCount(1);
+            }
+        }
+    }
+
+    public function testAdminMovesPlayToAnotherPartyWhereTheyAreAdminToo(): void
+    {
+        $play = $this->play();
+        $target = Fixtures::party($this->anna, 'Sobota');
+        $mover = $this->createMock(PlayMover::class);
+        $mover->expects(self::once())->method('move')->with($play, $target)->willReturn(['Bob']);
+
+        $response = ControllerHarness::as($this->anna)->call($this->controller(mover: $mover, parties: [$this->party, $target]), 'move', ['play' => $play, 'req' => new MovePlayRequest($target->getId())]);
+        $json = ControllerHarness::json($response);
+
+        self::assertSame(['id' => $target->getId(), 'name' => 'Sobota'], $json['party']);
+        self::assertSame(['Bob'], $json['createdGuests']);
+        self::assertSame($play->getId(), $json['play']['id']);
+    }
+
+    public function testMoveNeedsAdminInTheSourceParty(): void
+    {
+        $play = $this->play();
+        $target = Fixtures::party($this->bob, 'Sobota');
+        $this->party->changeRole($this->bob, PartyRole::Writer);
+        $mover = $this->createMock(PlayMover::class);
+        $mover->expects(self::never())->method('move');
+
+        $this->expectException(AccessDeniedException::class);
+        ControllerHarness::as($this->bob)->call($this->controller(mover: $mover, parties: [$this->party, $target]), 'move', ['play' => $play, 'req' => new MovePlayRequest($target->getId())]);
+    }
+
+    public function testMoveNeedsAdminInTheTargetPartyAndDoesNotRevealOtherParties(): void
+    {
+        $play = $this->play();
+        $foreign = Fixtures::party($this->eve, 'Cizí');
+        $asMember = Fixtures::party($this->eve, 'Sobota');
+        Fixtures::member($asMember, $this->anna);
+        $mover = $this->createMock(PlayMover::class);
+        $mover->expects(self::never())->method('move');
+        $harness = ControllerHarness::as($this->anna);
+
+        foreach ([$foreign->getId(), $asMember->getId(), 9999] as $partyId) {
+            try {
+                $harness->call($this->controller(mover: $mover, parties: [$this->party, $foreign, $asMember]), 'move', ['play' => $play, 'req' => new MovePlayRequest($partyId)]);
+                self::fail("Přesun do party $partyId nesmí projít.");
+            } catch (DomainException $e) {
+                self::assertSame('Cílová parta neexistuje, nebo v ní nejsi správce.', $e->getMessage());
             }
         }
     }

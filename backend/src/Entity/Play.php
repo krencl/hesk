@@ -95,6 +95,13 @@ class Play
         $this->endedAt = $endedAt;
     }
 
+    /** Přesune zápis do jiné party (do její seance); hráči, tagy a ostatní návaznosti musí volající převést sám. */
+    public function moveTo(Party $party, GameSession $session): void
+    {
+        $this->party = $party;
+        $this->session = $session;
+    }
+
     public function getSession(): GameSession
     {
         return $this->session;

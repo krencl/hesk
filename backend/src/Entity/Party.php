@@ -260,7 +260,8 @@ class Party
         $player->rename($nickname);
     }
 
-    private function uniquePlayerName(string $base): string
+    /** Jméno hráče, které je v partě volné: `$base`, jinak `$base 2`, `$base 3`… */
+    public function uniquePlayerName(string $base): string
     {
         $name = $base;
         for ($i = 2; $this->isPlayerNameTaken($name); ++$i) {

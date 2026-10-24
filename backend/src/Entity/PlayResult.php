@@ -41,6 +41,11 @@ class PlayResult
         return $this->player;
     }
 
+    public function changePlayer(Player $player): void
+    {
+        $this->player = $player;
+    }
+
     public function getScore(): ?float
     {
         return $this->score;

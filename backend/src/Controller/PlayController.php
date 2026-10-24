@@ -5,11 +5,14 @@ declare(strict_types=1);
 namespace App\Controller;
 
 use App\Domain\Exception\DomainException;
+use App\Dto\MovePlayRequest;
 use App\Dto\PlayRequest;
 use App\Entity\Party;
 use App\Entity\Play;
+use App\Repository\PartyRepository;
 use App\Repository\PlayRepository;
 use App\Security\PartyVoter;
+use App\Service\PlayMover;
 use App\Service\PlayService;
 use App\Service\SessionAssigner;
 use App\Service\Presenter;
@@ -22,7 +25,7 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 
 final class PlayController extends ApiController
 {
-    public function __construct(Presenter $presenter, private readonly PlayService $service, private readonly PlayRepository $plays, private readonly SessionAssigner $sessions)
+    public function __construct(Presenter $presenter, private readonly PlayService $service, private readonly PlayRepository $plays, private readonly SessionAssigner $sessions, private readonly PlayMover $mover, private readonly PartyRepository $parties)
     {
         parent::__construct($presenter);
     }
@@ -107,5 +110,24 @@ final class PlayController extends ApiController
         $this->service->delete($play);
 
         return new Response(status: Response::HTTP_NO_CONTENT);
+    }
+
+    /** Správce přesune zápis do jiné party, ve které je taky správce (ADR 0028). */
+    #[Route('/api/plays/{id}/move', requirements: ['id' => '\d+'], methods: ['POST'])]
+    public function move(Play $play, #[MapRequestPayload] MovePlayRequest $req): JsonResponse
+    {
+        $this->denyAccessUnlessGranted(PartyVoter::ADMIN, $play->getParty());
+        $target = $this->parties->find($req->partyId);
+        // neexistující a cizí party se nerozlišují, aby šlo zjistit, jaké party existují
+        if (null === $target || !$this->isGranted(PartyVoter::ADMIN, $target)) {
+            throw new DomainException('Cílová parta neexistuje, nebo v ní nejsi správce.');
+        }
+        $createdGuests = $this->mover->move($play, $target);
+
+        return new JsonResponse([
+            'play' => $this->presenter->play($play),
+            'party' => ['id' => $target->getId(), 'name' => $target->getName()],
+            'createdGuests' => $createdGuests,
+        ]);
     }
 }
