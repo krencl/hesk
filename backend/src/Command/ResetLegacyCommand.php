@@ -31,7 +31,7 @@ final class ResetLegacyCommand extends Command
     {
         $this
             ->setHelp(<<<'HELP'
-                Postup: zkouška importu (ověří přístup ke staré DB dřív, než se cokoli smaže) → záloha rolí uživatelů a obálek her
+                Postup: kontrola, že jde stará DB přečíst (dřív, než se cokoli smaže) → záloha rolí uživatelů a obálek her
                 (`image_url`; stará DB je nemá) do var/legacy-reset-backup.json → smazání celé databáze → `doctrine:migrations:migrate`
                 → `app:legacy:import` → obnova rolí a obálek (hry se hledají podle `bgg_id`, jinak podle názvu).
                 Smaže i vše, co vzniklo jen v nové aplikaci. Jen v prostředí dev. Doporučení: spouštět s `--no-debug`.
@@ -53,9 +53,10 @@ final class ResetLegacyCommand extends Command
             return Command::FAILURE;
         }
 
-        $io->section('Zkouška importu (ověření přístupu ke staré DB)');
-        if (Command::SUCCESS !== $this->runCommand('app:legacy:import', ['--dry-run' => true], $output)) {
-            $io->error('Zkouška importu selhala, nic se nesmazalo.');
+        $io->section('Ověření přístupu ke staré DB');
+        // jen čtení staré DB: import nasucho by běžel nad stávající (smazanou se mu nepodobající) databází a mohl by na jejích změnách selhat
+        if (Command::SUCCESS !== $this->runCommand('app:legacy:import', ['--check' => true], $output)) {
+            $io->error('Starou databázi se nepodařilo přečíst, nic se nesmazalo.');
 
             return Command::FAILURE;
         }

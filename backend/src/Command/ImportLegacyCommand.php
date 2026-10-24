@@ -50,7 +50,8 @@ final class ImportLegacyCommand extends Command
                 Lze ho spouštět opakovaně: nové a změněné se přidá/aktualizuje, smazané zápisy se smažou, co vzniklo jen
                 v nové aplikaci, se nemění. Doporučení: nejdřív `--dry-run`, spouštět s `--no-debug` (rychlejší a bez profileru).
                 HELP)
-            ->addOption('dry-run', null, InputOption::VALUE_NONE, 'Jen ukáže, co by se změnilo; nic nezapíše');
+            ->addOption('dry-run', null, InputOption::VALUE_NONE, 'Jen ukáže, co by se změnilo; nic nezapíše')
+            ->addOption('check', null, InputOption::VALUE_NONE, 'Jen ověří, že jde stará databáze přečíst; s novou databází nic nedělá (používá ho app:legacy:reset)');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int
@@ -79,6 +80,18 @@ final class ImportLegacyCommand extends Command
         }
 
         $importer = new LegacyImporter($legacy, $this->connection);
+        if ($input->getOption('check')) {
+            try {
+                $importer->checkLegacy();
+            } catch (\Throwable $e) {
+                $io->error('Starou databázi se nepodařilo přečíst: '.$e->getMessage());
+
+                return Command::FAILURE;
+            }
+            $io->success('Stará databáze je dostupná a čitelná.');
+
+            return Command::SUCCESS;
+        }
         $dryRun = (bool) $input->getOption('dry-run');
         $io->title($dryRun ? 'Import ze staré aplikace (zkouška, nic se nezapíše)' : 'Import ze staré aplikace');
 

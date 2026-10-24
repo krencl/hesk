@@ -63,6 +63,12 @@ final class LegacyImporter
         return $this->report;
     }
 
+    /** Ověří, že jde stará databáze přečíst (všechny potřebné tabulky a sloupce); do nové nic nezapisuje ani nečte. */
+    public function checkLegacy(): void
+    {
+        $this->readLegacy();
+    }
+
     private function run(): void
     {
         $legacy = $this->readLegacy();
