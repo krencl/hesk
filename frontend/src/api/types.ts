@@ -156,6 +156,24 @@ export interface MovedPlay {
   createdGuests: string[];
 }
 
+/** Co se při přesunu zápisu stane s jedním hráčem (cílové jméno, člen/host před a po, zda se v cílové partě zakládá). */
+export interface MovePreviewPlayer {
+  playerId: number;
+  name: string;
+  targetName: string;
+  fromMember: boolean;
+  toMember: boolean;
+  created: boolean;
+}
+
+/** Náhled přesunu zápisu do jiné party. */
+export interface MovePreview {
+  party: { id: number; name: string };
+  /** Hra v cílové partě ještě není, přesunem se do ní zařadí. */
+  gameAdded: boolean;
+  players: MovePreviewPlayer[];
+}
+
 export interface PlayerInput {
   playerId: number;
   score?: number | null;

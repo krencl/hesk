@@ -1,7 +1,9 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { api } from '../api';
+import { qk } from '../api/queryKeys';
 import type { Party } from '../api/types';
+import { describeMove } from '../lib/playMove';
 import { ErrorMessage } from './ErrorMessage';
 import { Icon } from './Icon';
 import { Popup } from './Popup';
@@ -24,9 +26,11 @@ export function MovePlayPopup({ playId, gameName, targets, onClose }: Props) {
   const queryClient = useQueryClient();
   const move = useMutation({
     mutationFn: (partyId: number) => api.movePlay(playId, partyId),
-    // všechno, co z party vychází (seznamy, statistiky, hosté, seance), se změnilo v obou partách
-    onSuccess: () => queryClient.invalidateQueries(),
+    // všechno, co z party vychází (seznamy, statistiky, hosté, seance), se změnilo v obou partách; náhled přesunu už neplatí
+    onSuccess: () => queryClient.invalidateQueries({ predicate: (q) => q.queryKey[0] !== qk.movePreview(0, 0)[0] }),
   });
+  // co se stane s hráči, ukáže backend stejným pravidlem, jakým pak přesun provede
+  const preview = useQuery({ queryKey: qk.movePreview(playId, target?.id ?? 0), queryFn: () => api.movePlayPreview(playId, target!.id), enabled: !!target, staleTime: 0, gcTime: 0 });
   const created = move.data?.createdGuests ?? [];
   const close = () => onClose(move.isSuccess);
 
@@ -52,11 +56,26 @@ export function MovePlayPopup({ playId, gameName, targets, onClose }: Props) {
         <>
           <div className="confirm-text">
             <p>Zápis přejde do party {target.name} a z této party zmizí, včetně příspěvku do statistik.</p>
-            <p>Hráči se převedou na hráče cílové party: členové podle účtu, hosté podle jména (host se stejným jménem se bere jako táž osoba), kdo tam chybí, vznikne jako host. Hra se do cílové party zařadí, pokud tam ještě není.</p>
+            {preview.data && (
+              <>
+                <p>Hráči se převedou takto (host se stejným jménem se bere jako táž osoba):</p>
+                <ul className="move-preview" aria-label="Převod hráčů">
+                  {preview.data.players.map((p) => (
+                    <li key={p.playerId}>
+                      <span>{p.name} → {p.targetName}</span>
+                      <small>{describeMove(p)}</small>
+                    </li>
+                  ))}
+                </ul>
+                {preview.data.gameAdded && <p>Hra {gameName} se do party {target.name} zařadí.</p>}
+              </>
+            )}
+            {preview.isPending && <p>Zjišťuji, co se s hráči stane…</p>}
           </div>
+          <ErrorMessage error={preview.error} />
           <ErrorMessage error={move.error} />
           <div className="confirm-actions">
-            <button type="button" className="btn destructive" disabled={move.isPending} onClick={() => move.mutate(target.id)}>Přesunout</button>
+            <button type="button" className="btn destructive" disabled={move.isPending || !preview.data} onClick={() => move.mutate(target.id)}>Přesunout</button>
             <button type="button" className="btn outline-secondary" disabled={move.isPending} onClick={() => { move.reset(); setTarget(null); }}>Zpět</button>
           </div>
         </>

@@ -28,6 +28,29 @@ final class PlayMover
     ) {
     }
 
+    /**
+     * Náhled přesunu: co se stane s každým hráčem zápisu, bez jakékoli změny. Stejné pravidlo používá {@see self::move()}.
+     *
+     * @return list<PlayerMapping> v pořadí výsledků zápisu
+     */
+    public function plan(Play $play, Party $target): array
+    {
+        $mappings = [];
+        $taken = [];
+        $plannedKeys = [];
+        foreach (array_values($play->getResults()->toArray()) as $result) {
+            $mapping = $this->resolvePlayer($target, $result->getPlayer(), $taken, $plannedKeys);
+            if (null !== $mapping->to) {
+                $taken[spl_object_id($mapping->to)] = true;
+            } else {
+                $plannedKeys[NameKey::of($mapping->targetName())] = true;
+            }
+            $mappings[] = $mapping;
+        }
+
+        return $mappings;
+    }
+
     /** @return list<string> jména hostů, kteří kvůli přesunu v cílové partě vznikli */
     public function move(Play $play, Party $target): array
     {
@@ -44,17 +67,21 @@ final class PlayMover
         $source = $play->getParty();
         $game = $play->getGame();
         $sourceLink = $source->findGameLink($game);
+        $mappings = $this->plan($play, $target);
         $targetLink = $target->addGame($game);
 
         $created = [];
-        $taken = [];
-        foreach ($play->getResults() as $result) {
-            $from = $result->getPlayer();
-            $to = $this->resolvePlayer($target, $from, $taken, $created);
-            $taken[spl_object_id($to)] = true;
+        foreach (array_values($play->getResults()->toArray()) as $i => $result) {
+            $mapping = $mappings[$i];
+            $to = $mapping->to;
+            if (null === $to) {
+                $to = $target->addGuest($mapping->targetName());
+                $to->setVisible($mapping->from->isVisible());
+                $created[] = $to->getName();
+            }
             $result->changePlayer($to);
             // „hráč hry“ (např. Boss u kooperativních her) zůstane hráčem hry i v cílové partě
-            if ($sourceLink?->getPlayers()->contains($from) && !$targetLink->getPlayers()->contains($to)) {
+            if ($sourceLink?->getPlayers()->contains($mapping->from) && !$targetLink->getPlayers()->contains($to)) {
                 $targetLink->getPlayers()->add($to);
             }
         }
@@ -79,31 +106,33 @@ final class PlayMover
 
     /**
      * Hráč cílové party odpovídající hráči zdrojové party: člen s tímtéž účtem, jinak host téhož jména (předpokládá se
-     * stejná osoba), jinak nový host. Jméno obsazené členem s jiným účtem dostane číslo („Bob 2“), přejmenovat a propojit
-     * ho jde pak ve správě hostů. Jednoho hráče cílové party nelze použít dvakrát (unikát zápis + hráč).
+     * stejná osoba), jinak nový host. Jméno obsazené členem s jiným účtem (nebo jiným nově zakládaným hostem) dostane číslo
+     * („Bob 2“), přejmenovat a propojit ho jde pak ve správě hostů. Jednoho hráče cílové party nelze použít dvakrát
+     * (unikát zápis + hráč).
      *
-     * @param array<int, true> $taken
-     * @param list<string>     $created
+     * @param array<int, true>    $taken       hráči cílové party, kteří už jsou použití
+     * @param array<string, true> $plannedKeys {@see NameKey} jmen hostů, které se budou zakládat
      */
-    private function resolvePlayer(Party $target, Player $from, array $taken, array &$created): Player
+    private function resolvePlayer(Party $target, Player $from, array $taken, array $plannedKeys): PlayerMapping
     {
         if (null !== $user = $from->getUser()) {
             $member = $target->findPlayerFor($user);
             if (null !== $member && !isset($taken[spl_object_id($member)])) {
-                return $member;
+                return new PlayerMapping($from, $member);
             }
         }
         $key = NameKey::of($from->getName());
         foreach ($target->getPlayers() as $candidate) {
             if (null === $candidate->getUser() && NameKey::of($candidate->getName()) === $key && !isset($taken[spl_object_id($candidate)])) {
-                return $candidate;
+                return new PlayerMapping($from, $candidate);
             }
         }
 
-        $guest = $target->addGuest($target->uniquePlayerName($from->getName()));
-        $guest->setVisible($from->isVisible());
-        $created[] = $guest->getName();
+        $name = $base = $from->getName();
+        for ($i = 2; $target->isPlayerNameTaken($name) || isset($plannedKeys[NameKey::of($name)]); ++$i) {
+            $name = $base.' '.$i;
+        }
 
-        return $guest;
+        return new PlayerMapping($from, null, $name);
     }
 }

@@ -17,6 +17,7 @@ use App\Enum\ScoreType;
 use App\Repository\PlayRepository;
 use App\Repository\PlayTagRepository;
 use App\Service\PlayMover;
+use App\Service\PlayerMapping;
 use App\Service\SessionAssigner;
 use App\Tests\Support\DoctrineMocks;
 use App\Tests\Support\Fixtures;
@@ -206,6 +207,55 @@ final class PlayMoverTest extends TestCase
         self::assertSame(1, $play->getSession()->getNumber());
         self::assertEquals(Fixtures::date('2026-03-01T19:00:00+00:00'), $old->getEndedAt(), 'seance se zkrátí na zápisy, které v ní zůstaly');
         self::assertNotContains($old, $this->calls['remove'] ?? []);
+    }
+
+    /** @return list<string> „Jméno → cílové jméno“ + druh změny, jak ji ukazuje náhled */
+    private function describe(Play $play): array
+    {
+        return array_map(static fn (PlayerMapping $m): string => sprintf(
+            '%s → %s (%s%s)',
+            $m->from->getName(),
+            $m->targetName(),
+            null !== $m->from->getUser() ? 'člen' : 'host',
+            ($m->targetIsMember() ? '→člen' : '→host').($m->isCreated() ? ', nový' : ''),
+        ), $this->mover()->plan($play, $this->target));
+    }
+
+    public function testPlanDescribesEveryPlayerWithoutChangingAnything(): void
+    {
+        Fixtures::member($this->target, $this->bob);
+        $anna = Fixtures::player($this->source, $this->anna);
+        $lukas = Fixtures::member($this->source, Fixtures::user('Lukáš'));
+        Fixtures::guest($this->target, 'Káťa');
+        $play = $this->play([$anna, Fixtures::player($this->source, $this->bob), Fixtures::player($this->source, $lukas), Fixtures::guest($this->source, 'Káťa'), Fixtures::guest($this->source, 'Nový')]);
+        $playersBefore = $this->target->getPlayers()->count();
+
+        self::assertSame([
+            'Anna → Anna (člen→člen)',
+            'Bob → Bob (člen→člen)',
+            'Lukáš → Lukáš (člen→host, nový)',
+            'Káťa → Káťa (host→host)',
+            'Nový → Nový (host→host, nový)',
+        ], $this->describe($play));
+        self::assertSame($playersBefore, $this->target->getPlayers()->count());
+        self::assertSame($this->source, $play->getParty());
+        self::assertSame([], $this->calls->getArrayCopy(), 'nic se neukládá');
+    }
+
+    public function testPlanShowsAMemberMatchedToAnExistingTargetGuest(): void
+    {
+        Fixtures::guest($this->target, 'bob');
+        $play = $this->play([Fixtures::player($this->source, $this->bob)]);
+
+        self::assertSame(['Bob → bob (člen→host)'], $this->describe($play));
+    }
+
+    public function testPlanNumbersNamesTakenByAnotherMemberAndByOtherNewGuests(): void
+    {
+        Fixtures::member($this->target, Fixtures::user('Bob', 'bob2@example.com'));
+        $play = $this->play([Fixtures::player($this->source, $this->bob), Fixtures::guest($this->source, 'Bob 2')]);
+
+        self::assertSame(['Bob → Bob 2 (člen→host, nový)', 'Bob 2 → Bob 2 2 (host→host, nový)'], $this->describe($play));
     }
 
     public function testMovingToTheSamePartyIsRejected(): void

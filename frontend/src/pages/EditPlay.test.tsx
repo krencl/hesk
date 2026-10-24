@@ -1,4 +1,4 @@
-import { fireEvent, screen, waitFor } from '@testing-library/react';
+import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import { toLocalInput } from '../lib/datetime';
 import { GAME, mockApi, ME, PARTY, PLAY, renderApp, sentBody } from '../test/helpers';
@@ -98,6 +98,16 @@ describe('edit play (/plays/:id/edit)', () => {
 
   describe('moving to another party', () => {
     const SATURDAY = { id: 4, name: 'Sobota', shortName: 'So', role: 'admin' };
+    const PREVIEW = {
+      party: { id: 4, name: 'Sobota' },
+      gameAdded: true,
+      players: [
+        { playerId: 1, name: 'Anna', targetName: 'Anna', fromMember: true, toMember: true, created: false },
+        { playerId: 5, name: 'Lukáš', targetName: 'Lukáš', fromMember: true, toMember: false, created: true },
+        { playerId: 2, name: 'Petr', targetName: 'Petr', fromMember: false, toMember: false, created: false },
+        { playerId: 3, name: 'Eva', targetName: 'Eva', fromMember: false, toMember: false, created: true },
+      ],
+    };
     const withParties = (parties: unknown[]) => ({ ...routes, '/parties': { body: parties } });
 
     it('offers the move only to an admin and only when there is another party where they are admin', async () => {
@@ -116,6 +126,7 @@ describe('edit play (/plays/:id/edit)', () => {
     it('moves the play after choosing the party and confirming, then shows the created guests and returns to the game', async () => {
       const fetchMock = mockApi({
         ...withParties([PARTY, SATURDAY, { id: 5, name: 'Neděle', shortName: 'Ne', role: 'member' }]),
+        '/plays/9/move-preview?partyId=4': { body: PREVIEW },
         'POST /plays/9/move': { body: { play: PLAY_FULL, party: { id: 4, name: 'Sobota' }, createdGuests: ['Petr', 'Eva'] } },
       });
       renderApp('/plays/9/edit');
@@ -124,6 +135,16 @@ describe('edit play (/plays/:id/edit)', () => {
       expect(screen.queryByRole('option', { name: 'Pátek' })).not.toBeInTheDocument();
       fireEvent.click(screen.getByRole('option', { name: 'Sobota' }));
       expect(fetchMock.mock.calls.some(([, init]) => init?.method === 'POST')).toBe(false);
+
+      // před potvrzením je vidět, co se stane s hráči a s hrou
+      const items = within(await screen.findByRole('list', { name: 'Převod hráčů' })).getAllByRole('listitem').map((li) => li.textContent);
+      expect(items).toEqual([
+        'Anna → Annačlen beze změny',
+        'Lukáš → Lukášz člena na nového hosta',
+        'Petr → Petrhost beze změny',
+        'Eva → Evanový host',
+      ]);
+      expect(screen.getByText('Hra Carcassonne se do party Sobota zařadí.')).toBeInTheDocument();
       fireEvent.click(screen.getByRole('button', { name: 'Přesunout' }));
 
       expect(await screen.findByText(/Jako hosté tam vznikli: Petr, Eva\./)).toBeInTheDocument();
@@ -132,11 +153,21 @@ describe('edit play (/plays/:id/edit)', () => {
       expect(await screen.findByRole('link', { name: 'Nový zápis' })).toHaveAttribute('href', '/games/1/new-play');
     });
 
-    it('shows the error and stays on the confirmation when the move fails', async () => {
-      mockApi({ ...withParties([PARTY, SATURDAY]), 'POST /plays/9/move': { status: 422, body: { error: 'Cílová parta neexistuje, nebo v ní nejsi správce.' } } });
+    it('does not allow moving before the preview is loaded and shows its error', async () => {
+      mockApi({ ...withParties([PARTY, SATURDAY]), '/plays/9/move-preview?partyId=4': { status: 422, body: { error: 'Cílová parta neexistuje, nebo v ní nejsi správce.' } } });
       renderApp('/plays/9/edit');
       fireEvent.click(await screen.findByRole('button', { name: 'Přesunout do jiné party' }));
       fireEvent.click(screen.getByRole('option', { name: 'Sobota' }));
+      expect(await screen.findByRole('alert')).toHaveTextContent('Cílová parta neexistuje');
+      expect(screen.getByRole('button', { name: 'Přesunout' })).toBeDisabled();
+    });
+
+    it('shows the error and stays on the confirmation when the move fails', async () => {
+      mockApi({ ...withParties([PARTY, SATURDAY]), '/plays/9/move-preview?partyId=4': { body: PREVIEW }, 'POST /plays/9/move': { status: 422, body: { error: 'Cílová parta neexistuje, nebo v ní nejsi správce.' } } });
+      renderApp('/plays/9/edit');
+      fireEvent.click(await screen.findByRole('button', { name: 'Přesunout do jiné party' }));
+      fireEvent.click(screen.getByRole('option', { name: 'Sobota' }));
+      await screen.findByRole('list', { name: 'Převod hráčů' });
       fireEvent.click(screen.getByRole('button', { name: 'Přesunout' }));
       expect(await screen.findByRole('alert')).toHaveTextContent('Cílová parta neexistuje');
       fireEvent.click(screen.getByRole('button', { name: 'Zpět' }));

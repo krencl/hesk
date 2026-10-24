@@ -18,6 +18,7 @@ use App\Enum\PartyRole;
 use App\Repository\PartyRepository;
 use App\Repository\PlayRepository;
 use App\Service\PlayMover;
+use App\Service\PlayerMapping;
 use App\Service\PlayService;
 use App\Service\Presenter;
 use App\Service\SessionAssigner;
@@ -252,5 +253,41 @@ final class PlayControllerTest extends TestCase
                 self::assertSame('Cílová parta neexistuje, nebo v ní nejsi správce.', $e->getMessage());
             }
         }
+    }
+
+    public function testMovePreviewDescribesPlayersAndGameWithoutMoving(): void
+    {
+        $play = $this->play();
+        $target = Fixtures::party($this->anna, 'Sobota');
+        $bob = Fixtures::player($this->party, $this->bob);
+        $mover = $this->createMock(PlayMover::class);
+        $mover->expects(self::never())->method('move');
+        $mover->expects(self::once())->method('plan')->with($play, $target)->willReturn([new PlayerMapping($bob, null, 'Bob')]);
+
+        $response = ControllerHarness::as($this->anna)->call($this->controller(mover: $mover, parties: [$this->party, $target]), 'movePreview', ['play' => $play, 'request' => new Request(['partyId' => (string) $target->getId()])]);
+        $json = ControllerHarness::json($response);
+
+        self::assertSame(['id' => $target->getId(), 'name' => 'Sobota'], $json['party']);
+        self::assertTrue($json['gameAdded']);
+        self::assertSame([['playerId' => $bob->getId(), 'name' => 'Bob', 'targetName' => 'Bob', 'fromMember' => true, 'toMember' => false, 'created' => true]], $json['players']);
+    }
+
+    public function testMovePreviewHasTheSameRulesAsMove(): void
+    {
+        $play = $this->play();
+        $foreign = Fixtures::party($this->eve, 'Cizí');
+        $harness = ControllerHarness::as($this->anna);
+
+        foreach ([$foreign->getId(), 9999, $this->party->getId()] as $partyId) {
+            try {
+                $harness->call($this->controller(parties: [$this->party, $foreign]), 'movePreview', ['play' => $play, 'request' => new Request(['partyId' => (string) $partyId])]);
+                self::fail("Náhled do party $partyId nesmí projít.");
+            } catch (DomainException) {
+                $this->addToAssertionCount(1);
+            }
+        }
+
+        $this->expectException(AccessDeniedException::class);
+        ControllerHarness::as($this->bob)->call($this->controller(parties: [$this->party]), 'movePreview', ['play' => $play, 'request' => new Request(['partyId' => '1'])]);
     }
 }

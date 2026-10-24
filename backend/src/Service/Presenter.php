@@ -54,6 +54,19 @@ final class Presenter
         return ['id' => $player->getId(), 'name' => $player->getName(), 'hasAccount' => null !== $player->getUser(), 'visible' => $player->isVisible()];
     }
 
+    /** Náhled přesunu hráče zápisu do jiné party (ADR 0028). */
+    public function playerMapping(PlayerMapping $m): array
+    {
+        return [
+            'playerId' => $m->from->getId(),
+            'name' => $m->from->getName(),
+            'targetName' => $m->targetName(),
+            'fromMember' => null !== $m->from->getUser(),
+            'toMember' => $m->targetIsMember(),
+            'created' => $m->isCreated(),
+        ];
+    }
+
     /** Sdílená hra (vč. tagů); `$link` (zařazení do party) přidá vlastní hráče hry v té partě. */
     public function game(Game $game, ?PartyGame $link = null): array
     {

@@ -112,16 +112,24 @@ final class PlayController extends ApiController
         return new Response(status: Response::HTTP_NO_CONTENT);
     }
 
+    /** Náhled přesunu zápisu do jiné party: co se stane s hráči a se hrou, nic se nemění (ADR 0028). */
+    #[Route('/api/plays/{id}/move-preview', requirements: ['id' => '\d+'], methods: ['GET'])]
+    public function movePreview(Play $play, Request $request): JsonResponse
+    {
+        $target = $this->movableTarget($play, $request->query->getInt('partyId'));
+
+        return new JsonResponse([
+            'party' => ['id' => $target->getId(), 'name' => $target->getName()],
+            'gameAdded' => !$target->hasGame($play->getGame()),
+            'players' => array_map($this->presenter->playerMapping(...), $this->mover->plan($play, $target)),
+        ]);
+    }
+
     /** Správce přesune zápis do jiné party, ve které je taky správce (ADR 0028). */
     #[Route('/api/plays/{id}/move', requirements: ['id' => '\d+'], methods: ['POST'])]
     public function move(Play $play, #[MapRequestPayload] MovePlayRequest $req): JsonResponse
     {
-        $this->denyAccessUnlessGranted(PartyVoter::ADMIN, $play->getParty());
-        $target = $this->parties->find($req->partyId);
-        // neexistující a cizí party se nerozlišují, aby šlo zjistit, jaké party existují
-        if (null === $target || !$this->isGranted(PartyVoter::ADMIN, $target)) {
-            throw new DomainException('Cílová parta neexistuje, nebo v ní nejsi správce.');
-        }
+        $target = $this->movableTarget($play, $req->partyId);
         $createdGuests = $this->mover->move($play, $target);
 
         return new JsonResponse([
@@ -129,5 +137,21 @@ final class PlayController extends ApiController
             'party' => ['id' => $target->getId(), 'name' => $target->getName()],
             'createdGuests' => $createdGuests,
         ]);
+    }
+
+    /** Cílová parta přesunu: volající musí být správce zdrojové i cílové party. */
+    private function movableTarget(Play $play, int $partyId): Party
+    {
+        $this->denyAccessUnlessGranted(PartyVoter::ADMIN, $play->getParty());
+        $target = $this->parties->find($partyId);
+        // neexistující a cizí party se nerozlišují, aby šlo zjistit, jaké party existují
+        if (null === $target || !$this->isGranted(PartyVoter::ADMIN, $target)) {
+            throw new DomainException('Cílová parta neexistuje, nebo v ní nejsi správce.');
+        }
+        if ($target === $play->getParty()) {
+            throw new DomainException('Zápis už v této partě je.');
+        }
+
+        return $target;
     }
 }

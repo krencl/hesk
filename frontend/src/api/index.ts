@@ -1,5 +1,5 @@
 import { del, get, patch, post, put } from './client';
-import type { BggPreparedGame, BggSearch, Game, GameListQuery, GameWithStats, NamedItemInput, Player, GameInput, SessionInfo, Me, Party, PartyDetail, PartyRole, MovedPlay, Play, PlayDefaults, PlayInput, Stats, StatsQuery } from './types';
+import type { BggPreparedGame, BggSearch, Game, GameListQuery, GameWithStats, NamedItemInput, Player, GameInput, SessionInfo, Me, Party, PartyDetail, PartyRole, MovedPlay, MovePreview, Play, PlayDefaults, PlayInput, Stats, StatsQuery } from './types';
 
 /** Sestaví `?a=1&b=2`; prázdné hodnoty (undefined, null, '') vynechá, pole jde jako `a[]=1&a[]=2`. */
 export function queryString(params: object): string {
@@ -72,6 +72,8 @@ export const api = {
   createPlay: (partyId: number, input: PlayInput) => post<Play>(`/parties/${partyId}/plays`, input),
   updatePlay: (id: number, input: PlayInput) => put<Play>(`/plays/${id}`, input),
   deletePlay: (id: number) => del(`/plays/${id}`),
+  /** Náhled přesunu: co se stane s hráči a hrou (nic se nemění). */
+  movePlayPreview: (id: number, partyId: number) => get<MovePreview>(`/plays/${id}/move-preview${queryString({ partyId })}`),
   /** Správce přesune zápis do jiné party, kde je taky správce; hráči se převedou, chybějící vzniknou jako hosté. */
   movePlay: (id: number, partyId: number) => post<MovedPlay>(`/plays/${id}/move`, { partyId }),
 

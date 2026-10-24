@@ -29,6 +29,8 @@ export const qk = {
   partyGameTags: (partyId?: number) => (partyId === undefined ? (['partyGameTags'] as const) : (['partyGameTags', partyId] as const)),
 
   play: (id: number) => ['play', id] as const,
+  /** Náhled přesunu zápisu do jiné party. */
+  movePreview: (playId: number, partyId: number) => ['movePreview', playId, partyId] as const,
   /** Výchozí hodnoty nového zápisu; bez časů předpona pro celou partu. */
   playDefaults: (partyId: number, startedIso?: string | null, endedIso?: string | null) =>
     startedIso === undefined ? (['playDefaults', partyId] as const) : (['playDefaults', partyId, startedIso, endedIso] as const),
