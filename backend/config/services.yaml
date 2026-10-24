@@ -34,6 +34,3 @@ when@test:
         # BGG se v testech nevolá
         App\Tests\Support\FakeBggClient: ~
         App\Service\Bgg\BggClient: '@App\Tests\Support\FakeBggClient'
-        # SQLite pro testy bez fsync (viz třída)
-        App\Tests\Support\SqliteNoFsyncMiddleware:
-            autoconfigure: true

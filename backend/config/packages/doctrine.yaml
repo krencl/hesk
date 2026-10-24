@@ -8,8 +8,6 @@ doctrine:
         password: '%env(DB_PASSWORD)%'
         server_version: '%env(DB_SERVER_VERSION)%'
         charset: utf8mb4
-        # tabulky převzaté ze staré aplikace (viz ADR 0007) Doctrine nespravuje
-        schema_filter: '~^(?!legacy_)~'
         profiling_collect_backtrace: '%kernel.debug%'
     orm:
         validate_xml_mapping: true

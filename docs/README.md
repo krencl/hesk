@@ -15,7 +15,7 @@ Primárně architektonická rozhodnutí (ADR). Aplikační dokumentace je zámě
 | [0009](adr/0009-game-centric-ux.md) | UX podle prototypu: seznam her, detail hry, čísla seancí, cheatsheety v Markdownu |
 | [0010](adr/0010-ui-consistency-and-play-flags.md) | Jednotná kostra UI (nadpisy, tlačítka 2×2), vítěz a začínající hráč v zápisu |
 | [0011](adr/0011-game-extras.md) | Zkrácený název, rozšíření, postavy a hráč hry |
-| [0012](adr/0012-repeatable-legacy-import.md) | Opakovatelný import ze staré aplikace (`app:legacy:import`) |
+| [0012](adr/0012-repeatable-legacy-import.md) | Opakovatelný import ze staré aplikace (odstraněn, ADR 0029) |
 | [0013](adr/0013-play-form-defaults.md) | Výchozí hodnoty formuláře zápisu: číslo sezení, předvybraní hráči, tagy s našeptáváním, zrušení míst |
 | [0014](adr/0014-party-short-name-and-page-title.md) | Zkratka a úprava party, nadpis stránky s modrou linkou |
 | [0015](adr/0015-menu-sticky-actions-toasts.md) | Menu, přichycená hlavní tlačítka, toast zprávy |
@@ -32,6 +32,7 @@ Primárně architektonická rozhodnutí (ADR). Aplikační dokumentace je zámě
 | [0026](adr/0026-squashed-initial-migration.md) | Jedna úvodní migrace místo historie (před prvním nasazením) |
 | [0027](adr/0027-closed-registration.md) | Uzavřená registrace: nový účet jen s pozvánkou |
 | [0028](adr/0028-move-play-between-parties.md) | Přesun zápisu do jiné party (správce obou part, hráči podle účtu/jména, noví hosté) |
+| [0029](adr/0029-production-config-and-legacy-removal.md) | Produkční konfigurace, odstranění importu ze staré aplikace |
 
 Poznámky ke vzoru z předchozích verzí: [prototype-notes.md](prototype-notes.md).
 

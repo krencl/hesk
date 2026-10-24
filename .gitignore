@@ -12,9 +12,6 @@
 # Obrázky her nahrané uživateli (ADR 0020)
 /web/uploads/
 
-# Záloha obálek her ze starého prototypu (lokálně, ~13 MB; mimo frontend/public, aby se nekopírovaly do buildu; ADR 0020)
-/legacy-covers/
-
 # SSH klíč pro push na GitHub (v rootu repozitáře) a obecně privátní klíče – nikdy necommitovat
 /github-ssh-key
 /github-ssh-key.pub

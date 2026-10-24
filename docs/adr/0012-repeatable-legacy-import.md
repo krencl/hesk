@@ -1,6 +1,6 @@
 # ADR 0012: Opakovatelný import ze staré aplikace
 
-Stav: přijato (2026-10-16)
+Stav: přijato (2026-10-16), kód importu odstraněn (ADR 0029, poslední commit s ním `a4d9414`)
 
 ## Kontext
 První import (ADR 0007) byl jednorázová migrace nad `legacy_*` kopiemi tabulek. Stará aplikace se ale dál používá a její databáze (`hesk-old`) se mění (v den zavedení: 731 zápisů místo 544, 108 her místo 81). Potřebujeme data do nové databáze (`hesk`) opakovaně přenášet, než se přepne.

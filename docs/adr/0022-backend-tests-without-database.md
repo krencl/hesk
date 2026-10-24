@@ -9,7 +9,7 @@ Funkční testy API (`ApiFlowTest`, `BggFlowTest`) procházely celé HTTP toky n
 - Testy backendu nesahají do databáze. Kontrolery, služby a repozitáře se testují jako unit testy (`tests/Unit/Controller`, `tests/Unit/Service`, …); `EntityManager`, repozitáře a dotazy jsou mocky/stuby (`tests/Support/DoctrineMocks`), entity žijí v paměti (`tests/Support/Fixtures` doplní `id`, která by přidělila DB).
 - Kontrolery se volají přímo přes `tests/Support/ControllerHarness`: přihlášený uživatel, skutečný `PartyVoter` a vyhodnocení `#[IsGranted]` nad akcí (to by jinak udělal kernel), takže se ověřují i oprávnění (403).
 - Validace vstupů (`tests/Unit/Dto/RequestValidationTest`), převod výjimek na JSON (`ApiExceptionListenerTest`) a přístupová pravidla (`ApiAccessTest`) mají vlastní testy bez kernelu.
-- Jediná výjimka je `tests/Functional/LegacyImportTest`: import je SQL z cizí databáze do schématu aplikace a mockem by se neověřil. Běží nad SQLite, schéma se vytvoří jednou za třídu (`TestDatabase`), v testovacím prostředí se vypíná fsync (`SqliteNoFsyncMiddleware`).
+- (Do 2026-10-24, ADR 0029) Jediná výjimka byl `tests/Functional/LegacyImportTest`: import je SQL z cizí databáze do schématu aplikace a mockem by se neověřil. Běží nad SQLite, schéma se vytvoří jednou za třídu (`TestDatabase`), v testovacím prostředí se vypíná fsync (`SqliteNoFsyncMiddleware`).
 - Třídy zůstávají `final`; mockovat je umožňuje `dg/bypass-finals` (dev závislost, PHPUnit extension v `phpunit.dist.xml`).
 
 ## Důsledky / limity
