@@ -144,7 +144,7 @@ describe('edit play (/plays/:id/edit)', () => {
         'Petr → Petrhost beze změny',
         'Eva → Evanový host',
       ]);
-      expect(screen.getByText('Hra Carcassonne se do party Sobota zařadí.')).toBeInTheDocument();
+      expect(screen.getByText('Hra Carcassonne se do party Sobota přidá.')).toBeInTheDocument();
       fireEvent.click(screen.getByRole('button', { name: 'Přesunout' }));
 
       expect(await screen.findByText(/Jako hosté tam vznikli: Petr, Eva\./)).toBeInTheDocument();

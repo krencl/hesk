@@ -67,7 +67,7 @@ export function MovePlayPopup({ playId, gameName, targets, onClose }: Props) {
                     </li>
                   ))}
                 </ul>
-                {preview.data.gameAdded && <p>Hra {gameName} se do party {target.name} zařadí.</p>}
+                {preview.data.gameAdded && <p>Hra {gameName} se do party {target.name} přidá.</p>}
               </>
             )}
             {preview.isPending && <p>Zjišťuji, co se s hráči stane…</p>}
