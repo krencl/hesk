@@ -54,8 +54,8 @@ h1, h2, h3, h4 { margin: 0.5rem 0; font-weight: 500; line-height: 1.2; }
 h2, h3, h4, .h5 { font-size: 1.25rem; }
 h2, h3 { color: var(--text); }
 /* Záhlaví stránky (nadpis, nebo náhled a název hry): vždy stejná výška a odsazení */
-.page-head { display: flex; align-items: center; gap: 1rem; min-height: var(--image-size-small); margin: 0.5rem 0; padding-right: 1rem; }
-.page-head:not(.with-image) { padding-left: 1rem; min-height: 0; margin-bottom: 0; }
+.page-head { display: flex; align-items: center; gap: 1rem; min-height: var(--image-size-small); margin: 0.5rem 0; padding: 0 1rem; }
+.page-head:not(.with-image) { min-height: 0; margin-bottom: 0; }
 .page-title { margin: 0; font-size: 1.5rem; font-weight: 500; line-height: 1.2; }
 .page-title-label { margin-right: 0.15rem; font-size: 0.6em; font-weight: 400; color: var(--secondary); }
 .page-head:not(.with-image) .page-title { padding-bottom: 0.3rem; border-bottom: 0.2rem solid var(--main); }
