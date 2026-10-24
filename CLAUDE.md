@@ -6,7 +6,7 @@ Webová aplikace pro zapisování výsledků z hraní deskových her a statistik
 - `web/index.php` – hlavní rozcestník v kořeni (`/api` → Symfony s project_dir `backend/`, jinak SPA `web/static/index.html`); `web/static/` – statika = build frontendu (git-ignorováno).
 - `backend/` – Symfony 7.4 LTS, PHP ≥ 8.4, Doctrine ORM (MariaDB 11), PHPUnit. REST API pod `/api`.
 - `frontend/` – React 19 + TypeScript + Vite, TanStack Query, React Router, Vitest.
-- `docs/` – ADR + poznámky. `/hesk-dev-old` (rozpracovaný prototyp, mimo repo) a `/hesk-original` (produkce, Node/RethinkDB) jsou **jen vzor**, ne součást nové app.
+- `docs/` – ADR + poznámky. Původní adresáře `/hesk-dev-old` (prototyp) a `/hesk-original` (stará produkce, Node/RethinkDB) už neexistují (smazány 2026-10-24); zůstaly jen historické odkazy v ADR a `docs/prototype-notes.md`.
 
 ## Příkazy
 - Import ze staré aplikace (opakovatelný, ADR 0012; obálky nekopíruje): `cd backend && php bin/console app:legacy:import --dry-run --no-debug -v`, pak bez `--dry-run`. **Úplný reset dev DB** (smaže vše, znovu vytvoří schéma migrací, naimportuje a vrátí role a obálky her, jen v `dev`): `cd backend && php bin/console app:legacy:reset --yes --no-debug` (~1 min; záloha rolí/obálek v `backend/var/legacy-reset-backup.json`). Po změně entit před `doctrine:migrations:diff`/`schema:*` s `--no-debug` nejdřív `cache:clear`, jinak se čtou zastaralá metadata mapování. Přístupy `LEGACY_DB_*` jsou v `backend/.env.dev.local` (git-ignorováno, nevypisovat).
@@ -44,6 +44,8 @@ Není tu MySQL ani sudo. PHP 8.4 je systémové (`/usr/bin/php`, s GD vč. WebP/
 - Obrázky her (ADR 0020): interně jen WebP; `POST /api/parties/{id}/game-images` (ořez do čtverce a kódování do WebP dělá prohlížeč, bez podpory (iPhone) pošle JPEG a převede ho server přes GD – ta v dev kontejneru nemá WebP/JPEG, viz ADR 0020; `ImageCropPopup` + `react-easy-crop` + `cropToBlob`), soubory v `web/uploads/covers/<sha1>.webp` (git-ignorováno, URL `/uploads/…`; v produkci je musí servírovat web server a zálohovat se). `game.image_url` smí být jen taková adresa; ruční URL zaniklo. Staré obálky (záloha, git-ignorováno) jsou v `/workspace/legacy-covers/covers/` mimo `frontend/public/`, aby se nekopírovaly do buildu. Statika frontendu se servíruje pod `/static/` (Vite `base`).
 - Git: větev `master`, commity s trailerem `Co-Authored-By` dle zadání prostředí. Remote `origin` = `git@github.com:krencl/hesk.git` (privátní repo); push jde SSH klíčem `/workspace/github-ssh-key` (v `.gitignore`, **nikdy necommitovat ani nevypisovat**), který je zapojený v lokálním `core.sshCommand` (+ ověřený otisk hostitele v `.git/github_known_hosts`; po novém kontejneru nastavit znovu). Pushuje se jen na výslovné vyžádání.
 
-## Stav (2026-10-14)
+## Stav (2026-10-24)
+Nasazeno do produkce na https://hesk.krencl.cz/ (zdravotní kontrola `/api/health` vrací ok).
+
 Hotovo: dev DB zmigrována na nové schéma s importem dat, hráči-hosté, auth (Google + dev login, spárování starých účtů podle e-mailu), party/členové/pozvánky, hry (+rozšíření), zápisy se seancemi, statistiky (výhry, top hry), mobilní UI; UX podle prototypu (seznam her s hledáním/filtrem, detail hry se zápisy a cheatsheetem, čísla seancí, ADR 0009).
 Nehotovo/nápady: vynucení přezdívky na backendu, úklid osiřelých nahraných obrázků, WYSIWYG cheatsheet, CI s MySQL, import z původní app.

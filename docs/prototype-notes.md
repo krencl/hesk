@@ -1,5 +1,7 @@
 # Poznámky ke vzorům
 
+> Adresáře `/hesk-original` a `/hesk-dev-old` byly 2026-10-24 po nasazení nové aplikace do produkce (https://hesk.krencl.cz/) odstraněny; poznámky zůstávají jako historie.
+
 ## `/hesk-original` (produkce)
 Node.js + Express + RethinkDB + AngularJS. Globální katalog her, role admin přes heslo, „rounds“ s `scoring` typy `score | lowestScore | order | check`, verze hry, postavy, „první hráč“, tagy. Z toho nové zadání přebírá typy bodování (mapování: `score`→`most_points`, `lowestScore`→`fewest_points`, `order`→`rank_order`, `check`→`winner_only`).
 
