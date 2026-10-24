@@ -115,6 +115,36 @@ describe('game detail', () => {
     '/parties/3/plays?limit=11&offset=0&gameId=1': { body: [PLAY, older, ...Array.from({ length: 9 }, (_, i) => ({ ...PLAY, id: 100 + i, sessionNumber: 50 - i }))] },
   });
 
+  it('shows the top four winners and links to the statistics filtered by the game', async () => {
+    const wins = [['Anna', 9], ['Petr', 7], ['Eva', 5], ['Jan', 3], ['Ola', 1]].map(([name, n], i) => ({ playerId: i + 1, name, wins: n, plays: 10 }));
+    mockApi({
+      ...detailRoutes(null),
+      '/parties/3/stats?games%5B%5D=1': { body: { wins, topGames: [], starters: [], playTags: [] } },
+    });
+    renderApp('/games/1');
+
+    expect(await screen.findByRole('heading', { name: 'Nejčastější výherci' })).toBeInTheDocument();
+    expect(screen.getByRole('img', { name: 'Anna: 9' })).toBeInTheDocument();
+    expect(screen.getByRole('img', { name: 'Jan: 3' })).toBeInTheDocument();
+    expect(screen.queryByRole('img', { name: 'Ola: 1' })).not.toBeInTheDocument();
+    const link = screen.getByRole('link', { name: 'Zobrazit další statistiky' });
+    expect(link).toHaveAttribute('href', '/parties/3/stats?games=1');
+
+    fireEvent.click(link);
+    expect(await screen.findByText(/\+ Carcassonne/)).toBeInTheDocument(); // štítek filtru nese název hry
+  });
+
+  it('hides the winners block when nobody has won yet', async () => {
+    mockApi({
+      ...detailRoutes(null),
+      '/parties/3/stats?games%5B%5D=1': { body: { wins: [{ playerId: 1, name: 'Anna', wins: 0, plays: 2 }], topGames: [], starters: [], playTags: [] } },
+    });
+    renderApp('/games/1');
+
+    await screen.findAllByRole('button', { expanded: true });
+    expect(screen.queryByRole('heading', { name: 'Nejčastější výherci' })).not.toBeInTheDocument();
+  });
+
   it('lists the plays, expands the first one and lets the user open another', async () => {
     mockApi(detailRoutes('<p>Pravidla</p>'));
     renderApp('/games/1');

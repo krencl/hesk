@@ -8,6 +8,7 @@ import { Actions } from '../components/Actions';
 import { ErrorMessage } from '../components/ErrorMessage';
 import { LoadMore } from '../components/LoadMore';
 import { GameHeader } from '../components/GameHeader';
+import { GameTopWinners } from '../components/GameTopWinners';
 import { Icon } from '../components/Icon';
 import { EmptyState, LoadingOrError, isNotFound } from '../components/PageState';
 import { ListSkeleton } from '../components/Skeleton';
@@ -47,6 +48,7 @@ export function GameDetailPage() {
   return (
     <section className="page game-detail">
       <GameHeader name={game.data.name} imageUrl={game.data.imageUrl} />
+      {game.data.playCount > 0 && <GameTopWinners partyId={party.id} gameId={id} gameName={game.data.name} />}
 
       {rounds.isPending && <ListSkeleton rows={4} withImage={false} />}
       <ErrorMessage error={rounds.error} />
