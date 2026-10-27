@@ -27,7 +27,7 @@ export function LoginPage() {
   return (
     <div className="login">
       <img className="login-logo" src={`${import.meta.env.BASE_URL}logo.svg`} alt="HESK" />
-      <p>Zapisuj odehrané deskovky a sleduj, kdo vyhrává.</p>
+      <p>Přihlaš se a hraj!</p>
       {registrationDenied && (
         <p role="alert" className="error">Registrace je zatím uzavřená. Účet si můžeš založit jen přes pozvánku od člena party.</p>
       )}
