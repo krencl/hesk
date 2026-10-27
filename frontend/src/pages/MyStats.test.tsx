@@ -36,7 +36,7 @@ describe('my stats (/my-stats)', () => {
     expect(screen.getByText('Anna: 21 výher z 40 her')).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Carcassonne' })).toHaveAttribute('href', '/games/1');
     // sloupec = výhry, plná šířka = všechny odehrané zápisy hry; za sloupcem „výhry/zápisy“
-    expect(screen.getByText('16/28')).toBeInTheDocument();
+    expect(screen.getByText('/28')).toHaveClass('secondary'); // druhá hodnota sekundární barvou
     expect(screen.getByRole('img', { name: 'Carcassonne: 16/28' })).toHaveStyle({ width: `${(16 / 28) * 100}%` });
     expect(screen.getByRole('img', { name: 'Caverna: 5/12' })).toHaveStyle({ width: `${(5 / 12) * 100}%` });
     expect(screen.getByRole('heading', { name: 'Výhry podle tagu hry' })).toBeInTheDocument();

@@ -23,7 +23,7 @@ export function MyStatsPage() {
           <>
             <p className="muted my-stats-summary">{data.player?.name}: {winsLabel(data.wins)} z {data.plays} {data.plays === 1 ? 'hry' : 'her'}</p>
             <h3>Nejvíc výher</h3>
-            <BarChart items={data.topGames.map((g) => ({ key: g.gameId, label: g.shortName ?? g.name, value: g.wins, total: g.plays, valueText: `${g.wins}/${g.plays}`, to: `/games/${g.gameId}` }))} />
+            <BarChart items={data.topGames.map((g) => ({ key: g.gameId, label: g.shortName ?? g.name, value: g.wins, total: g.plays, showTotal: true, to: `/games/${g.gameId}` }))} />
             <h3>Výhry podle tagu hry</h3>
             <BarChart items={data.gameTags.map((t) => ({ key: t.name, label: t.name, value: t.wins }))} />
           </>

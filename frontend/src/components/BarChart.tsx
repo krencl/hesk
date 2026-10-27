@@ -6,8 +6,8 @@ export interface BarItem {
   value: number;
   /** Hodnota, která odpovídá plné šířce sloupce (např. počet všech her); bez ní je plná šířka nejvyšší hodnota grafu. */
   total?: number;
-  /** Text za sloupcem místo hodnoty (např. „2/2“). */
-  valueText?: string;
+  /** Za hodnotou se sekundární barvou ukáže „/total“ (např. „2/2“). */
+  showTotal?: boolean;
   /** Popisek je odkaz. */
   to?: string;
 }
@@ -24,14 +24,14 @@ export function BarChart({ items }: { items: BarItem[] }) {
   if (shown.length === 0) return <p className="muted">Zatím žádná data.</p>;
   const max = Math.max(...shown.map((i) => i.value));
   return (
-    <ul className={`bars${shown.some((i) => i.valueText) ? ' wide' : ''}`}>
+    <ul className={`bars${shown.some((i) => i.showTotal) ? ' wide' : ''}`}>
       {shown.map((i, index) => (
         <li key={i.key}>
           <span className="bar-label">{i.to ? <Link to={i.to}>{i.label}</Link> : i.label}</span>
           <span className="bar-track">
-            <span className={`bar-fill${index >= TOP_COUNT ? ' rest' : ''}`} style={{ width: `${(i.value / (i.total || max)) * 100}%`, animationDelay: `${index * 50}ms` }} role="img" aria-label={`${i.label}: ${i.valueText ?? i.value}`} />
+            <span className={`bar-fill${index >= TOP_COUNT ? ' rest' : ''}`} style={{ width: `${(i.value / (i.total || max)) * 100}%`, animationDelay: `${index * 50}ms` }} role="img" aria-label={`${i.label}: ${i.value}${i.showTotal ? `/${i.total}` : ''}`} />
           </span>
-          <span className="bar-value">{i.valueText ?? i.value}</span>
+          <span className="bar-value">{i.value}{i.showTotal && <span className="secondary">/{i.total}</span>}</span>
         </li>
       ))}
     </ul>
