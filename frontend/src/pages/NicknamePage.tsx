@@ -6,7 +6,7 @@ import { ErrorMessage } from '../components/ErrorMessage';
 import { qk } from '../api/queryKeys';
 
 /** Formulář přezdívky – povinný krok po prvním přihlášení, jinak úprava v profilu. */
-export function NicknamePage({ first = false, initial = '', hint }: { first?: boolean; initial?: string; hint?: string }) {
+export function NicknamePage({ first = false, initial = '' }: { first?: boolean; initial?: string }) {
   const queryClient = useQueryClient();
   const [nickname, setNickname] = useState(initial);
   const save = useMutation({
@@ -24,7 +24,6 @@ export function NicknamePage({ first = false, initial = '', hint }: { first?: bo
       <label>
         Přezdívka
         <input value={nickname} onChange={(e) => setNickname(e.target.value)} minLength={2} maxLength={100} required autoFocus={first} />
-        {hint && <small className="muted">{hint}</small>}
       </label>
       <ErrorMessage error={save.error} />
       {save.isSuccess && !first && <div className="success">Uloženo.</div>}

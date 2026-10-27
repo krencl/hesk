@@ -17,6 +17,7 @@ describe('settings: nicknames', () => {
     mockApi(routes());
     renderApp('/settings');
     expect(await screen.findByText('Defaultní nick, použije se pro nové party')).toBeInTheDocument();
+    expect(screen.getAllByRole('button', { name: 'Uložit' })).toHaveLength(1);
     const field = await screen.findByLabelText(/Nick v partě Pátek/);
     expect(field).toHaveValue('');
     expect(field).toHaveAttribute('placeholder', 'Anna');
@@ -29,7 +30,7 @@ describe('settings: nicknames', () => {
     const field = await screen.findByLabelText(/Nick v partě Pátek/);
     expect(field).toHaveValue('Aniččin');
     fireEvent.change(field, { target: { value: ' Anička ' } });
-    fireEvent.click(screen.getAllByRole('button', { name: 'Uložit' })[1]);
+    fireEvent.click(screen.getByRole('button', { name: 'Uložit' }));
     await waitFor(() => expect(sentBody(fetchMock, 'PATCH', '/parties/3/me')).toEqual({ nickname: 'Anička' }));
   });
 
@@ -37,7 +38,26 @@ describe('settings: nicknames', () => {
     const fetchMock = mockApi({ ...routes('Aniččin'), '/parties/3/me': { body: detail(null) } });
     renderApp('/settings');
     fireEvent.change(await screen.findByLabelText(/Nick v partě Pátek/), { target: { value: '' } });
-    fireEvent.click(screen.getAllByRole('button', { name: 'Uložit' })[1]);
+    fireEvent.click(screen.getByRole('button', { name: 'Uložit' }));
     await waitFor(() => expect(sentBody(fetchMock, 'PATCH', '/parties/3/me')).toEqual({ nickname: null }));
+  });
+
+  it('saves both nicknames with one button, sending only what changed', async () => {
+    const fetchMock = mockApi({ ...routes(null), '/parties/3/me': { body: detail('Anička') } });
+    renderApp('/settings');
+    fireEvent.change(await screen.findByLabelText(/Nick v partě Pátek/), { target: { value: 'Anička' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Uložit' }));
+    await waitFor(() => expect(sentBody(fetchMock, 'PATCH', '/parties/3/me')).toEqual({ nickname: 'Anička' }));
+    expect(sentBody(fetchMock, 'PATCH', '/me')).toBeUndefined();
+  });
+
+  it('saves a changed default nickname without touching the nickname in the party', async () => {
+    const fetchMock = mockApi(routes(null));
+    renderApp('/settings');
+    await screen.findByLabelText(/Nick v partě Pátek/);
+    fireEvent.change(screen.getByLabelText(/^Přezdívka/), { target: { value: 'Anča' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Uložit' }));
+    await waitFor(() => expect(sentBody(fetchMock, 'PATCH', '/me')).toEqual({ nickname: 'Anča' }));
+    expect(sentBody(fetchMock, 'PATCH', '/parties/3/me')).toBeUndefined();
   });
 });
