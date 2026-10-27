@@ -195,6 +195,23 @@ final class PlayControllerTest extends TestCase
         self::assertSame(['sessionNumber' => 6, 'playerIds' => null, 'tags' => []], ControllerHarness::json($harness->call($controller, 'defaults', ['party' => $this->party, 'request' => new Request(['startedAt' => '2026-04-01T20:00:00+00:00'])])));
     }
 
+    public function testLastPlayOfSessionReturnsEndPlayersAndTagsOrNull(): void
+    {
+        $last = $this->play('2026-03-01T20:00:00+00:00', 5);
+        $last->setTags([new PlayTag($this->party, 'liga')]);
+        $session = $last->getSession();
+        $plays = $this->createStub(PlayRepository::class);
+        $plays->method('findLastInSession')->willReturnCallback(static fn (GameSession $s): ?Play => $s === $session ? $last : null);
+        $controller = $this->controller(plays: $plays, sessions: [$session]);
+        $harness = ControllerHarness::as($this->anna);
+
+        $found = ControllerHarness::json($harness->call($controller, 'lastPlayOfSession', ['party' => $this->party, 'number' => 5]));
+        self::assertSame('2026-03-01T20:00:00+00:00', $found['endedAt']);
+        self::assertEqualsCanonicalizing([Fixtures::player($this->party, $this->anna)->getId(), Fixtures::player($this->party, $this->bob)->getId()], $found['playerIds']);
+        self::assertSame(['liga'], $found['tags']);
+        self::assertSame('null', $harness->call($controller, 'lastPlayOfSession', ['party' => $this->party, 'number' => 6])->getContent());
+    }
+
     public function testDefaultsRequireValidTime(): void
     {
         $harness = ControllerHarness::as($this->anna);

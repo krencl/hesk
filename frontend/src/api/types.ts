@@ -205,6 +205,13 @@ export interface PlayDefaults {
   tags: string[];
 }
 
+/** Poslední zápis seance s daným číslem (pro dopisování her zpětně). */
+export interface SessionLastPlay {
+  endedAt: string;
+  playerIds: number[];
+  tags: string[];
+}
+
 /** Filtr statistik (hry a tagy zahrnuté / vyloučené); posílá se jako opakované parametry dotazu. */
 export interface StatsQuery {
   tags?: string[];

@@ -1,5 +1,5 @@
 import { del, get, patch, post, put } from './client';
-import type { BggPreparedGame, BggSearch, Game, GameListQuery, GameWithStats, NamedItemInput, Player, GameInput, SessionInfo, Me, Party, PartyDetail, PartyRole, MovedPlay, MovePreview, Play, PlayDefaults, PlayInput, Stats, StatsQuery } from './types';
+import type { BggPreparedGame, BggSearch, Game, GameListQuery, GameWithStats, NamedItemInput, Player, GameInput, SessionInfo, Me, Party, PartyDetail, PartyRole, MovedPlay, MovePreview, Play, PlayDefaults, SessionLastPlay, PlayInput, Stats, StatsQuery } from './types';
 
 /** Sestaví `?a=1&b=2`; prázdné hodnoty (undefined, null, '') vynechá, pole jde jako `a[]=1&a[]=2`. */
 export function queryString(params: object): string {
@@ -63,6 +63,8 @@ export const api = {
     get<Play[]>(`/parties/${partyId}/plays${queryString({ limit, offset, gameId })}`),
   playDefaults: (partyId: number, startedAt: string, endedAt: string) =>
     get<PlayDefaults>(`/parties/${partyId}/plays/defaults${queryString({ startedAt, endedAt })}`),
+  /** Poslední zápis seance s daným číslem; `null`, když seance neexistuje. */
+  sessionLastPlay: (partyId: number, number: number) => get<SessionLastPlay | null>(`/parties/${partyId}/sessions/${number}/last-play`),
   tags: (partyId: number) => get<string[]>(`/parties/${partyId}/tags`),
   /** Všechny tagy her v katalogu (našeptávání ve formuláři hry). */
   gameTags: () => get<string[]>('/game-tags'),

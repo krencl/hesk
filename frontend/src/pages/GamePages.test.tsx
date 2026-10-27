@@ -1,6 +1,7 @@
 import { act, fireEvent, screen, waitFor } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { BASE_ROUTES, GAME, PLAY, games, mockApi, renderApp, requestedUrls, sentBody } from '../test/helpers';
+import { toLocalInput } from '../lib/datetime';
 
 describe('game list', () => {
   it('shows the game list at the root', async () => {
@@ -255,6 +256,20 @@ describe('new play', () => {
     mockApi({ ...routes, '/parties/3/plays/defaults*': { body: { sessionNumber: 96, playerIds: [1], tags: ['liga'] } } });
     renderApp('/games/1/new-play');
     await screen.findByRole('heading', { name: 'Nový zápis' });
+    expect(screen.getByRole('button', { name: 'Odebrat tag liga' })).toBeInTheDocument();
+  });
+
+  it('after typing the number of an existing session takes the time, players and tags of its last play', async () => {
+    mockApi({ ...routes, '/parties/3/sessions/90/last-play': { body: { endedAt: '2026-03-01T21:30:00+00:00', playerIds: [3, 1], tags: ['liga'] } } });
+    renderApp('/games/1/new-play');
+    await screen.findByRole('heading', { name: 'Nový zápis' });
+    expect(screen.getByLabelText('Petr')).toBeChecked();
+    fireEvent.change(screen.getByLabelText('Číslo sezení'), { target: { value: '90' } });
+    await waitFor(() => expect(screen.getByLabelText('Petr')).not.toBeChecked(), { timeout: 3000 });
+    expect(screen.getByLabelText('Host')).toBeChecked();
+    expect(screen.getByLabelText('Anna')).toBeChecked();
+    expect(screen.getByLabelText('Začátek')).toHaveValue(toLocalInput(new Date('2026-03-01T21:30:00+00:00')));
+    expect(screen.getByLabelText('Konec')).toHaveValue(toLocalInput(new Date('2026-03-01T21:30:00+00:00')));
     expect(screen.getByRole('button', { name: 'Odebrat tag liga' })).toBeInTheDocument();
   });
 

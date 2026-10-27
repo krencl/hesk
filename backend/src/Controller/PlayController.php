@@ -63,9 +63,43 @@ final class PlayController extends ApiController
 
         return new JsonResponse([
             'sessionNumber' => $number,
-            'playerIds' => null === $last ? null : array_values(array_map(static fn ($r): int => $r->getPlayer()->getId(), $last->getResults()->toArray())),
-            'tags' => null === $last ? [] : array_values(array_map(static fn ($t): string => $t->getName(), $last->getTags()->toArray())),
+            'playerIds' => null === $last ? null : $this->playerIds($last),
+            'tags' => null === $last ? [] : $this->tagNames($last),
         ]);
+    }
+
+    /**
+     * Poslední zápis seance s daným číslem (pro dopisování her zpětně): čas jeho konce a jeho hráči a tagy;
+     * `null`, když seance neexistuje nebo je prázdná.
+     */
+    #[Route('/api/parties/{id}/sessions/{number}/last-play', requirements: ['id' => '\d+', 'number' => '\d+'], methods: ['GET'])]
+    #[IsGranted(PartyVoter::WRITE, 'party')]
+    public function lastPlayOfSession(Party $party, int $number): JsonResponse
+    {
+        $session = $this->sessions->find($party, $number);
+        $last = $session ? $this->plays->findLastInSession($session) : null;
+
+        if (null === $last) {
+            return JsonResponse::fromJsonString('null'); // new JsonResponse(null) by vrátilo {}
+        }
+
+        return new JsonResponse([
+            'endedAt' => $last->getEndedAt()->format(\DATE_ATOM),
+            'playerIds' => $this->playerIds($last),
+            'tags' => $this->tagNames($last),
+        ]);
+    }
+
+    /** @return list<int> */
+    private function playerIds(Play $play): array
+    {
+        return array_values(array_map(static fn ($r): int => $r->getPlayer()->getId(), $play->getResults()->toArray()));
+    }
+
+    /** @return list<string> */
+    private function tagNames(Play $play): array
+    {
+        return array_values(array_map(static fn ($t): string => $t->getName(), $play->getTags()->toArray()));
     }
 
     private function parseTime(mixed $value): ?\DateTimeImmutable

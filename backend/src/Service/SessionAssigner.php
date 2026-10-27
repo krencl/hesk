@@ -42,6 +42,11 @@ final class SessionAssigner
         return new GameSession($party, $next, $start, $end);
     }
 
+    public function find(Party $party, int $number): ?GameSession
+    {
+        return $this->sessions->findOneByNumber($party, $number);
+    }
+
     /**
      * Do které seance by zápis v daném čase spadl, a jaké číslo by tedy dostal (nic se nemění).
      *

@@ -1,4 +1,4 @@
-import type { Game, Play, PlayDefaults, Player, PlayerInput, PlayInput, ScoreType } from '../api/types';
+import type { Game, Play, PlayDefaults, Player, PlayerInput, PlayInput, ScoreType, SessionLastPlay } from '../api/types';
 import { fromLocalInput, toLocalInput } from './datetime';
 
 export interface PlayerDraft {
@@ -96,6 +96,22 @@ export function emptyDraft(game: Pick<Game, 'id' | 'players'>, now = new Date(),
     sessionNumber: prefill.sessionNumber === undefined ? '' : String(prefill.sessionNumber),
     sessionNumberTouched: false,
     winnersTouched: false,
+  };
+}
+
+/**
+ * Po změně čísla sezení na existující: začátek i konec se nastaví na konec posledního zápisu sezení (stačí pak změnit čas),
+ * hráči a tagy se převezmou z něj (hráči už vybraní zůstanou se svým skóre; vlastní hráči hry jsou vždy první).
+ */
+export function applySessionLastPlay(draft: PlayDraft, game: Pick<Game, 'players'>, last: SessionLastPlay): PlayDraft {
+  const ended = toLocalInput(new Date(last.endedAt));
+  const ids = [...new Set([...game.players.map((p) => p.id), ...last.playerIds])];
+  return {
+    ...draft,
+    startedAt: ended,
+    endedAt: ended,
+    players: ids.map((id) => draft.players.find((p) => p.playerId === id) ?? newPlayerDraft(id)),
+    tags: last.tags,
   };
 }
 

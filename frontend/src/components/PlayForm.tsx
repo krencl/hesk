@@ -1,11 +1,11 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { type FormEvent, type ReactNode, useState } from 'react';
+import { type FormEvent, type ReactNode, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useActiveParty } from '../AppContext';
 import { api } from '../api';
 import type { Game, PlayInput } from '../api/types';
 import { fromLocalInput } from '../lib/datetime';
-import { endAfterStart, isScored, isWinner, newPlayerDraft, type PlayDraft, toPlayInput, validateDraft } from '../lib/playForm';
+import { applySessionLastPlay, endAfterStart, isScored, parseSessionNumber, isWinner, newPlayerDraft, type PlayDraft, toPlayInput, validateDraft } from '../lib/playForm';
 import { Actions } from './Actions';
 import { ErrorMessage } from './ErrorMessage';
 import { GameHeader } from './GameHeader';
@@ -60,6 +60,26 @@ export function PlayForm({ game, initial, heading, submitLabel, saving, error, c
   // Dokud číslo sezení uživatel nezměnil, ukazuje se návrh podle času zápisu (do draftu se nekopíruje; posílá se jen ručně zadané).
   const shownSession = draft.sessionNumberTouched ? draft.sessionNumber : suggested !== undefined ? String(suggested) : draft.sessionNumber;
   const { showError } = useToasts();
+
+  // Ručně zadané číslo existujícího sezení (nový zápis, dopisování zpětně): čas a hráči podle jeho posledního zápisu.
+  // Čeká se na dopsání čísla, aby se nenačítala mezičísla (např. „1“ cestou k „12“).
+  const typedSession = suggestSessionNumber && draft.sessionNumberTouched ? parseSessionNumber(draft.sessionNumber) : null;
+  useEffect(() => {
+    if (typedSession === null) return;
+    let cancelled = false;
+    const timer = setTimeout(() => {
+      queryClient
+        .fetchQuery({ queryKey: qk.sessionLastPlay(party.id, typedSession), queryFn: () => api.sessionLastPlay(party.id, typedSession), staleTime: 0 })
+        .then((last) => {
+          if (!cancelled && last) setDraft((d) => applySessionLastPlay(d, game, last));
+        })
+        .catch(() => undefined); // bez předvyplnění se dá zapisovat dál
+    }, 500);
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [typedSession, party.id, queryClient, game]);
   const [showGuests, setShowGuests] = useState(false);
   const [guestName, setGuestName] = useState('');
 

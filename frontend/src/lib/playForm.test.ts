@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { Game, Play } from '../api/types';
-import { toLocalInput } from './datetime';
-import { bestScoreIds, defaultPlayerIds, defaultTimes, draftFromPlay, endAfterStart, emptyDraft, isWinner, type PlayDraft, toPlayInput, validateDraft } from './playForm';
+import { fromLocalInput, toLocalInput } from './datetime';
+import { bestScoreIds, defaultPlayerIds, defaultTimes, applySessionLastPlay, draftFromPlay, endAfterStart, emptyDraft, isWinner, type PlayDraft, toPlayInput, validateDraft } from './playForm';
 
 const game = (scoreType: Game['scoreType']): Game => ({
   id: 7, name: 'G', shortName: null, scoreType, imageUrl: null, bggId: null, description: null, cheatSheet: null, addons: [{ id: 1, name: 'X' }], characters: [{ id: 3, name: 'Gigazaur' }], players: [], tags: [],
@@ -134,6 +134,15 @@ describe('emptyDraft', () => {
     expect(endAfterStart('2026-03-01T18:00', '2026-03-02T18:01')).toBe('2026-03-01T18:00');
     expect(endAfterStart('2026-02-01T18:00', '2026-03-01T19:00')).toBe('2026-02-01T18:00');
     expect(endAfterStart('', '2026-03-01T19:00')).toBe('2026-03-01T19:00');
+  });
+
+  it('applies the last play of an existing session: end time as both times, its players and tags', () => {
+    const base = emptyDraft({ id: 7, players: [{ id: 3, name: 'Boss' }] }, new Date(2026, 2, 5, 20, 0), { playerIds: [1] });
+    base.players[1] = { ...base.players[1], score: '42' };
+    const next = applySessionLastPlay(base, { players: [{ id: 3, name: 'Boss' }] }, { endedAt: fromLocalInput('2026-03-01T21:30'), playerIds: [1, 2], tags: ['liga'] });
+    expect(next).toMatchObject({ startedAt: '2026-03-01T21:30', endedAt: '2026-03-01T21:30', tags: ['liga'] });
+    expect(next.players.map((p) => p.playerId)).toEqual([3, 1, 2]);
+    expect(next.players[1].score).toBe('42');
   });
 
   it('computes default times', () => {
