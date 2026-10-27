@@ -10,6 +10,8 @@ Aplikace běží v produkci na https://hesk.krencl.cz/, stará aplikace i její 
 - **Produkční konfigurace:** `backend/.env.prod` (commitovaný, bez tajemství) nastavuje `DEFAULT_URI`, `CORS_ALLOW_ORIGIN` jen na vlastní doménu a `FRONTEND_URL`. Tajemství jdou do `backend/.env.prod.local` (git-ignorováno, `chmod 600`; šablona `.env.prod.local.example`) nebo do proměnných prostředí. `APP_ENV=prod` se nastavuje v prostředí procesu (php-fpm), případně `composer dump-env prod`; `.env` ho nechává na `dev`.
 - `dev-login` je mimo `dev`/`test` vypnutý (404).
 
+- **Žádná dev DB:** databáze, ke které se připojuje vývojové prostředí (`/workspace/.env`), je produkční. Destruktivní operace a migrace se spouštějí jen vědomě a po záloze (viz `CLAUDE.md`).
+
 ## Kontrolní seznam nasazení
 - `APP_ENV=prod`, vlastní `APP_SECRET`, `composer install --no-dev -o --classmap-authoritative`, `php bin/console cache:clear` a `doctrine:migrations:migrate --no-interaction`.
 - `npm run build` (výstup `web/static/`), nginx podle ADR 0006 a navíc `location /uploads/ { }` (obrázky her) – složka `web/uploads/` musí být zapisovatelná pro PHP a zálohovaná.
