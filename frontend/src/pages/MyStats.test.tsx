@@ -35,7 +35,10 @@ describe('my stats (/my-stats)', () => {
     expect(await screen.findByRole('heading', { name: 'Nejvíc výher' })).toBeInTheDocument();
     expect(screen.getByText('Anna: 21 výher z 40 her')).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Carcassonne' })).toHaveAttribute('href', '/games/1');
-    expect(screen.getByText('16 výher z 28')).toBeInTheDocument();
+    // sloupec = výhry, plná šířka = všechny odehrané zápisy hry; za sloupcem „výhry/zápisy“
+    expect(screen.getByText('16/28')).toBeInTheDocument();
+    expect(screen.getByRole('img', { name: 'Carcassonne: 16/28' })).toHaveStyle({ width: `${(16 / 28) * 100}%` });
+    expect(screen.getByRole('img', { name: 'Caverna: 5/12' })).toHaveStyle({ width: `${(5 / 12) * 100}%` });
     expect(screen.getByRole('heading', { name: 'Výhry podle tagu hry' })).toBeInTheDocument();
     expect(screen.getByRole('img', { name: 'Strategie: 15' })).toBeInTheDocument();
     expect(screen.getByRole('img', { name: 'Párty: 6' })).toBeInTheDocument();
