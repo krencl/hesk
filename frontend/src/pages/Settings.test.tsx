@@ -55,7 +55,7 @@ describe('settings: nicknames', () => {
     const fetchMock = mockApi(routes(null));
     renderApp('/settings');
     await screen.findByLabelText(/Nick v partě Pátek/);
-    fireEvent.change(screen.getByLabelText(/^Přezdívka/), { target: { value: 'Anča' } });
+    fireEvent.change(screen.getByLabelText(/^Nick(?! v partě)/), { target: { value: 'Anča' } });
     fireEvent.click(screen.getByRole('button', { name: 'Uložit' }));
     await waitFor(() => expect(sentBody(fetchMock, 'PATCH', '/me')).toEqual({ nickname: 'Anča' }));
     expect(sentBody(fetchMock, 'PATCH', '/parties/3/me')).toBeUndefined();

@@ -54,7 +54,7 @@ function NicknamesForm({ party, initialPartyNickname = '' }: { party?: Party; in
   return (
     <form className="form" onSubmit={submit}>
       <label>
-        Přezdívka
+        Nick
         <input value={nickname} onChange={(e) => setNickname(e.target.value)} minLength={2} maxLength={100} required />
         <small className="muted">Defaultní nick, použije se pro nové party</small>
       </label>

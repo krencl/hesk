@@ -22,7 +22,7 @@ export function NicknamePage({ first = false, initial = '' }: { first?: boolean;
     <form className={first ? 'login' : 'form'} onSubmit={submit}>
       {first && <h1>Jak ti máme říkat?</h1>}
       <label>
-        Přezdívka
+        Nick
         <input value={nickname} onChange={(e) => setNickname(e.target.value)} minLength={2} maxLength={100} required autoFocus={first} />
       </label>
       <ErrorMessage error={save.error} />
