@@ -127,9 +127,12 @@ describe('emptyDraft', () => {
     expect(d).toMatchObject({ sessionNumber: '95', sessionNumberTouched: false, tags: [] });
   });
 
-  it('moves an end earlier than the start to the start, keeps a later one', () => {
+  it('moves an end before the start or more than 24 h after it to the start, keeps a close later one', () => {
     expect(endAfterStart('2026-03-01T20:00', '2026-03-01T19:00')).toBe('2026-03-01T20:00');
     expect(endAfterStart('2026-03-01T18:00', '2026-03-01T19:00')).toBe('2026-03-01T19:00');
+    expect(endAfterStart('2026-03-01T18:00', '2026-03-02T18:00')).toBe('2026-03-02T18:00');
+    expect(endAfterStart('2026-03-01T18:00', '2026-03-02T18:01')).toBe('2026-03-01T18:00');
+    expect(endAfterStart('2026-02-01T18:00', '2026-03-01T19:00')).toBe('2026-02-01T18:00');
     expect(endAfterStart('', '2026-03-01T19:00')).toBe('2026-03-01T19:00');
   });
 

@@ -67,11 +67,12 @@ export function defaultTimes(now = new Date()): { startedAt: string; endedAt: st
   return { startedAt: local, endedAt: local };
 }
 
-/** Po změně začátku se konec, který by vyšel před začátek, posune na začátek. */
+/** Po změně začátku se konec, který by byl před začátkem nebo o víc než 24 h po něm (typicky při zápisu zpětně), posune na začátek. */
 export function endAfterStart(startedAt: string, endedAt: string): string {
   const start = new Date(startedAt).getTime();
   const end = new Date(endedAt).getTime();
-  return !Number.isNaN(start) && !Number.isNaN(end) && end < start ? startedAt : endedAt;
+  if (Number.isNaN(start) || Number.isNaN(end)) return endedAt;
+  return end < start || end - start > 24 * 3600_000 ? startedAt : endedAt;
 }
 
 /**
