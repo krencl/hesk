@@ -5,7 +5,7 @@ import { useActiveParty } from '../AppContext';
 import { api } from '../api';
 import type { Game, PlayInput } from '../api/types';
 import { fromLocalInput } from '../lib/datetime';
-import { isScored, isWinner, newPlayerDraft, type PlayDraft, toPlayInput, validateDraft } from '../lib/playForm';
+import { endAfterStart, isScored, isWinner, newPlayerDraft, type PlayDraft, toPlayInput, validateDraft } from '../lib/playForm';
 import { Actions } from './Actions';
 import { ErrorMessage } from './ErrorMessage';
 import { GameHeader } from './GameHeader';
@@ -65,6 +65,7 @@ export function PlayForm({ game, initial, heading, submitLabel, saving, error, c
 
   const scored = isScored(game.scoreType);
   const patch = (changes: Partial<PlayDraft>) => setDraft((d) => ({ ...d, ...changes }));
+  const changeStart = (startedAt: string) => setDraft((d) => ({ ...d, startedAt, endedAt: endAfterStart(startedAt, d.endedAt) }));
   const togglePlayer = (playerId: number) =>
     setDraft((d) => ({
       ...d,
@@ -123,7 +124,7 @@ export function PlayForm({ game, initial, heading, submitLabel, saving, error, c
         <label>Číslo sezení<input type="number" inputMode="numeric" min={1} step={1} value={shownSession} onChange={(e) => patch({ sessionNumber: e.target.value, sessionNumberTouched: true })} /></label>
 
         <div className="row">
-          <label>Začátek<input type="datetime-local" value={draft.startedAt} onChange={(e) => patch({ startedAt: e.target.value })} required /></label>
+          <label>Začátek<input type="datetime-local" value={draft.startedAt} onChange={(e) => changeStart(e.target.value)} required /></label>
           <label>Konec<input type="datetime-local" value={draft.endedAt} onChange={(e) => patch({ endedAt: e.target.value })} required /></label>
         </div>
 

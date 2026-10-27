@@ -67,6 +67,13 @@ export function defaultTimes(now = new Date()): { startedAt: string; endedAt: st
   return { startedAt: local, endedAt: local };
 }
 
+/** Po změně začátku se konec, který by vyšel před začátek, posune na začátek. */
+export function endAfterStart(startedAt: string, endedAt: string): string {
+  const start = new Date(startedAt).getTime();
+  const end = new Date(endedAt).getTime();
+  return !Number.isNaN(start) && !Number.isNaN(end) && end < start ? startedAt : endedAt;
+}
+
 /**
  * Předvybraní hráči nového zápisu: hráči posledního zápisu stejného sezení (do 24 h);
  * když sezení ještě není (první hra dne), členové party s účtem.

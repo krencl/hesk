@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { Game, Play } from '../api/types';
 import { toLocalInput } from './datetime';
-import { bestScoreIds, defaultPlayerIds, defaultTimes, draftFromPlay, emptyDraft, isWinner, type PlayDraft, toPlayInput, validateDraft } from './playForm';
+import { bestScoreIds, defaultPlayerIds, defaultTimes, draftFromPlay, endAfterStart, emptyDraft, isWinner, type PlayDraft, toPlayInput, validateDraft } from './playForm';
 
 const game = (scoreType: Game['scoreType']): Game => ({
   id: 7, name: 'G', shortName: null, scoreType, imageUrl: null, bggId: null, description: null, cheatSheet: null, addons: [{ id: 1, name: 'X' }], characters: [{ id: 3, name: 'Gigazaur' }], players: [], tags: [],
@@ -125,6 +125,12 @@ describe('emptyDraft', () => {
     const d = emptyDraft({ id: 7, players: [{ id: 3, name: 'Boss' }] }, new Date(2026, 2, 1, 20, 0), { playerIds: [1, 3], sessionNumber: 95 });
     expect(d.players.map((p) => p.playerId)).toEqual([3, 1]);
     expect(d).toMatchObject({ sessionNumber: '95', sessionNumberTouched: false, tags: [] });
+  });
+
+  it('moves an end earlier than the start to the start, keeps a later one', () => {
+    expect(endAfterStart('2026-03-01T20:00', '2026-03-01T19:00')).toBe('2026-03-01T20:00');
+    expect(endAfterStart('2026-03-01T18:00', '2026-03-01T19:00')).toBe('2026-03-01T19:00');
+    expect(endAfterStart('', '2026-03-01T19:00')).toBe('2026-03-01T19:00');
   });
 
   it('computes default times', () => {
