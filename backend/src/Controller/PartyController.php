@@ -8,6 +8,7 @@ use App\Domain\Exception\DomainException;
 use App\Dto\ChangeRoleRequest;
 use App\Dto\CreatePartyRequest;
 use App\Dto\InviteRequest;
+use App\Dto\PartyNicknameRequest;
 use App\Dto\UpdatePartyRequest;
 use App\Entity\Party;
 use App\Entity\PartyInvitation;
@@ -125,6 +126,18 @@ final class PartyController extends ApiController
         $this->em->flush();
 
         return new JsonResponse($this->presenter->partyDetail($party, $this->currentUser()));
+    }
+
+    /** Vlastní nick v této partě (prázdný = přezdívka účtu); přejmenuje i hráče člena. */
+    #[Route('/api/parties/{id}/me', requirements: ['id' => '\d+'], methods: ['PATCH'])]
+    #[IsGranted(PartyVoter::VIEW, 'party')]
+    public function updateMyNickname(Party $party, #[MapRequestPayload] PartyNicknameRequest $req): JsonResponse
+    {
+        $me = $this->currentUser();
+        $party->changeMemberNickname($me, $req->nickname);
+        $this->em->flush();
+
+        return new JsonResponse($this->presenter->partyDetail($party, $me));
     }
 
     /** Člena odebírá admin; kdokoli může opustit partu sám. */

@@ -275,6 +275,43 @@ final class PartyTest extends TestCase
         self::assertNull($party->findMemberByUserId(33));
     }
 
+    public function testMemberNicknameRenamesPlayerAndOverridesTheAccountNickname(): void
+    {
+        $user = new User('g1', 'a@example.com');
+        $user->setNickname('Anna');
+        $party = Party::create('Hrajeme', $user);
+        $party->addGuest('Taken');
+
+        $party->changeMemberNickname($user, '  Anička ');
+        self::assertSame('Anička', $party->findPlayerFor($user)?->getName());
+        self::assertSame('Anička', $party->findMember($user)?->displayName());
+
+        // změna přezdívky účtu nepřebije nick v partě
+        $user->setNickname('Anna K.');
+        $party->syncPlayerName($user);
+        self::assertSame('Anička', $party->findPlayerFor($user)?->getName());
+
+        // prázdný nick = zpět na přezdívku účtu
+        $party->changeMemberNickname($user, '');
+        self::assertNull($party->findMember($user)?->getNickname());
+        self::assertSame('Anna K.', $party->findPlayerFor($user)?->getName());
+
+        $this->expectException(DomainException::class);
+        $party->changeMemberNickname($user, 'taken');
+    }
+
+    public function testMemberNicknameIsUsedForTheNewPlayerOfAMember(): void
+    {
+        $owner = new User('g1', 'a@example.com');
+        $owner->setNickname('Anna');
+        $party = Party::create('Hrajeme', $owner);
+        $bob = new User('g2', 'b@example.com');
+        $bob->setNickname('Bob');
+        $party->addMember($bob);
+        $party->changeMemberNickname($bob, 'Bobík');
+        self::assertSame('Bobík', $party->findPlayerFor($bob)?->getName());
+    }
+
     public function testSyncPlayerNameFollowsNicknameUnlessTaken(): void
     {
         $user = new User('g1', 'a@example.com');

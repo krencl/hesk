@@ -21,7 +21,10 @@ export interface Party {
 
 export interface Member {
   userId: number;
+  /** Jméno v partě: nick v partě, jinak přezdívka účtu. */
   nickname: string | null;
+  /** Nick jen v této partě; `null` = použije se přezdívka účtu. */
+  partyNickname?: string | null;
   role: PartyRole;
 }
 

@@ -176,13 +176,14 @@ class Party
         return null;
     }
 
-    /** Každý člen party má svého hráče (pod přezdívkou účtu). */
+    /** Každý člen party má svého hráče (pod jeho nickem v partě, jinak přezdívkou účtu). */
     public function ensurePlayerFor(User $user): Player
     {
         if ($player = $this->findPlayerFor($user)) {
             return $player;
         }
-        $this->players->add($player = new Player($this, $this->uniquePlayerName($user->getNickname() ?? strstr($user->getEmail(), '@', true) ?: 'Hráč'), $user));
+        $name = $this->findMember($user)?->displayName() ?? $user->getNickname();
+        $this->players->add($player = new Player($this, $this->uniquePlayerName($name ?? strstr($user->getEmail(), '@', true) ?: 'Hráč'), $user));
 
         return $player;
     }
@@ -246,11 +247,31 @@ class Party
         }
     }
 
-    /** Přejmenuje hráče navázaného na účet podle nové přezdívky, pokud je jméno v partě volné. */
+    /**
+     * Nick člena jen v této partě (prázdný = zpět na přezdívku účtu); přejmenuje i jeho hráče.
+     *
+     * @throws DomainException když je jméno v partě už obsazené
+     */
+    public function changeMemberNickname(User $user, ?string $nickname): void
+    {
+        $member = $this->findMember($user) ?? throw new DomainException('Uživatel není členem party.');
+        $nickname = null === $nickname || '' === ($nickname = trim($nickname)) ? null : $nickname;
+        $name = $nickname ?? $user->getNickname();
+        $player = $this->findPlayerFor($user);
+        if ($player && $name && $this->isPlayerNameTaken($name, $player)) {
+            throw new DomainException('Hráč s tímto jménem už v partě existuje.');
+        }
+        $member->setNickname($nickname);
+        if ($player && $name) {
+            $player->rename($name);
+        }
+    }
+
+    /** Přejmenuje hráče navázaného na účet podle nové přezdívky (nebo nicku v partě), pokud je jméno v partě volné. */
     public function syncPlayerName(User $user): void
     {
         $player = $this->findPlayerFor($user);
-        $nickname = $user->getNickname();
+        $nickname = $this->findMember($user)?->displayName() ?? $user->getNickname();
         if (!$player || !$nickname || $player->getName() === $nickname) {
             return;
         }

@@ -44,7 +44,7 @@ final class Presenter
     public function partyDetail(Party $party, User $viewer): array
     {
         return $this->party($party, $viewer) + ['members' => array_values(array_map(
-            fn (PartyMember $m): array => ['userId' => $m->getUser()->getId(), 'nickname' => $m->getUser()->getNickname(), 'role' => $m->getRole()->value],
+            fn (PartyMember $m): array => ['userId' => $m->getUser()->getId(), 'nickname' => $m->displayName(), 'partyNickname' => $m->getNickname(), 'role' => $m->getRole()->value],
             $party->getMembers()->toArray(),
         ))];
     }

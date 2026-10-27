@@ -9,6 +9,7 @@ use App\Domain\Exception\DomainException;
 use App\Dto\ChangeRoleRequest;
 use App\Dto\CreatePartyRequest;
 use App\Dto\InviteRequest;
+use App\Dto\PartyNicknameRequest;
 use App\Dto\UpdatePartyRequest;
 use App\Entity\Party;
 use App\Entity\PartyInvitation;
@@ -235,6 +236,36 @@ final class PartyControllerTest extends TestCase
             }
         }
         self::assertTrue($this->party->isAdmin($this->anna));
+    }
+
+    public function testMemberSetsHisNicknameInThePartyOnly(): void
+    {
+        Fixtures::member($this->party, $this->bob);
+        $controller = $this->controller();
+
+        $detail = ControllerHarness::json(ControllerHarness::as($this->bob)->call($controller, 'updateMyNickname', ['party' => $this->party, 'req' => new PartyNicknameRequest('Bobík')]));
+        $bob = array_values(array_filter($detail['members'], fn (array $m): bool => $m['userId'] === $this->bob->getId()))[0];
+        self::assertSame(['Bobík', 'Bobík'], [$bob['nickname'], $bob['partyNickname']]);
+        self::assertSame('Bob', $this->bob->getNickname(), 'přezdívka účtu se nemění');
+        self::assertSame('Bobík', $this->party->findPlayerFor($this->bob)?->getName());
+
+        $cleared = ControllerHarness::json(ControllerHarness::as($this->bob)->call($controller, 'updateMyNickname', ['party' => $this->party, 'req' => new PartyNicknameRequest(null)]));
+        $bob = array_values(array_filter($cleared['members'], fn (array $m): bool => $m['userId'] === $this->bob->getId()))[0];
+        self::assertSame(['Bob', null], [$bob['nickname'], $bob['partyNickname']]);
+    }
+
+    public function testNicknameInThePartyMustBeFreeAndOnlyMembersMaySetIt(): void
+    {
+        Fixtures::member($this->party, $this->bob);
+        try {
+            ControllerHarness::as($this->bob)->call($this->controller(), 'updateMyNickname', ['party' => $this->party, 'req' => new PartyNicknameRequest('anna')]);
+            self::fail('Jméno Anny je v partě obsazené.');
+        } catch (DomainException) {
+            $this->addToAssertionCount(1);
+        }
+
+        $this->expectException(AccessDeniedException::class);
+        ControllerHarness::as($this->eve)->call($this->controller(), 'updateMyNickname', ['party' => $this->party, 'req' => new PartyNicknameRequest('Eva')]);
     }
 
     public function testWriterCannotChangeRolesAndUnknownUserIsNotFound(): void

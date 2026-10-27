@@ -15,6 +15,8 @@ export function queryString(params: object): string {
 export const api = {
   me: () => get<Me>('/me'),
   setNickname: (nickname: string) => patch<Me>('/me', { nickname }),
+  /** Vlastní nick v partě; prázdný = přezdívka účtu. */
+  setPartyNickname: (partyId: number, nickname: string) => patch<PartyDetail>(`/parties/${partyId}/me`, { nickname: nickname || null }),
   logout: () => post<void>('/auth/logout'),
 
   parties: () => get<Party[]>('/parties'),

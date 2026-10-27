@@ -24,6 +24,9 @@ class PartyMember
         private User $user,
         #[ORM\Column(enumType: PartyRole::class)]
         private PartyRole $role,
+        /** Nick člena jen v této partě; bez něj se použije přezdívka účtu. */
+        #[ORM\Column(length: 100, nullable: true)]
+        private ?string $nickname = null,
     ) {
     }
 
@@ -50,6 +53,22 @@ class PartyMember
     public function setRole(PartyRole $role): void
     {
         $this->role = $role;
+    }
+
+    public function getNickname(): ?string
+    {
+        return $this->nickname;
+    }
+
+    public function setNickname(?string $nickname): void
+    {
+        $this->nickname = $nickname;
+    }
+
+    /** Jméno člena v této partě: nick v partě, jinak přezdívka účtu. */
+    public function displayName(): ?string
+    {
+        return $this->nickname ?? $this->user->getNickname();
     }
 
     public function isAdmin(): bool

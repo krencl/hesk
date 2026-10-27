@@ -12,6 +12,7 @@ use App\Dto\InviteRequest;
 use App\Dto\LinkMemberRequest;
 use App\Dto\NamedItemRequest;
 use App\Dto\NicknameRequest;
+use App\Dto\PartyNicknameRequest;
 use App\Dto\PlayRequest;
 use App\Dto\PlayerNameRequest;
 use App\Dto\PlayerRequest;
@@ -120,6 +121,10 @@ final class RequestValidationTest extends TestCase
         self::assertTrue($this->invalid(new NicknameRequest(' X ')), 'dva znaky se počítají bez okolních mezer');
         self::assertFalse($this->invalid(new NicknameRequest(' Xena ')));
         self::assertFalse($this->invalid(new NicknameRequest('Xena')));
+        self::assertFalse($this->invalid(new PartyNicknameRequest()), 'bez nicku v partě se použije přezdívka účtu');
+        self::assertFalse($this->invalid(new PartyNicknameRequest('')));
+        self::assertTrue($this->invalid(new PartyNicknameRequest(' X ')));
+        self::assertFalse($this->invalid(new PartyNicknameRequest('Xena')));
         self::assertTrue($this->invalid(new DevLoginRequest('není e-mail')));
         self::assertFalse($this->invalid(new DevLoginRequest('x@example.com')));
         self::assertTrue($this->invalid(new PlayerNameRequest('   ')), 'jméno hosta nesmí být prázdné');
