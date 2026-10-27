@@ -38,6 +38,7 @@ export const qk = {
   /** Poslední zápis seance podle čísla. */
   sessionLastPlay: (partyId: number, number: number) => ['sessionLastPlay', partyId, number] as const,
 
+  myStats: (partyId: number) => ['myStats', partyId] as const,
   stats: (partyId: number, filter?: object) => (filter === undefined ? (['stats', partyId] as const) : (['stats', partyId, filter] as const)),
   statsGameName: (partyId: number, gameId: number) => ['statsGameName', partyId, gameId] as const,
   bggSearch: (partyId: number, query: string) => ['bggSearch', partyId, query] as const,

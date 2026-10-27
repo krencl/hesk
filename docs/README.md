@@ -34,6 +34,7 @@ Primárně architektonická rozhodnutí (ADR). Aplikační dokumentace je zámě
 | [0028](adr/0028-move-play-between-parties.md) | Přesun zápisu do jiné party (správce obou part, hráči podle účtu/jména, noví hosté) |
 | [0029](adr/0029-production-config-and-legacy-removal.md) | Produkční konfigurace, odstranění importu ze staré aplikace |
 | [0030](adr/0030-nickname-per-party.md) | Nick člena jen v jedné partě (defaultní nick × nick v partě) |
+| [0031](adr/0031-my-stats.md) | Moje statistiky: hry s nejvíc výhrami, výhry podle tagu hry |
 
 Poznámky ke vzoru z předchozích verzí: [prototype-notes.md](prototype-notes.md).
 

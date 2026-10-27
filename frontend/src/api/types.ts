@@ -232,6 +232,17 @@ export interface Stats {
   playTags: { name: string; plays: number }[];
 }
 
+/** Statistiky přihlášeného člena v jedné partě (`player` je `null`, když v partě nemá hráče). */
+export interface MyStats {
+  player: { id: number; name: string } | null;
+  plays: number;
+  wins: number;
+  /** Hry s nejvíc výhrami hráče. */
+  topGames: { gameId: number; name: string; shortName: string | null; wins: number; plays: number }[];
+  /** Výhry hráče podle tagů her. */
+  gameTags: { name: string; wins: number; plays: number }[];
+}
+
 /** Výsledek hledání při přidávání hry: `party` = hra už v partě, `catalog` = hra z katalogu, kterou parta nemá (stačí ji zařadit podle `gameId`), `cache` = lokální cache BGG, `bgg` = živé BGG API. */
 export interface BggSearchResult {
   source: 'party' | 'catalog' | 'cache' | 'bgg';

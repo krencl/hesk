@@ -57,6 +57,27 @@ final class StatsAndListsControllerTest extends TestCase
         self::assertSame(['wins' => $wins, 'topGames' => $top, 'starters' => $starters, 'playTags' => $tags], ControllerHarness::json($response));
     }
 
+    public function testMyStatsAreOfTheLoggedInMembersPlayerInThePartyOnly(): void
+    {
+        $player = $this->party->findPlayerFor($this->anna);
+        $top = [['gameId' => 5, 'name' => 'King of Tokyo', 'shortName' => null, 'wins' => 3, 'plays' => 4]];
+        $tags = [['name' => 'Rychlovka', 'wins' => 3, 'plays' => 4]];
+        $plays = $this->createMock(PlayRepository::class);
+        $plays->expects(self::once())->method('winsPerPlayer')->with($this->party)->willReturn([['playerId' => $player->getId(), 'name' => 'Anna', 'wins' => 3, 'plays' => 7], ['playerId' => 99, 'name' => 'Bob', 'wins' => 9, 'plays' => 9]]);
+        $plays->expects(self::once())->method('topWinningGamesOfPlayer')->with($this->party, $player)->willReturn($top);
+        $plays->expects(self::once())->method('winsOfPlayerByGameTag')->with($this->party, $player)->willReturn($tags);
+
+        $response = ControllerHarness::as($this->anna)->call(new StatsController(new Presenter(), $plays), 'mine', ['party' => $this->party]);
+
+        self::assertSame(['player' => ['id' => $player->getId(), 'name' => $player->getName()], 'plays' => 7, 'wins' => 3, 'topGames' => $top, 'gameTags' => $tags], ControllerHarness::json($response));
+    }
+
+    public function testMyStatsAreForMembersOnly(): void
+    {
+        $this->expectException(AccessDeniedException::class);
+        ControllerHarness::as($this->eve)->call(new StatsController(new Presenter(), $this->createStub(PlayRepository::class)), 'mine', ['party' => $this->party]);
+    }
+
     public function testStatsAreForMembersOnly(): void
     {
         $this->expectException(AccessDeniedException::class);

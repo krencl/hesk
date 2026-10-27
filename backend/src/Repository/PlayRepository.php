@@ -125,6 +125,44 @@ class PlayRepository extends ServiceEntityRepository
         ], $rows);
     }
 
+    /**
+     * Hry, ve kterých hráč v partě vyhrál nejvíc (jen hry s aspoň jednou výhrou).
+     *
+     * @return list<array{gameId: int, name: string, shortName: ?string, wins: int, plays: int}>
+     */
+    public function topWinningGamesOfPlayer(Party $party, Player $player, int $limit = 10): array
+    {
+        $rows = $this->getEntityManager()->createQuery(
+            'SELECT g.id AS gameId, g.name AS name, g.shortName AS shortName, COUNT(r.id) AS plays, SUM(CASE WHEN r.winner = true THEN 1 ELSE 0 END) AS wins
+             FROM App\Entity\PlayResult r JOIN r.play p JOIN p.game g
+             WHERE p.party = :party AND r.player = :player
+             GROUP BY g.id, g.name, g.shortName HAVING SUM(CASE WHEN r.winner = true THEN 1 ELSE 0 END) > 0
+             ORDER BY wins DESC, plays ASC, g.name ASC',
+        )->setParameters(['party' => $party, 'player' => $player])->setMaxResults($limit)->getArrayResult();
+
+        return array_map(static fn (array $r): array => [
+            'gameId' => (int) $r['gameId'], 'name' => $r['name'], 'shortName' => $r['shortName'], 'wins' => (int) $r['wins'], 'plays' => (int) $r['plays'],
+        ], $rows);
+    }
+
+    /**
+     * Výhry hráče v partě podle tagů her (hra s víc tagy se počítá do každého z nich; jen tagy s aspoň jednou výhrou).
+     *
+     * @return list<array{name: string, wins: int, plays: int}>
+     */
+    public function winsOfPlayerByGameTag(Party $party, Player $player): array
+    {
+        $rows = $this->getEntityManager()->createQuery(
+            'SELECT t.name AS name, COUNT(r.id) AS plays, SUM(CASE WHEN r.winner = true THEN 1 ELSE 0 END) AS wins
+             FROM App\Entity\PlayResult r JOIN r.play p JOIN p.game g JOIN g.tags t
+             WHERE p.party = :party AND r.player = :player
+             GROUP BY t.id, t.name HAVING SUM(CASE WHEN r.winner = true THEN 1 ELSE 0 END) > 0
+             ORDER BY wins DESC, plays ASC, t.name ASC',
+        )->setParameters(['party' => $party, 'player' => $player])->getArrayResult();
+
+        return array_map(static fn (array $r): array => ['name' => $r['name'], 'wins' => (int) $r['wins'], 'plays' => (int) $r['plays']], $rows);
+    }
+
     /** @return list<array{gameId: int, name: string, shortName: ?string, plays: int}> */
     public function topGames(Party $party, int $limit = 10, StatsFilter $filter = new StatsFilter()): array
     {

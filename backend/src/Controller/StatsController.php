@@ -40,6 +40,26 @@ final class StatsController extends ApiController
         ]);
     }
 
+    /** Statistiky přihlášeného člena v partě: hry s nejvíc výhrami a výhry podle tagů her. */
+    #[Route('/api/parties/{id}/stats/me', requirements: ['id' => '\d+'], methods: ['GET'])]
+    #[IsGranted(PartyVoter::VIEW, 'party')]
+    public function mine(Party $party): JsonResponse
+    {
+        $player = $party->findPlayerFor($this->currentUser());
+        if (null === $player) {
+            return new JsonResponse(['player' => null, 'plays' => 0, 'wins' => 0, 'topGames' => [], 'gameTags' => []]);
+        }
+        $totals = array_values(array_filter($this->plays->winsPerPlayer($party), static fn (array $w): bool => $w['playerId'] === $player->getId()))[0] ?? null;
+
+        return new JsonResponse([
+            'player' => ['id' => $player->getId(), 'name' => $player->getName()],
+            'plays' => $totals['plays'] ?? 0,
+            'wins' => $totals['wins'] ?? 0,
+            'topGames' => $this->plays->topWinningGamesOfPlayer($party, $player),
+            'gameTags' => $this->plays->winsOfPlayerByGameTag($party, $player),
+        ]);
+    }
+
     /**
      * Filtr podle her a tagů her (`tags[]`, `excludeTags[]`, `games[]`, `excludeGames[]`), viz `StatsFilter`.
      *

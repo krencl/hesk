@@ -114,6 +114,7 @@ export function Layout() {
           <h4 className="primary">Menu</h4>
           <ul className="menu-list">
             <li><NavLink to="/" end onClick={closeMenu}>Seznam her</NavLink></li>
+            {activeParty && <li><NavLink to="/my-stats" onClick={closeMenu}>Moje statistiky</NavLink></li>}
           </ul>
 
           <hr />

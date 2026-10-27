@@ -20,6 +20,7 @@ import { PartiesPage } from './pages/PartiesPage';
 import { PartyDetailPage } from './pages/PartyDetailPage';
 import { PartyEditPage } from './pages/PartyEditPage';
 import { PartyGuestsPage } from './pages/PartyGuestsPage';
+import { MyStatsPage } from './pages/MyStatsPage';
 import { SettingsPage } from './pages/SettingsPage';
 import { StatsPage } from './pages/StatsPage';
 
@@ -87,6 +88,7 @@ function AppContent() {
             <Route path="/games/:id/new-play" element={<NewPlayPage />} />
             <Route path="/plays/:id/edit" element={<EditPlayPage />} />
             <Route path="/stats" element={<StatsRedirect />} />
+            <Route path="/my-stats" element={<MyStatsPage />} />
           </Route>
           <Route path="*" element={<Navigate to="/" replace />} />
         </Route>

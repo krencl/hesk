@@ -1,5 +1,5 @@
 import { del, get, patch, post, put } from './client';
-import type { BggPreparedGame, BggSearch, Game, GameListQuery, GameWithStats, NamedItemInput, Player, GameInput, SessionInfo, Me, Party, PartyDetail, PartyRole, MovedPlay, MovePreview, Play, PlayDefaults, SessionLastPlay, PlayInput, Stats, StatsQuery } from './types';
+import type { MyStats, BggPreparedGame, BggSearch, Game, GameListQuery, GameWithStats, NamedItemInput, Player, GameInput, SessionInfo, Me, Party, PartyDetail, PartyRole, MovedPlay, MovePreview, Play, PlayDefaults, SessionLastPlay, PlayInput, Stats, StatsQuery } from './types';
 
 /** Sestaví `?a=1&b=2`; prázdné hodnoty (undefined, null, '') vynechá, pole jde jako `a[]=1&a[]=2`. */
 export function queryString(params: object): string {
@@ -82,6 +82,7 @@ export const api = {
   movePlay: (id: number, partyId: number) => post<MovedPlay>(`/plays/${id}/move`, { partyId }),
 
   /** Statistiky; `tags`/`games` = jen vybrané hry nebo hry s aspoň jedním z tagů, `excludeTags`/`excludeGames` = bez nich. */
+  myStats: (partyId: number) => get<MyStats>(`/parties/${partyId}/stats/me`),
   stats: (partyId: number, filter: StatsQuery = {}) => get<Stats>(`/parties/${partyId}/stats${queryString(filter)}`),
 };
 
