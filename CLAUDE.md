@@ -45,7 +45,7 @@ There is no MySQL and no sudo. PHP 8.4 is the system one (`/usr/bin/php`, with G
 - Git: branch `master`, commits with the `Co-Authored-By` trailer as given by the environment. Remote `origin` = `git@github.com:krencl/hesk.git` (private repo); push works with the SSH key `/workspace/github-ssh-key` (in `.gitignore`, **never commit or print it**), which is wired into the local `core.sshCommand` (+ verified host fingerprint in `.git/github_known_hosts`; set it up again after a new container). Push only on explicit request.
 
 ## Status (2026-10-24)
-Deployed to production at https://hesk.krencl.cz/ (health check `/api/health` returns ok).
+Deployed to production at https://hesk.krencl.cz/; the dev instance (this clone) is at https://hesk-dev.krencl.cz/ (health check `/api/health` returns ok).
 
 Done: data from the old application migrated (production), guest players, auth (Google + dev login, matching old accounts by e-mail), parties/members/invitations, games (+ expansions), plays with sessions, statistics (wins, top games), mobile UI; UX following the prototype (game list with search/filter, game detail with plays and cheatsheet, session numbers, ADR 0009).
 Not done/ideas: enforcing the nickname on the backend, cleanup of orphaned uploaded images, WYSIWYG cheatsheet, CI with MySQL.
