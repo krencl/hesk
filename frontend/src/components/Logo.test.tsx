@@ -14,6 +14,7 @@ describe('Logo', () => {
     renderLogo();
     await waitFor(() => expect(screen.getByAltText('HESK').getAttribute('src')).toMatch(/logo-dev\.svg$/));
     expect([...document.head.querySelectorAll('link')].map((l) => new URL(l.href).pathname)).toEqual(['/static/favicon-dev.png', '/static/icon-dev.png', '/static/icon-dev.png']);
+    expect(document.documentElement.dataset.env).toBe('dev');
   });
 
   it('je na produkci a při chybě API modré', async () => {
