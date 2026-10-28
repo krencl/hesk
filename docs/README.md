@@ -37,6 +37,7 @@ Docs are written in English.
 | [0029](adr/0029-production-config-and-legacy-removal.md) | Production configuration, removal of the import from the old application |
 | [0030](adr/0030-nickname-per-party.md) | A member's nickname in only one party (default nickname × party nickname) |
 | [0031](adr/0031-my-stats.md) | My statistics: games with the most wins, wins by game tag |
+| [0032](adr/0032-separate-dev-database.md) | Separate development database (supersedes "no dev DB" of ADR 0029) |
 
 Notes on the reference material from previous versions: [prototype-notes.md](prototype-notes.md).
 

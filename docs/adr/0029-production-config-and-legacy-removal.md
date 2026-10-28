@@ -10,7 +10,7 @@ The application runs in production at https://hesk.krencl.cz/, the old applicati
 - **Production configuration:** `backend/.env.prod` (committed, no secrets) sets `DEFAULT_URI`, `CORS_ALLOW_ORIGIN` only to the own domain, and `FRONTEND_URL`. Secrets go into `backend/.env.prod.local` (git-ignored, `chmod 600`; template `.env.prod.local.example`) or into environment variables. `APP_ENV=prod` is set in the process environment (php-fpm), or via `composer dump-env prod`; `.env` leaves it at `dev`.
 - `dev-login` is disabled outside `dev`/`test` (404).
 
-- **No dev DB:** the database that the development environment connects to (`/workspace/.env`) is the production one. Destructive operations and migrations are run only deliberately and after a backup (see `CLAUDE.md`).
+- **No dev DB (superseded by ADR 0032, 2026-10-28):** the database that the development environment connects to (`/workspace/.env`) is the production one. Destructive operations and migrations are run only deliberately and after a backup (see `CLAUDE.md`).
 
 ## Deployment checklist
 - `APP_ENV=prod`, own `APP_SECRET`, `composer install --no-dev -o --classmap-authoritative`, `php bin/console cache:clear` and `doctrine:migrations:migrate --no-interaction`.
