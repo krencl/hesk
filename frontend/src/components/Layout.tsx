@@ -132,6 +132,11 @@ export function Layout() {
             <ErrorMessage error={logout.error} />
           </p>
         </div>
+        <footer className="menu-footer">
+          <strong>HESK {__APP_VERSION__}</strong>
+          <span>© Krencl</span>
+          <span>Aplikace slouží výhradně pro přátelské zapisování výsledků.</span>
+        </footer>
       </nav>
     </div>
   );

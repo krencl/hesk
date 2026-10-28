@@ -103,7 +103,7 @@ html[data-env='dev'] .header-button { background: #208a38; }
   position: fixed; top: 0; z-index: 40;
   left: max(0px, calc(50% - var(--max-width) / 2));
   width: min(100%, var(--max-width)); height: 100%;
-  overflow-y: auto;
+  overflow-y: auto; display: flex; flex-direction: column;
   background: rgba(196, 219, 255, 0.92); backdrop-filter: blur(3px);
   opacity: 0; visibility: hidden;
   transition: opacity var(--animation) ease-in-out, visibility var(--animation);
@@ -111,7 +111,9 @@ html[data-env='dev'] .header-button { background: #208a38; }
 .menu.visible { opacity: 1; visibility: visible; transition: opacity var(--animation) ease-in-out, visibility 1ms; }
 .menu-header { background: rgba(39, 123, 218, 0.98); color: #fff; padding: 1.2rem 4.5rem 1.2rem 1rem; min-height: calc(var(--header-height) + 1rem); }
 .menu-header h2 { margin: 0; color: #fff; font-size: 1.75rem; }
-.menu-content { padding: 1rem; }
+.menu-content { flex: 1 0 auto; padding: 1rem; }
+.menu-footer { display: grid; gap: 0.15rem; padding: 1rem; text-align: center; font-size: 0.8rem; color: var(--secondary); }
+.menu-footer strong { font-weight: 500; }
 .menu-content h4 { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 0.5rem; }
 .menu-content h4 small { display: inline; color: var(--secondary); font-size: 0.8em; }
 .menu-content h4 .btn { margin-left: auto; align-self: center; }
