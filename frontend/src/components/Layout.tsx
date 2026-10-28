@@ -7,6 +7,7 @@ import { pathForSwitchedParty } from '../lib/partyPath';
 import { canWrite } from '../lib/roles';
 import { ErrorMessage } from './ErrorMessage';
 import { Icon } from './Icon';
+import { Logo } from './Logo';
 import { ListSkeleton } from './Skeleton';
 
 export function Layout() {
@@ -55,7 +56,7 @@ export function Layout() {
     <div className="app">
       <header className="header">
         <Link to="/" aria-label="HESK – domů">
-          <img src={`${import.meta.env.BASE_URL}logo.svg`} alt="HESK" className="header-logo" />
+          <Logo className="header-logo" />
         </Link>
         <button
           type="button"

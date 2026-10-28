@@ -13,6 +13,8 @@ export function queryString(params: object): string {
 }
 
 export const api = {
+  /** Stav serveru a jeho prostředí (`APP_ENV`: dev/prod/test). */
+  health: () => get<{ status: string; env: string }>('/health'),
   me: () => get<Me>('/me'),
   setNickname: (nickname: string) => patch<Me>('/me', { nickname }),
   /** Vlastní nick v partě; prázdný = přezdívka účtu. */

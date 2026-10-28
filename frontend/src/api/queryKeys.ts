@@ -4,6 +4,7 @@
  * (bez party) detail hry ve všech partách.
  */
 export const qk = {
+  health: () => ['health'] as const,
   me: () => ['me'] as const,
   parties: () => ['parties'] as const,
   /** Detail party; bez `id` všechny načtené detaily. */

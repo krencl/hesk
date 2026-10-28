@@ -10,6 +10,7 @@ ADR 0029 recorded that there was no dev DB and that the development environment 
 - Schema commands, migrations and `dev-login` may be used in `hesk-dev`. The production clone `hesk` is only used for deployment, and its migrations are run by the owner (checklist in ADR 0029).
 - Before any DB write, verify which database `.env` points to (read only `DB_DATABASE`; never print secrets).
 - URLs: production https://hesk.krencl.cz/ (clone `hesk`), development https://hesk-dev.krencl.cz/ (clone `hesk-dev`).
+- Dev is visually distinguishable: `GET /api/health` also returns `env` (the Symfony `APP_ENV`), and the frontend `Logo` component (header and login page) uses the green `logo-dev.svg` when `env` is `dev`, otherwise the blue `logo.svg`. `logo-dev.svg` is `logo.svg` with the hue of the blue fills (`#277bda`, `#699cd6`) rotated to green (`#27da44`, `#69d67a`; same saturation and lightness) – regenerate it when `logo.svg` changes.
 
 ## Consequences
 - Migrations can be tested on the dev DB before a release.
