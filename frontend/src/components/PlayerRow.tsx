@@ -33,14 +33,8 @@ export function PlayerRow({ member, game, player, isGamePlayer, scored, winner, 
       {player && game.scoreType === 'rank_order' && (
         <input type="number" min={1} aria-label={`Pořadí ${member.name}`} placeholder="pořadí" value={player.rank} onChange={(e) => onPatch({ rank: e.target.value })} />
       )}
-      {player && game.characters.length > 0 && (
-        <select className="character" aria-label={`Postava ${member.name}`} value={player.characterId ?? ''} onChange={(e) => onPatch({ characterId: e.target.value ? Number(e.target.value) : null })}>
-          <option value="">— postava —</option>
-          {game.characters.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-        </select>
-      )}
       {player && (
-        <div className="chips">
+        <div className="chips toggles">
           {game.scoreType !== 'rank_order' && (
             <button type="button" className="chip" aria-pressed={winner} aria-label={`Vítěz ${member.name}`} onClick={onToggleWinner}>
               <Icon name="workspace_premium" /> Vítěz
@@ -50,6 +44,12 @@ export function PlayerRow({ member, game, player, isGamePlayer, scored, winner, 
             <Icon name="looks_one" /> Začíná
           </button>
         </div>
+      )}
+      {player && game.characters.length > 0 && (
+        <select className="character" aria-label={`Postava ${member.name}`} value={player.characterId ?? ''} onChange={(e) => onPatch({ characterId: e.target.value ? Number(e.target.value) : null })}>
+          <option value="">— postava —</option>
+          {game.characters.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+        </select>
       )}
     </div>
   );

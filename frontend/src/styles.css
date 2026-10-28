@@ -374,7 +374,11 @@ fieldset.plain { display: contents; border: 0; margin: 0; padding: 0; min-width:
   padding: 0.25rem 0.5rem; margin: 0 -0.5rem; border-radius: var(--radius);
 }
 .player.selected { background: #e8f0fb; }
-.player .character { grid-column: 1 / -1; }
+.player .character { grid-column: 1 / -1; justify-self: start; width: 60%; min-width: 9rem; padding: 0.2rem 0.4rem; font-size: 0.85rem; margin-bottom: 0.25rem; }
+/* Winner / starting toggles in the play form: large, touch-friendly buttons sharing the row width. */
+.player .chips.toggles { padding-bottom: 0; }
+.player .chips.toggles .chip { flex: 1; justify-content: center; gap: 0.4rem; padding: 0.55rem 0.8rem; font-size: 1rem; border-radius: 1.5rem; }
+.player .chips.toggles .chip .icon { font-size: 1.5rem; }
 .result-character { margin-left: 0.5rem; font-weight: 400; color: var(--secondary); font-size: 0.9rem; }
 .round.selected .results li.winner .result-character { color: var(--secondary); }
 .chips { grid-column: 1 / -1; display: flex; gap: 0.5rem; padding-bottom: 0.25rem; }
