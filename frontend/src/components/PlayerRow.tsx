@@ -24,8 +24,10 @@ export function PlayerRow({ member, game, player, isGamePlayer, scored, winner, 
     <div className={`player${player ? ' selected' : ''}`}>
       <label className="check">
         <input type="checkbox" checked={!!player} onChange={onToggle} />
-        {member.name}
-        {isGamePlayer && <span className="muted hint"> hráč hry</span>}
+        <span className="player-name">
+          {member.name}
+          {isGamePlayer && <span className="muted hint"> hráč hry</span>}
+        </span>
       </label>
       {player && scored && (
         <input inputMode="decimal" aria-label={`Skóre ${member.name}`} placeholder="skóre" value={player.score} onChange={(e) => onPatch({ score: e.target.value })} />

@@ -370,15 +370,19 @@ fieldset.plain { display: contents; border: 0; margin: 0; padding: 0; min-width:
 .field { display: grid; gap: 0.25rem; }
 .field-label { font-size: 0.9rem; color: var(--secondary); }
 .player {
-  display: grid; grid-template-columns: minmax(0, 1fr) 6.5rem; gap: 0.25rem 0.5rem; align-items: center;
+  display: grid; grid-template-columns: 1.25rem minmax(0, 1fr) 6.5rem; gap: 0.25rem 0.5rem; align-items: center;
   padding: 0.25rem 0.5rem; margin: 0 -0.5rem; border-radius: var(--radius);
 }
+/* The checkbox gets its own column; name, score, toggles and character line up in the columns to its right. */
+.player label.check { display: contents; }
+.player label.check input[type='checkbox'] { grid-column: 1; margin: 0; width: 1.1rem; height: 1.1rem; }
+.player .player-name { grid-column: 2; min-width: 0; }
 .player.selected { background: #e8f0fb; }
-.player .character { grid-column: 1 / -1; justify-self: start; width: 60%; min-width: 9rem; padding: 0.2rem 0.4rem; font-size: 0.85rem; margin-bottom: 0.25rem; }
-/* Winner / starting toggles in the play form: large, touch-friendly buttons sharing the row width. */
-.player .chips.toggles { padding-bottom: 0; }
-.player .chips.toggles .chip { flex: 1; justify-content: center; gap: 0.4rem; padding: 0.55rem 0.8rem; font-size: 1rem; border-radius: 1.5rem; }
-.player .chips.toggles .chip .icon { font-size: 1.5rem; }
+.player .character { grid-column: 2 / -1; justify-self: start; width: 60%; min-width: 9rem; padding: 0.2rem 0.4rem; font-size: 0.85rem; margin-bottom: 0.25rem; }
+/* Winner / starting toggles in the play form: only slightly larger than the default chips. */
+.player .chips.toggles { grid-column: 2 / -1; padding-bottom: 0; }
+.player .chips.toggles .chip { padding: 0.3rem 0.8rem 0.3rem 0.5rem; font-size: 0.95rem; border-radius: 1.2rem; }
+.player .chips.toggles .chip .icon { font-size: 1.3rem; }
 .result-character { margin-left: 0.5rem; font-weight: 400; color: var(--secondary); font-size: 0.9rem; }
 .round.selected .results li.winner .result-character { color: var(--secondary); }
 .chips { grid-column: 1 / -1; display: flex; gap: 0.5rem; padding-bottom: 0.25rem; }
