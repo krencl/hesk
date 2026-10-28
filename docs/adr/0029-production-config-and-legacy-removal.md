@@ -1,20 +1,20 @@
-# 0029 – Produkční konfigurace a odstranění importu ze staré aplikace
+# 0029 – Production configuration and removal of the old-application import
 
-Stav: přijato (2026-10-24)
+Status: accepted (2026-10-24)
 
-## Kontext
-Aplikace běží v produkci na https://hesk.krencl.cz/, stará aplikace i její adresáře byly odstraněny a data jsou převedená. Import (ADR 0007, 0012) a s ním související kód už nemá využití.
+## Context
+The application runs in production at https://hesk.krencl.cz/, the old application and its directories have been removed and the data has been migrated. The import (ADR 0007, 0012) and the related code no longer have any use.
 
-## Rozhodnutí
-- **Import odstraněn:** `app:legacy:import`, `app:legacy:reset`, `src/Legacy/*`, `LegacyImportTest` (a s ním `TestDatabase`, `SqliteNoFsyncMiddleware`), `ResetLegacyCommandTest`, proměnné `LEGACY_DB_*`, `schema_filter` pro `legacy_*` a záloha starých obálek (`/legacy-covers/`). Obnovit jde z gitu: poslední commit, který je obsahuje, je `a4d9414` (`git checkout a4d9414 -- backend/src/Legacy backend/src/Command …`). ADR 0007 a 0012 zůstávají jako historie.
-- **Produkční konfigurace:** `backend/.env.prod` (commitovaný, bez tajemství) nastavuje `DEFAULT_URI`, `CORS_ALLOW_ORIGIN` jen na vlastní doménu a `FRONTEND_URL`. Tajemství jdou do `backend/.env.prod.local` (git-ignorováno, `chmod 600`; šablona `.env.prod.local.example`) nebo do proměnných prostředí. `APP_ENV=prod` se nastavuje v prostředí procesu (php-fpm), případně `composer dump-env prod`; `.env` ho nechává na `dev`.
-- `dev-login` je mimo `dev`/`test` vypnutý (404).
+## Decision
+- **Import removed:** `app:legacy:import`, `app:legacy:reset`, `src/Legacy/*`, `LegacyImportTest` (and with it `TestDatabase`, `SqliteNoFsyncMiddleware`), `ResetLegacyCommandTest`, the `LEGACY_DB_*` variables, the `schema_filter` for `legacy_*` and the backup of old covers (`/legacy-covers/`). It can be restored from git: the last commit containing them is `a4d9414` (`git checkout a4d9414 -- backend/src/Legacy backend/src/Command …`). ADR 0007 and 0012 remain as history.
+- **Production configuration:** `backend/.env.prod` (committed, no secrets) sets `DEFAULT_URI`, `CORS_ALLOW_ORIGIN` only to the own domain, and `FRONTEND_URL`. Secrets go into `backend/.env.prod.local` (git-ignored, `chmod 600`; template `.env.prod.local.example`) or into environment variables. `APP_ENV=prod` is set in the process environment (php-fpm), or via `composer dump-env prod`; `.env` leaves it at `dev`.
+- `dev-login` is disabled outside `dev`/`test` (404).
 
-- **Žádná dev DB:** databáze, ke které se připojuje vývojové prostředí (`/workspace/.env`), je produkční. Destruktivní operace a migrace se spouštějí jen vědomě a po záloze (viz `CLAUDE.md`).
+- **No dev DB:** the database that the development environment connects to (`/workspace/.env`) is the production one. Destructive operations and migrations are run only deliberately and after a backup (see `CLAUDE.md`).
 
-## Kontrolní seznam nasazení
-- `APP_ENV=prod`, vlastní `APP_SECRET`, `composer install --no-dev -o --classmap-authoritative`, `php bin/console cache:clear` a `doctrine:migrations:migrate --no-interaction`.
-- `npm run build` (výstup `web/static/`), nginx podle ADR 0006 a navíc `location /uploads/ { }` (obrázky her) – složka `web/uploads/` musí být zapisovatelná pro PHP a zálohovaná.
-- Google Console: redirect URI `https://hesk.krencl.cz/oauth/google/check`; nginx posílá `X-Forwarded-Proto/Host/Port`.
-- Správce her: `php bin/console app:user:role <e-mail> ROLE_GAMES_ADMIN`.
-- Zálohy DB a `web/uploads/`.
+## Deployment checklist
+- `APP_ENV=prod`, own `APP_SECRET`, `composer install --no-dev -o --classmap-authoritative`, `php bin/console cache:clear` and `doctrine:migrations:migrate --no-interaction`.
+- `npm run build` (output `web/static/`), nginx per ADR 0006 plus `location /uploads/ { }` (game images) – the `web/uploads/` folder must be writable by PHP and backed up.
+- Google Console: redirect URI `https://hesk.krencl.cz/oauth/google/check`; nginx sends `X-Forwarded-Proto/Host/Port`.
+- Game administrator: `php bin/console app:user:role <e-mail> ROLE_GAMES_ADMIN`.
+- Backups of the DB and `web/uploads/`.

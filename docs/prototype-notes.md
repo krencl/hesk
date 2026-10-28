@@ -1,14 +1,14 @@
-# Poznámky ke vzorům
+# Notes on the Reference Versions
 
-> Adresáře `/hesk-original` a `/hesk-dev-old` byly 2026-10-24 po nasazení nové aplikace do produkce (https://hesk.krencl.cz/) odstraněny; poznámky zůstávají jako historie.
+> The directories `/hesk-original` and `/hesk-dev-old` were removed on 2026-10-24 after the new application was deployed to production (https://hesk.krencl.cz/); the notes remain as history.
 
-## `/hesk-original` (produkce)
-Node.js + Express + RethinkDB + AngularJS. Globální katalog her, role admin přes heslo, „rounds“ s `scoring` typy `score | lowestScore | order | check`, verze hry, postavy, „první hráč“, tagy. Z toho nové zadání přebírá typy bodování (mapování: `score`→`most_points`, `lowestScore`→`fewest_points`, `order`→`rank_order`, `check`→`winner_only`).
+## `/hesk-original` (production)
+Node.js + Express + RethinkDB + AngularJS. Global game catalog, admin role via password, "rounds" with `scoring` types `score | lowestScore | order | check`, game version, characters, "first player", tags. The new assignment takes over the scoring types from it (mapping: `score`→`most_points`, `lowestScore`→`fewest_points`, `order`→`rank_order`, `check`→`winner_only`).
 
-## `/hesk-dev-old` (rozpracovaný prototyp)
-Symfony 5 + Dibi + Vue 3. Koncept „Party“, mobilní GUI (max. šířka 400 px, hlavní barva `#277bda`, font Signika, kulatý přepínač party v hlavičce), `SPECIFICATION.md`. Adresář leží mimo repozitář (jen referenční).
+## `/hesk-dev-old` (work-in-progress prototype)
+Symfony 5 + Dibi + Vue 3. The "Party" concept, mobile GUI (max. width 400 px, main color `#277bda`, Signika font, round party switcher in the header), `SPECIFICATION.md`. The directory lives outside the repository (reference only).
 
-## Převzato / změněno
-- Převzato: koncept part a rolí, mobile-first, top bar s přepínačem party, statistiky (výhry, nejhranější hry), barvy a font.
-- Nově: Doctrine místo Dibi, React místo Vue, seance (24 h), rozšíření místo „verzí hry“.
-- Zatím nepřevzato z originálu: postavy, „začínající hráč“, porovnání her, filtry – kandidáti na další iterace (po ujasnění s uživatelem).
+## Taken over / changed
+- Taken over: the concept of parties and roles, mobile-first, top bar with a party switcher, statistics (wins, most-played games), colors and font.
+- New: Doctrine instead of Dibi, React instead of Vue, sessions (24 h), expansions instead of "game versions".
+- Not taken over from the original yet: characters, "starting player", game comparison, filters – candidates for further iterations (after clarifying with the user).

@@ -1,28 +1,28 @@
-# ADR 0013: Výchozí hodnoty formuláře zápisu, číslo sezení, tagy s našeptáváním, zrušení míst
+# ADR 0013: Play form defaults, session number, tags with suggestions, removal of places
 
-Stav: přijato (2026-10-16)
+Status: accepted (2026-10-16)
 
-## Kontext
-Formulář nového zápisu byl prázdný: číslo sezení se nedalo zadat ani vidět, hráče bylo nutné pokaždé zaškrtat znovu a místo i tagy se psaly jako volný text (tagy čárkou) bez znalosti dosud použitých hodnot. Místo se od tagu v ničem nelišilo, proto se zrušilo.
+## Context
+The new play form was empty: the session number could be neither entered nor seen, players had to be ticked again every time, and both place and tags were typed as free text (tags separated by commas) without knowing the values used so far. A place did not differ from a tag in any way, so it was removed.
 
-## Rozhodnutí
-**Pořadí polí ve formuláři:** číslo sezení, začátek a konec vedle sebe, hráči, rozšíření, tagy, poznámka.
+## Decision
+**Field order in the form:** session number, start and end side by side, players, expansions, tags, note.
 
-**Číslo sezení** (backend `SessionAssigner`, `PlayRequest.sessionNumber`)
-- `GET /api/parties/{id}/plays/defaults?startedAt&endedAt` vrací `sessionNumber` a `playerIds`. Číslo je číslo sezení, do kterého by zápis v daném čase spadl (24h pravidlo jako při ukládání); jinak o jedno víc než nejvyšší existující. Příklad: poslední sezení 95 → další zápis téhož dne opět 95, zápis o měsíc později 96.
-- `tags` jsou tagy posledního zápisu toho sezení (prázdné, když sezení není); formulář je předvyplní.
-- `playerIds` jsou hráči posledního zápisu (podle konce hry) toho sezení, nebo `null`, když sezení ještě není (první hra dne). Frontend pak předvybere členy party s účtem (`defaultPlayerIds`); vlastní hráč hry se vždy přidá.
-- Formulář číslo předvyplní a při změně začátku/konce ho znovu navrhne, dokud ho uživatel sám nezměnil. **Posílá se jen ručně změněné číslo** (`sessionNumber` v `PlayRequest`); jinak sezení určí backend jako dřív, takže zobrazené číslo odpovídá uloženému a úprava času zápisu dál přesouvá zápis mezi sezeními automaticky.
-- Ručně zadané číslo: existuje-li sezení s tímto číslem, zápis se do něj zařadí (i mimo 24h okno, hranice sezení se rozšíří); jinak vznikne nové sezení s tímto číslem (např. navázání na starou řadu). Číslo musí být kladné.
+**Session number** (backend `SessionAssigner`, `PlayRequest.sessionNumber`)
+- `GET /api/parties/{id}/plays/defaults?startedAt&endedAt` returns `sessionNumber` and `playerIds`. The number is the number of the session the play would fall into at the given time (the 24h rule as when saving); otherwise one more than the highest existing one. Example: last session 95 → the next play on the same day is again 95, a play a month later is 96.
+- `tags` are the tags of the last play of that session (empty when the session does not exist); the form pre-fills them.
+- `playerIds` are the players of the last play (by game end) of that session, or `null` when the session does not exist yet (first game of the day). The frontend then preselects party members with an account (`defaultPlayerIds`); the game's own player is always added.
+- The form pre-fills the number and proposes it again when the start/end changes, until the user changes it manually. **Only a manually changed number is sent** (`sessionNumber` in `PlayRequest`); otherwise the backend determines the session as before, so the displayed number matches the stored one and editing a play's time still moves the play between sessions automatically.
+- Manually entered number: if a session with this number exists, the play is placed into it (even outside the 24h window, the session boundaries are extended); otherwise a new session with this number is created (e.g. continuing an old series). The number must be positive.
 
-**Místa zrušena** (migrace `Version20261018000000`): entita `Place`, `play.place_id`, pole `place` v API i formuláři zmizely. Stávající místa se v migraci převedou na tagy (jméno se založí jako tag party, pokud tam ještě není, a přiřadí se zápisům, které měly místo); tabulka `place` se smaže. `down()` schéma vrátí, ale data ne.
+**Places removed** (migration `Version20261018000000`): the `Place` entity, `play.place_id` and the `place` field in the API and form are gone. Existing places are converted to tags in the migration (the name is created as a party tag if not yet there and assigned to plays that had the place); the `place` table is dropped. `down()` restores the schema but not the data.
 
-**Tagy** (`Autocomplete`, `TagInput`, `GET /api/parties/{id}/tags`)
-- Žádné tlačítko „přidat“: uživatel buď vybere z nabídky, nebo napíše novou hodnotu, která se založí při uložení zápisu. Nabídka se ukáže po zaostření (jako select) a při psaní se zužuje bez ohledu na velikost písmen a diakritiku.
-- Tagy jsou štítky přímo v rámečku inputu (Backspace v prázdném poli odebere poslední). Po přidání tagu input zůstává zaostřený a nabídka otevřená, takže jde vybírat dál; křížek ani nabídka zaostření nebere.
-- Tagy jsou štítky s odebráním; psaný text se přidá Enterem, čárkou, výběrem z nabídky nebo opuštěním pole (rozepsaný tag se neztratí při uložení). Velikost písmen se sjednotí s existujícím tagem.
-- Vlastní komponenta místo `<datalist>`: jednotný vzhled a chování na mobilech a testovatelnost.
+**Tags** (`Autocomplete`, `TagInput`, `GET /api/parties/{id}/tags`)
+- No "add" button: the user either picks from the suggestions or types a new value, which is created when the play is saved. The suggestions appear on focus (like a select) and narrow as you type, ignoring case and diacritics.
+- Tags are chips directly inside the input box (Backspace in an empty field removes the last one). After adding a tag the input stays focused and the suggestions stay open, so you can keep selecting; neither the cross nor the suggestions take focus.
+- Tags are chips with a remove button; typed text is added with Enter, a comma, a pick from the suggestions or leaving the field (a half-typed tag is not lost on save). Letter case is unified with an existing tag.
+- A custom component instead of `<datalist>`: uniform look and behavior on mobile and testability.
 
-## Důsledky
-- Při úpravě zápisu je číslo sezení zobrazené z uloženého zápisu a návrh se nepřepočítává; změna času uvnitř sezení ho nemění, přesun mimo ně posune zápis automaticky (číslo se neposílá).
-- Po uložení zápisu se zneplatní seznam tagů i výchozí hodnoty (`refreshAfterPlayChange`).
+## Consequences
+- When editing a play, the session number is shown from the stored play and the suggestion is not recomputed; changing the time within the session does not change it, moving outside it shifts the play automatically (the number is not sent).
+- After a play is saved, the tag list and the defaults are invalidated (`refreshAfterPlayChange`).

@@ -1,16 +1,16 @@
-# ADR 0019: Víc hráčů hry, editace jménem jako postavy
+# ADR 0019: Multiple game players, editing by name like characters
 
-Stav: přijato (2026-10-21)
+Status: accepted (2026-10-21)
 
-## Kontext
-Hráč hry (protivník v kooperativních hrách, ADR 0011) byl jeden a ve formuláři hry se vybíral z existujících hostů. Hra ale může mít hráčů víc (např. několik protivníků) a výběr z hostů byl nepraktický oproti postavám, které se prostě píšou jménem.
+## Context
+The game player (the opponent in cooperative games, ADR 0011) was a single one and was picked from existing guests in the game form. But a game can have more players (e.g. several opponents) and picking from guests was impractical compared to characters, which are simply typed by name.
 
-## Rozhodnutí
-- **Víc hráčů hry:** `game.player_id` nahradila vazební tabulka `game_player` (`Game::$players`, many-to-many s `Player`, `ON DELETE CASCADE`). Migrace `Version20261025000000` hodnoty přenese; `down` vrátí nejnižší id.
-- **API:** hra vrací `players: [{id, name}]` a bere `players: [{id?, name}]` (jako `addons` a `characters`, `playerId` zaniklo). `id` je **id hráče party**. Pravidla v `Game::update`: položka s `id` přejmenuje hráče (jen hosta; člena s účtem ne, jeho jméno určuje přezdívka), bez `id` se spáruje podle jména s hráčem party (včetně člena), jinak vznikne nový host (`Party::addGuest`). Prázdná a opakovaná jména se zahodí, cizí hráč (jiná parta) se odmítne (422). Odebraný hráč zůstává v partě (Hosté), jen přestane být hráčem hry. Přejmenování sdílí `Party::renamePlayer` s `PATCH /api/players/{id}`.
-- **UI:** formulář hry používá `NamedListEditor` („Hráči hry“, Přidat hráče hry, křížek odebere), žádný výběr z existujících hráčů. Formulář nového zápisu předvybere všechny hráče hry a ukáže je první.
-- **Sloučení hosta s členem** (ADR 0018) nahradí hosta členem v hráčích her; **smazání hosta** je zakázané, dokud je hráčem nějaké hry. Import ze staré aplikace přidá všechny hráče typu „game“ dané hry, ruční změny v nové aplikaci neodebírá.
+## Decision
+- **Multiple game players:** `game.player_id` was replaced by the join table `game_player` (`Game::$players`, many-to-many with `Player`, `ON DELETE CASCADE`). Migration `Version20261025000000` carries the values over; `down` restores the lowest id.
+- **API:** a game returns `players: [{id, name}]` and takes `players: [{id?, name}]` (like `addons` and `characters`, `playerId` is gone). `id` is the **party player id**. Rules in `Game::update`: an item with `id` renames the player (guests only; not a member with an account, whose name is determined by the nickname), without `id` it is matched by name to a party player (including a member), otherwise a new guest is created (`Party::addGuest`). Empty and duplicate names are discarded, a foreign player (another party) is rejected (422). A removed player stays in the party (Guests), it just stops being a game player. Renaming shares `Party::renamePlayer` with `PATCH /api/players/{id}`.
+- **UI:** the game form uses `NamedListEditor` ("Hráči hry" (Game players), "Přidat hráče hry" (Add game player), the cross removes), no picking from existing players. The new play form preselects all game players and shows them first.
+- **Merging a guest with a member** (ADR 0018) replaces the guest with the member in game players; **deleting a guest** is forbidden while they are a player of some game. The import from the old application adds all players of type "game" of the given game, and does not remove manual changes made in the new application.
 
-## Důsledky
-- Přejmenování hráče hry ve formuláři hry přejmenuje hráče party všude (i ve starých zápisech), stejně jako přejmenování postavy.
-- Hráč založený z formuláře hry je v databázi běžný `Player` bez účtu, ale **ve správě party (záložka Hosté) se nezobrazuje**: `GET /api/parties/{id}/players` u každého hráče vrací `gamePlayer` (je hráčem aspoň jedné hry party, `PartyGameRepository::gamePlayerIds`) a Hosté takové hráče vynechá. Spravuje se jen ve formuláři hry. Ve formuláři zápisu je vidět vždy jen u své hry (jako člen party, předvybraný a první); v zápisech jiných her se mezi hosty nenabízí (už vybraný zůstává). Odebráním z hráčů hry se z něj zase stane obyčejný host.
+## Consequences
+- Renaming a game player in the game form renames the party player everywhere (also in old plays), just like renaming a character.
+- A player created from the game form is an ordinary `Player` without an account in the database, but **is not shown in party management (Guests tab)**: `GET /api/parties/{id}/players` returns `gamePlayer` for each player (is a player of at least one party game, `PartyGameRepository::gamePlayerIds`) and Guests omits such players. They are managed only in the game form. In the play form they are visible only for their own game (as a party member, preselected and first); in plays of other games they are not offered among guests (one already selected stays). Removing them from the game players turns them back into an ordinary guest.

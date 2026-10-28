@@ -1,13 +1,13 @@
-# 0030 – Nick v partě
+# 0030 – Nickname per party
 
-Stav: přijato (2026-10-27)
+Status: accepted (2026-10-27)
 
-## Kontext
-Hráč měl jednu přezdívku účtu, která se propsala do jména jeho hráče ve všech partách. V různých partách ale chce být jmenován různě.
+## Context
+A player had a single account nickname, which carried over into the name of their player in all parties. In different parties, however, they want to be called differently.
 
-## Rozhodnutí
-- `party_member.nickname` (nullable): nick člena jen v dané partě. Jméno člena v partě je `PartyMember::displayName()` = nick v partě, jinak přezdívka účtu („defaultní nick“, použije se i pro nové party).
-- Jméno hráče člena (`Player.name`, vidět v zápisech a statistikách) se řídí tímto jménem: `Party::changeMemberNickname` ho přejmenuje (obsazené jméno → `DomainException`, 422), `syncPlayerName` (změna přezdívky účtu) nick v partě nepřebíjí.
-- API: `PATCH /api/parties/{id}/me` s `{nickname: string|null}` (prázdný = zpět na přezdívku účtu), vrací detail party; členové v detailu mají `nickname` (efektivní jméno) a `partyNickname` (jen nick v partě).
-- UI: Nastavení → „Defaultní nick, použije se pro nové party“ a pod tím pole „Nick v partě <název aktivní party>“ s defaultním nickem jako placeholderem.
-- Migrace `Version20261027082517`.
+## Decision
+- `party_member.nickname` (nullable): the member's nickname only in the given party. A member's name in the party is `PartyMember::displayName()` = the nickname in the party, otherwise the account nickname ("default nickname", also used for new parties).
+- The member's player name (`Player.name`, visible in plays and statistics) follows this name: `Party::changeMemberNickname` renames it (a taken name → `DomainException`, 422), `syncPlayerName` (change of the account nickname) does not override the nickname in the party.
+- API: `PATCH /api/parties/{id}/me` with `{nickname: string|null}` (empty = back to the account nickname), returns the party detail; members in the detail have `nickname` (the effective name) and `partyNickname` (only the nickname in the party).
+- UI: Settings → "Defaultní nick, použije se pro nové party" (Default nickname, used for new parties) and below it a field "Nick v partě <name of the active party>" (Nickname in the party) with the default nickname as the placeholder.
+- Migration `Version20261027082517`.

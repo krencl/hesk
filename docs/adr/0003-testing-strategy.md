@@ -1,13 +1,13 @@
-# 0003 – Strategie testování
+# 0003 – Testing Strategy
 
-Stav: přijato (2026-10-02); funkční testy API nahrazeny unit testy s mocky, viz [0022](0022-backend-tests-without-database.md)
+Status: accepted (2026-10-02); functional API tests replaced by unit tests with mocks, see [0022](0022-backend-tests-without-database.md)
 
-## Rozhodnutí
-- **Backend – unit testy** (`backend/tests/Unit`): čistá doménová logika bez DB – `ResultCalculator`, `Party` (invarianty adminů), `GameSession` (24h okno), `Game` (synchronizace rozšíření), `SessionAssigner` (repozitář jako stub).
-- **Backend – funkční testy API** (`backend/tests/Functional`): celé HTTP toky přes `WebTestCase` nad **SQLite** (`.env.test`), schéma se vytváří `SchemaTool`. Důvod: rychlé, bez serveru. Pokrývá auth, oprávnění, vytvoření zápisu, seance, statistiky.
-- **Frontend** (`frontend/src/**/*.test.ts(x)`): Vitest + jsdom. Čistá logika v `src/lib` (formulář zápisu, seskupení seancí, aktivní parta) a komponenty/stránky s mockovaným `fetch`.
-- Spuštění: `cd backend && php bin/phpunit`, `cd frontend && npm test`.
+## Decision
+- **Backend – unit tests** (`backend/tests/Unit`): pure domain logic without a DB – `ResultCalculator`, `Party` (admin invariants), `GameSession` (24h window), `Game` (expansion synchronization), `SessionAssigner` (repository as a stub).
+- **Backend – functional API tests** (`backend/tests/Functional`): whole HTTP flows via `WebTestCase` on **SQLite** (`.env.test`), the schema is created by `SchemaTool`. Reason: fast, no server needed. Covers auth, permissions, play creation, sessions, statistics.
+- **Frontend** (`frontend/src/**/*.test.ts(x)`): Vitest + jsdom. Pure logic in `src/lib` (play form, session grouping, active party) and components/pages with a mocked `fetch`.
+- Running: `cd backend && php bin/phpunit`, `cd frontend && npm test`.
 
-## Důsledky / limity
-- Funkční testy neběží proti MySQL, takže rozdíly platforem (collation, striktní režim, DQL specifika) nezachytí. **Schéma/migrace pro MySQL nebyly proti živému serveru ověřeny** – `Version20261002000000` je vygenerována z `doctrine:schema:create --dump-sql` pro platformu MySQL 8.4. Před prvním nasazením spustit migrace na reálném MySQL a ideálně přidat CI job s MySQL službou.
-- Žádné E2E testy v prohlížeči (zatím).
+## Consequences / limits
+- Functional tests do not run against MySQL, so they do not catch platform differences (collation, strict mode, DQL specifics). **The schema/migrations for MySQL have not been verified against a live server** – `Version20261002000000` was generated from `doctrine:schema:create --dump-sql` for the MySQL 8.4 platform. Before the first deployment, run the migrations on a real MySQL and ideally add a CI job with a MySQL service.
+- No E2E browser tests (yet).

@@ -1,16 +1,16 @@
-# 0027 – Uzavřená registrace
+# 0027 – Closed registration
 
-Stav: přijato (2026-10-23)
+Status: accepted (2026-10-23)
 
-## Kontext
-Aplikace se zatím používá jen v uzavřené partě, ale přihlášení přes Google (ADR 0002) dosud zakládalo účet každému, kdo se přihlásil.
+## Context
+The application so far is used only by a closed party, but the Google login (ADR 0002) has so far created an account for anyone who logged in.
 
-## Rozhodnutí
-- Při přihlášení přes Google se **účet nezaloží**, pokud uživatel není v databázi (podle `googleId`, nebo e-mailu účtu převzatého ze staré aplikace) a nepřichází s platnou pozvánkou. Existující uživatelé se přihlašují beze změny.
-- Pozvánky (`PartyInvitation`) jsou odkazy s tokenem (`/join/<token>`), nejsou vázané na e-mail. Frontend proto při přihlášení nepřihlášeného uživatele z odkazu pozvánky předá token: `GET /api/auth/google?invitation=<token>` ho uloží do session, `googleCallback` ho po návratu z Googlu přečte (a z session smaže) a nový účet povolí jen u existující a neprošlé pozvánky.
-- Odmítnutý nový uživatel je přesměrován na `FRONTEND_URL/?registration=denied` a přihlašovací stránka vysvětlí, že registrace je uzavřená a je potřeba pozvánka.
-- `POST /api/auth/dev-login` (jen `dev`/`test`) se nemění.
+## Decision
+- On Google login an **account is not created** if the user is not in the database (by `googleId`, or by the e-mail of an account taken over from the old application) and does not come with a valid invitation. Existing users log in unchanged.
+- Invitations (`PartyInvitation`) are links with a token (`/join/<token>`), not bound to an e-mail. The frontend therefore passes the token when a not-logged-in user logs in from an invitation link: `GET /api/auth/google?invitation=<token>` stores it in the session, `googleCallback` reads it after the return from Google (and deletes it from the session) and allows a new account only for an existing, unexpired invitation.
+- A rejected new user is redirected to `FRONTEND_URL/?registration=denied` and the login page explains that registration is closed and an invitation is needed.
+- `POST /api/auth/dev-login` (only `dev`/`test`) is unchanged.
 
-## Důsledky
-- Pozvánku může využít kdokoli, kdo odkaz má (platí 7 dní); omezení na konkrétní e-mail by vyžadovalo změnu pozvánek.
-- Nový člen se po registraci do party přidá obvyklým přijetím pozvánky (`/join/<token>`), které si frontend pamatuje přes přihlášení.
+## Consequences
+- An invitation can be used by anyone who has the link (valid for 7 days); restricting it to a specific e-mail would require changing invitations.
+- After registering, the new member is added to the party by the usual acceptance of the invitation (`/join/<token>`), which the frontend remembers across the login.

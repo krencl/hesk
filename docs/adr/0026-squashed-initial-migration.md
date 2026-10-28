@@ -1,16 +1,16 @@
-# 0026 – Jedna úvodní migrace místo historie
+# 0026 – A single initial migration instead of a history
 
-Stav: přijato (2026-10-23)
+Status: accepted (2026-10-23)
 
-## Kontext
-Za dobu vývoje vzniklo 19 migrací (přejmenování legacy tabulek, jednorázový import dat, průběžné změny schématu). Produkční data zatím neexistují a data ze staré aplikace se přenášejí příkazem `app:legacy:import` (ADR 0012), takže historie migrací nemá co chránit a jen zpomaluje založení databáze. Živá dev DB navíc po průběžných migracích nesouhlasila s entitami (přebytečný index na `play`).
+## Context
+During development 19 migrations accumulated (renaming of legacy tables, a one-off data import, incremental schema changes). There is no production data yet and the data from the old application is transferred by the `app:legacy:import` command (ADR 0012), so the migration history has nothing to protect and only slows down database creation. Moreover, the live dev DB, after the incremental migrations, did not match the entities (a redundant index on `play`).
 
-## Rozhodnutí
-- Všechny dosavadní migrace nahrazuje jediná `Version20261023000000` s čistým schématem vygenerovaným z entit (`doctrine:schema:create --dump-sql`). Nepřejmenovává legacy tabulky ani nepřenáší data – to dělá `app:legacy:import` (nahrazuje i migraci `…000200` z ADR 0007).
-- Existující databáze se nepřevádí: smaže se (`doctrine:schema:drop --full-database --force`), znovu se spustí `doctrine:migrations:migrate` a `app:legacy:import`.
-- **Od prvního nasazení do produkce se migrace už neslučují** – změny entit jdou do nových migrací (`doctrine:migrations:diff`).
+## Decision
+- All existing migrations are replaced by a single `Version20261023000000` with a clean schema generated from the entities (`doctrine:schema:create --dump-sql`). It does not rename legacy tables or transfer data – `app:legacy:import` does that (it also replaces migration `…000200` from ADR 0007).
+- An existing database is not converted: it is dropped (`doctrine:schema:drop --full-database --force`), then `doctrine:migrations:migrate` and `app:legacy:import` are run again.
+- **From the first production deployment on, migrations are no longer squashed** – entity changes go into new migrations (`doctrine:migrations:diff`).
 
-## Důsledky
-- Nová databáze se založí jedinou migrací a `doctrine:schema:validate` je v souladu s mapováním.
-- Tabulky `legacy_*` (ADR 0007) už neexistují; zdrojem dat je přímo stará DB přes `LEGACY_DB_*`.
-- Role (`ROLE_GAMES_ADMIN`) a obálky her nejsou ve staré DB, po smazání databáze se musí vrátit (`app:user:role`, `image_url`).
+## Consequences
+- A new database is created by a single migration and `doctrine:schema:validate` is consistent with the mapping.
+- The `legacy_*` tables (ADR 0007) no longer exist; the data source is the old DB directly via `LEGACY_DB_*`.
+- Roles (`ROLE_GAMES_ADMIN`) and game covers are not in the old DB, so after wiping the database they must be restored (`app:user:role`, `image_url`).

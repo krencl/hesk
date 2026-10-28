@@ -1,21 +1,21 @@
-# 0028 – Přesun zápisu do jiné party
+# 0028 – Moving a play to another party
 
-Stav: přijato (2026-10-24)
+Status: accepted (2026-10-24)
 
-## Kontext
-Zápis se občas omylem založí v jiné partě (s podobnými hráči) a po importu ze staré aplikace je potřeba napravit rozdělení zápisů mezi party. Zápis (`Play`) patří jedné partě, stejně jako jeho seance (`GameSession`), hráči (`Player`) a tagy (`PlayTag`); hra, rozšíření a postavy jsou ve sdíleném katalogu (ADR 0023).
+## Context
+A play is occasionally created by mistake in a different party (one with similar players), and after the import from the old application the split of plays between parties needs to be corrected. A play (`Play`) belongs to one party, as do its sessions (`GameSession`), players (`Player`) and tags (`PlayTag`); the game, expansions and characters are in the shared catalog (ADR 0023).
 
-## Rozhodnutí
-- `POST /api/plays/{id}/move` s `{partyId}`; smí to jen **správce zdrojové i cílové party**. Neexistující cílová parta a parta, kde volající není správce, se nerozlišují (422), aby šlo zjistit, jaké party existují.
-- Logika je ve službě `PlayMover` a běží v jedné transakci:
-  - **Hra** se do cílové party zařadí (`Party::addGame`), pokud tam ještě není; ve zdrojové partě zůstává. Rozšíření a postavy patří hře, takže se nemění. Je-li hráč zápisu zároveň „hráčem hry“ (ADR 0019) ve zdrojové partě, stane se jím i v cílové.
-  - **Hráči** (`PlayResult.player`): člen s účtem se najde podle účtu, jinak se hledá **host cílové party se stejným jménem** (`NameKey`, ADR 0025) a považuje se za tutéž osobu; kdo tam není, vznikne jako **host** (se stejnou viditelností). Jméno obsazené členem s jiným účtem dostane číslo („Bob 2“), protože jména v partě jsou unikátní; přejmenovat a propojit ho jde pak ve správě hostů (ADR 0018). Jednoho hráče cílové party nelze použít dvakrát (unikát zápis + hráč).
-  - **Tagy** se znovu založí/najdou v cílové partě podle názvu.
-  - **Seance**: původní seance se přepočítá bez přesouvaného zápisu (prázdná zanikne), zápis se zařadí do seance cílové party podle 24h pravidla (`SessionAssigner`, číslo se přidělí automaticky).
-- **Náhled před potvrzením:** `GET /api/plays/{id}/move-preview?partyId=` (stejná oprávnění) vrátí `{party, gameAdded, players: [{playerId, name, targetName, fromMember, toMember, created}]}`. Počítá ho `PlayMover::plan()` – tatáž funkce, kterou pak používá `move()` (nic se tedy nerozejde), a nic nemění. Popup před tlačítkem „Přesunout“ vypíše u každého hráče „Jméno → cílové jméno“ a co se stane (člen/host beze změny, z člena na hosta, nový host) a zda se do cílové party zařadí hra; dokud se náhled nenačte, jde tlačítko zablokované.
-- Odpověď: `{play, party: {id, name}, createdGuests: [jména]}`. Zdrojová parta o zápis přijde i ve statistikách; hosté a hráči, kteří tím zůstali bez zápisů, se nemažou.
-- Frontend: pod formulářem úpravy zápisu odkaz „Přesunout do jiné party“ (jen správci, kteří jsou správci aspoň v jedné další partě) → popup s výběrem party → potvrzení → výsledek se jmény nově založených hostů.
+## Decision
+- `POST /api/plays/{id}/move` with `{partyId}`; allowed only for an **administrator of both the source and the target party**. A nonexistent target party and a party where the caller is not an administrator are not distinguished (422), so that one cannot find out which parties exist.
+- The logic is in the `PlayMover` service and runs in a single transaction:
+  - **Game** is enlisted in the target party (`Party::addGame`) if it is not there yet; it stays in the source party. Expansions and characters belong to the game, so they do not change. If the play's player is also a "game player" (ADR 0019) in the source party, they become one in the target party too.
+  - **Players** (`PlayResult.player`): a member with an account is found by the account, otherwise a **guest of the target party with the same name** is looked up (`NameKey`, ADR 0025) and treated as the same person; anyone not there is created as a **guest** (with the same visibility). A name taken by a member with a different account gets a number ("Bob 2"), because names within a party are unique; renaming and linking it is then possible in guest management (ADR 0018). One player of the target party cannot be used twice (unique play + player).
+  - **Tags** are created/found again in the target party by name.
+  - **Session**: the original session is recalculated without the moved play (an empty one disappears), the play is assigned to a session of the target party by the 24-hour rule (`SessionAssigner`, the number is assigned automatically).
+- **Preview before confirmation:** `GET /api/plays/{id}/move-preview?partyId=` (same permissions) returns `{party, gameAdded, players: [{playerId, name, targetName, fromMember, toMember, created}]}`. It is computed by `PlayMover::plan()` – the very same function that `move()` then uses (so the two cannot diverge) – and changes nothing. The popup before the "Přesunout" (Move) button lists for each player "Name → target name" and what happens (member/guest unchanged, from member to guest, new guest) and whether the game gets enlisted in the target party; until the preview loads, the button is disabled.
+- Response: `{play, party: {id, name}, createdGuests: [names]}`. The source party also loses the play in its statistics; guests and players left without plays by this are not deleted.
+- Frontend: below the play edit form there is a link "Přesunout do jiné party" (Move to another party) (only administrators who are administrators of at least one more party) → a popup with party selection → confirmation → a result with the names of newly created guests.
 
-## Důsledky
-- Přesun jde provést i zpět (správce musí být v obou partách), čísla seancí se ale přidělí znovu.
-- Člen s účtem, který v cílové partě není, se tam objeví jako host; po jeho přidání do party ho jde sloučit s členem (ADR 0018).
+## Consequences
+- A move can also be done back (the administrator must be in both parties), but session numbers are assigned anew.
+- A member with an account who is not in the target party appears there as a guest; after they are added to the party, the guest can be merged with the member (ADR 0018).

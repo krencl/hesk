@@ -1,27 +1,27 @@
-# ADR 0015: Menu, přichycená hlavní tlačítka a toast zprávy
+# ADR 0015: Menu, sticky main buttons and toast messages
 
-Stav: přijato (2026-10-20)
+Status: accepted (2026-10-20)
 
-## Rozhodnutí
+## Decision
 **Menu**
-- Kliknutí na kteroukoli položku menu menu zavře; důležité hlavně u položky aktivní stránky, kde se adresa nezmění a menu by samo nezmizelo.
-- Tlačítko na zavření menu zůstává modré jako kulaté tlačítko party (jako ve starém prototypu), ne šedé.
-- V sekci Parta je „Statistiky“ a pak „Spravovat“ (detail party).
-- Všechny hover efekty (menu, seznamy, ikony, tlačítka) mají stejnou lehkou animaci 0,15 s jako tlačítka.
+- Clicking any menu item closes the menu; this matters mainly for the active page item, where the address does not change and the menu would not disappear on its own.
+- The menu close button stays blue like the round party button (as in the old prototype), not grey.
+- The Parta (Party) section contains "Statistiky" (Statistics) and then "Spravovat" (Manage) (party detail).
+- All hover effects (menu, lists, icons, buttons) have the same light 0.15 s animation as the buttons.
 
-**Hlavní tlačítka (`Actions`)**
-- Lišta je `position: sticky; bottom: 0` s průhledným bílým rozmazaným pozadím. Na desktopu se tak přichytí jen tehdy, když je stránka delší než obrazovka; na mobilu (do 576 px) stránka vyplní obrazovku a lišta je vždy u spodního okraje i na krátké stránce.
-- Sticky se drží jen uvnitř svého rodiče, proto je `Actions` vždy přímo ve stránce (`.page`) nebo ve formuláři, ne v malém bloku jen kolem sebe. Tlačítko uvnitř obsahu (např. „Upravit“ v rozbaleném zápisu) je `<Actions inline>` a nepřichytává se.
+**Main buttons (`Actions`)**
+- The bar is `position: sticky; bottom: 0` with a transparent white blurred background. On desktop it therefore sticks only when the page is longer than the screen; on mobile (up to 576 px) the page fills the screen and the bar is always at the bottom edge, even on a short page.
+- Sticky holds only within its parent, so `Actions` is always directly in the page (`.page`) or in a form, not in a small block just around itself. A button inside content (e.g. "Upravit" (Edit) in an expanded play) is `<Actions inline>` and does not stick.
 
-**Chybové zprávy**
-- API chyby i validační hlášky formulářů se zobrazují jako toast (`ToastProvider`, `ErrorMessage`, `useToasts().showError`): červená (`#da2736`, 90 %) s `backdrop-filter` jako menu, výška stejná jako záhlaví s logem (5 rem), shora dolů pod sebou, víc najednou, každá s křížkem na místě tlačítka party. Mizí po 6 s (+1 s za každou podrobnost); dole má každá odpočítávací proužek, který zároveň odděluje zprávy pod sebou. Po najetí myší se odpočet i proužek zastaví, stejný text se nenaskládá dvakrát. Zavřená zpráva se nejdřív svine na nulovou výšku (grid `1fr → 0fr`), takže zprávy pod ní plynule sjedou nahoru.
-- `ErrorMessage` sám nic nevykresluje; `inline` varianta zůstala pro stránky, které kvůli chybě nemají jiný obsah (nenačetl se detail hry, party, zápisu).
+**Error messages**
+- API errors and form validation messages are shown as toasts (`ToastProvider`, `ErrorMessage`, `useToasts().showError`): red (`#da2736`, 90 %) with `backdrop-filter` like the menu, the same height as the header with the logo (5 rem), stacked from top to bottom, several at once, each with a cross in the place of the party button. They disappear after 6 s (+1 s per detail); at the bottom each has a countdown bar, which also separates the messages stacked below each other. On mouse hover both the countdown and the bar pause, and the same text is not stacked twice. A closed message first collapses to zero height (grid `1fr → 0fr`), so the messages below it slide up smoothly.
+- `ErrorMessage` renders nothing by itself; the `inline` variant remained for pages that have no other content because of the error (the game, party or play detail did not load).
 
-**Filtr seznamu her (popup místo selectu)**
-- Řazení a Sezení v panelu filtru jsou tlačítka s aktuální volbou (`SelectPopup`, podle `common-select` ze starého prototypu). Klik otevře popup přes celou šířku aplikace, který překryje obsah (bílá s rozmazáním), nahoře s názvem volby a hledáním, které má ihned focus, a pod ním seznam voleb s přepínačem. Hledání nezohledňuje velikost písmen ani diakritiku; vybraná volba zůstane vidět (zeslabená) i mimo výsledky a „Všechny“ (bez filtru) je vždy první.
-- Zavření: výběr volby, Esc, nebo křížek, který stojí na místě kulatého tlačítka party (to popup překrývá, jako se v prototypu mění na zavírací). Zaostření se vrací na tlačítko.
-- Ostatní `<select>`y (typ bodování hry, hráč hry, postava hráče) zůstávají nativní.
+**Game list filter (popup instead of select)**
+- Sorting and Sessions in the filter panel are buttons with the current choice (`SelectPopup`, modeled on `common-select` from the old prototype). A click opens a popup across the whole app width that covers the content (white with blur), with the name of the choice and a search at the top that has focus immediately, and below it a list of options with a toggle. The search ignores case and diacritics; the selected option stays visible (dimmed) even outside the results and "Všechny" (All, no filter) is always first.
+- Closing: choosing an option, Esc, or the cross, which stands in the place of the round party button (which the popup covers, as it turns into a close button in the prototype). Focus returns to the button.
+- Other `<select>`s (game scoring type, game player, player character) remain native.
 
-**Tooltipy tlačítek s ikonou**
-- Jedna globální vrstva `TooltipLayer` (v `App`) sleduje najetí myší a zaostření klávesnicí a ukáže vlastní tooltip u každého tlačítka či odkazu, který obsahuje jen ikonu (text bere z `aria-label`, takže se tlačítka s ikonou nemusí nijak označovat a nové tooltip dostanou samy). `data-tooltip` text přebije (prázdný ho vypne) a funguje i u tlačítka s textem; nativní `title` se nepoužívá.
-- Tmavý popisek se šipkou nad prvkem (pod ním, když nahoře není místo), v portálu nad vším ostatním, vodorovně držený v okně; objeví se po 350 ms (při zaostření klávesnicí hned) s lehkou animací a zmizí při odjetí, kliknutí, scrollu, Esc. Po kliknutí myší tooltip nezůstane viset, na dotykových zařízeních (`hover: none`) se nezobrazuje.
+**Tooltips of icon buttons**
+- A single global layer `TooltipLayer` (in `App`) tracks mouse hover and keyboard focus and shows a custom tooltip for every button or link that contains only an icon (the text is taken from `aria-label`, so icon buttons need no special marking and new ones get tooltips by themselves). A `data-tooltip` text overrides it (an empty one turns it off) and also works on a button with text; the native `title` is not used.
+- A dark label with an arrow above the element (below it when there is no room above), in a portal above everything else, kept horizontally within the window; it appears after 350 ms (immediately on keyboard focus) with a light animation and disappears on mouse-out, click, scroll, Esc. After a mouse click the tooltip does not stay hanging, and on touch devices (`hover: none`) it is not shown.

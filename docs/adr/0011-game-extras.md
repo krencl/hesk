@@ -1,18 +1,18 @@
-# ADR 0011: Zkrácený název, rozšíření, postavy a hráč hry
+# ADR 0011: Short name, expansions, characters and game player
 
-Stav: přijato (2026-10-16)
+Status: accepted (2026-10-16)
 
-## Kontext
-Správa her (inspirace aktuálním HESK, `/hesk-original`, nastavení her) nenabízela zkrácený název (statistiky), pohodlnou editaci rozšíření, postavy ani vlastního hráče hry (kooperativní hry, kde lidé hrají proti hře – Boss, T.I.M.E…).
+## Context
+Game management (inspired by the current HESK, `/hesk-original`, game settings) offered no short name (for statistics), no convenient editing of expansions, no characters and no game's own player (cooperative games where people play against the game – Boss, T.I.M.E…).
 
-## Rozhodnutí
-- **Zkrácený název** `game.short_name` (volitelný, max. 50): statistiky ukazují `shortName ?? name`.
-- **Rozšíření** (dříve „přídavky“, v kódu stále `addon`) a **postavy** (`GameCharacter`) se ukládají jako seznam `{id?, name}`. Položka s `id` se přejmenuje (zachovají se vazby na odehrané zápisy), bez `id` se spáruje s existující stejného názvu, jinak vznikne nová; chybějící se odeberou (vazby na zápisy se tím odpojí). Prázdné a opakované názvy se zahodí. UI: `NamedListEditor` – samostatné pole pro každou položku, Enter přidá řádek, křížek odebere.
-- **Postava ve výsledku zápisu:** `play_result.character_id` (volitelná, musí patřit ke hře zápisu); formulář zápisu nabídne výběr postavy u hráče, detail hry ji ukazuje vedle jména.
-- **Hráč hry** (původně jeden `game.player_id`, od ADR 0019 víc hráčů přes `game_player`): hráč té samé party, typicky host; ve formuláři zápisu je vždy vidět, první v seznamu a rovnou vybraný. Editace ve formuláři hry viz [ADR 0019](0019-multiple-game-players.md).
-- **Obrázek hry:** původně `imageUrl` jako libovolná `http(s)://…` nebo lokální cesta; od ADR 0020 smí být jen adresa nahraného WebP (`/uploads/covers/<sha1>.webp`).
-- **Import z dev DB** (`Version20261017000000`): zkrácené názvy (jen pokud se liší od názvu), postavy (pro každou novou hru), postavy ve výsledcích (191 výsledků, párování podle pozice v zápisu) a hráči her (typ „game“ ve staré DB, 3 hry).
+## Decision
+- **Short name** `game.short_name` (optional, max. 50): statistics show `shortName ?? name`.
+- **Expansions** (formerly "přídavky" (add-ons), still `addon` in code) and **characters** (`GameCharacter`) are stored as a list of `{id?, name}`. An item with `id` is renamed (links to played records are kept); without `id` it is matched to an existing one with the same name, otherwise a new one is created; missing ones are removed (their links to records are detached). Empty and duplicate names are discarded. UI: `NamedListEditor` – a separate field for each item, Enter adds a row, the cross removes it.
+- **Character in a play result:** `play_result.character_id` (optional, must belong to the game of the play); the play form offers a character choice for each player, the game detail shows it next to the name.
+- **Game player** (originally a single `game.player_id`, since ADR 0019 multiple players via `game_player`): a player of the same party, typically a guest; in the play form always visible, first in the list and preselected. Editing in the game form: see [ADR 0019](0019-multiple-game-players.md).
+- **Game image:** originally `imageUrl` as any `http(s)://…` or local path; since ADR 0020 it may only be the address of an uploaded WebP (`/uploads/covers/<sha1>.webp`).
+- **Import from the dev DB** (`Version20261017000000`): short names (only if different from the name), characters (for each new game), characters in results (191 results, matched by position in the play) and game players (type "game" in the old DB, 3 games).
 
-## Důsledky
-- Zrušení postavy odpojí její výběr ve starších zápisech (`ON DELETE SET NULL`), stejně jako zrušení rozšíření odpojí rozšíření od zápisů.
-- API pro hru už neakceptuje rozšíření jako pole řetězců, ale pole objektů `{id?, name}`.
+## Consequences
+- Deleting a character detaches its selection in older plays (`ON DELETE SET NULL`), just as deleting an expansion detaches the expansion from plays.
+- The game API no longer accepts expansions as an array of strings, but an array of objects `{id?, name}`.

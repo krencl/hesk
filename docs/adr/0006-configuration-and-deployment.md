@@ -1,17 +1,17 @@
-# 0006 – Konfigurace, databáze a nasazení
+# 0006 – Configuration, Database and Deployment
 
-Stav: přijato (2026-10-02)
+Status: accepted (2026-10-02)
 
-## Kontext
-Vývojová/ostrá DB je **MariaDB 11.0** (`mariadb:3306`, db `hesk`), ne MySQL, a už obsahuje data a schéma prototypu `hesk-dev-old` (tabulky `game`, `round`, `round_player`, `party`, `user`, `player`, `tag`, … ~540 odehraných kol). Konfigurace žije v souboru `/workspace/.env` (mimo git) s proměnnými `DB_HOSTNAME, DB_PORT, DB_DATABASE, DB_USERNAME, DB_PASSWORD, OAUTH_GOOGLE_ID, OAUTH_GOOGLE_SECRET`.
+## Context
+The development/live DB is **MariaDB 11.0** (`mariadb:3306`, db `hesk`), not MySQL, and it already contains the data and schema of the `hesk-dev-old` prototype (tables `game`, `round`, `round_player`, `party`, `user`, `player`, `tag`, … ~540 recorded rounds). Configuration lives in the file `/workspace/.env` (outside git) with the variables `DB_HOSTNAME, DB_PORT, DB_DATABASE, DB_USERNAME, DB_PASSWORD, OAUTH_GOOGLE_ID, OAUTH_GOOGLE_SECRET`.
 
-## Rozhodnutí
-- Doctrine DBAL se konfiguruje z jednotlivých `DB_*` proměnných (ne `DATABASE_URL`, kvůli speciálním znakům v hesle); `server_version: mariadb-11.0.2` (`DB_SERVER_VERSION`).
-- `backend/.env` obsahuje jen prázdné/vývojové defaulty. Skutečné hodnoty se načtou z `backend/.env.local`, což je v dev **symlink na `../.env`** (git-ignorováno; na serveru stačí položit soubor). Symfony `.env.local` v prostředí `test` nečte, takže testy nikdy nesahají na skutečnou DB (SQLite, ADR 0003).
-- Google OAuth proměnné se jmenují `OAUTH_GOOGLE_ID/SECRET` (shodně s prototypem). Redirect URI je **`/oauth/google/check`** (stejná jako u prototypu, takže v Google Console není nutná změna; alias `/api/auth/google/callback` zůstává, ale povolená není). `web/index.php` směruje `/oauth/*` do Symfony, Vite proxy také. Za reverzní proxy musí Symfony vidět `https` a správnou doménu, jinak se odešle jiná redirect URI → `redirect_uri_mismatch`: proto `TRUSTED_PROXIES` (default `127.0.0.1,REMOTE_ADDR`) a nginx musí posílat `X-Forwarded-Proto/Host/Port`. `FRONTEND_URL` je výchozí `/` (po přihlášení přesměrování na stejný origin).
-- **Struktura kořene projektu:** `web/index.php` (front controller, v kořeni vedle `backend/` a `frontend/`) a `web/static/` (statické soubory uvnitř `web/` – výstup `npm run build`, git-ignorováno). `web/index.php` nastaví `project_dir` Symfony Runtime na `backend/` a načte `backend/vendor/autoload_runtime.php`; cache a logy zůstávají v `backend/var/`. Backend obsluhuje jen `/api/*`, ostatní cesty patří SPA (`web/static/index.html`).
-- **`web/index.php` je hlavní rozcestník** (`.route.php` z prototypu se nepoužívá): `/api/*` → Symfony, ostatní cesty → `web/static/index.html` (SPA fallback); při běhu pod vestavěným PHP serverem navíc vrací existující soubory pod `/static/` jako statiku. Dev: `php -S 127.0.0.1:8000 -t web web/index.php` z kořene. Pro vývoj frontendu stačí `npm run dev` ve `frontend/` (Vite proxy `/api` → :8000). V produkci statiku servíruje web server.
-- Ukázka nginx (document root = `web/`; build odkazuje na assety jako `/static/assets/…` díky `base: '/static/'` ve `vite.config.ts`):
+## Decision
+- Doctrine DBAL is configured from the individual `DB_*` variables (not `DATABASE_URL`, because of special characters in the password); `server_version: mariadb-11.0.2` (`DB_SERVER_VERSION`).
+- `backend/.env` contains only empty/development defaults. Real values are loaded from `backend/.env.local`, which in dev is a **symlink to `../.env`** (git-ignored; on a server it is enough to drop the file in place). Symfony does not read `.env.local` in the `test` environment, so tests never touch the real DB (SQLite, ADR 0003).
+- Google OAuth variables are named `OAUTH_GOOGLE_ID/SECRET` (same as the prototype). The redirect URI is **`/oauth/google/check`** (the same as in the prototype, so no change is needed in Google Console; the alias `/api/auth/google/callback` remains, but is not allowed). `web/index.php` routes `/oauth/*` to Symfony, the Vite proxy does too. Behind a reverse proxy Symfony must see `https` and the correct domain, otherwise a different redirect URI is sent → `redirect_uri_mismatch`: hence `TRUSTED_PROXIES` (default `127.0.0.1,REMOTE_ADDR`) and nginx must send `X-Forwarded-Proto/Host/Port`. `FRONTEND_URL` defaults to `/` (after login a redirect to the same origin).
+- **Project root structure:** `web/index.php` (front controller, in the root next to `backend/` and `frontend/`) and `web/static/` (static files inside `web/` – the output of `npm run build`, git-ignored). `web/index.php` sets the Symfony Runtime `project_dir` to `backend/` and loads `backend/vendor/autoload_runtime.php`; cache and logs stay in `backend/var/`. The backend serves only `/api/*`, other paths belong to the SPA (`web/static/index.html`).
+- **`web/index.php` is the main router** (`.route.php` from the prototype is not used): `/api/*` → Symfony, other paths → `web/static/index.html` (SPA fallback); when running under the built-in PHP server it additionally returns existing files under `/static/` as static content. Dev: `php -S 127.0.0.1:8000 -t web web/index.php` from the root. For frontend development `npm run dev` in `frontend/` is enough (Vite proxy `/api` → :8000). In production the web server serves static files.
+- Example nginx (document root = `web/`; the build references assets as `/static/assets/…` thanks to `base: '/static/'` in `vite.config.ts`):
 
 ```nginx
 root /var/www/hesk/web;
@@ -20,8 +20,8 @@ location /api/ { fastcgi_pass php; include fastcgi_params;
   fastcgi_param SCRIPT_FILENAME /var/www/hesk/web/index.php; }
 location / { try_files /static/index.html =404; }
 ```
-- Produkce: `APP_ENV=prod`, vlastní `APP_SECRET`, `composer install --no-dev -o`, `TRUSTED_PROXIES` za reverzní proxy (dle potřeby).
+- Production: `APP_ENV=prod`, own `APP_SECRET`, `composer install --no-dev -o`, `TRUSTED_PROXIES` behind a reverse proxy (as needed).
 
-## Důsledky / otevřené
-- Kolize názvů tabulek se stávajícím schématem byla vyřešena přejmenováním na `legacy_*` a importem dat (ADR 0007).
-- Pozor na legacy schéma: `utf8mb3_czech_ci`, `datetime` s defaultem `0000-00-00`.
+## Consequences / open
+- Table name collisions with the existing schema were resolved by renaming to `legacy_*` and importing the data (ADR 0007).
+- Beware of the legacy schema: `utf8mb3_czech_ci`, `datetime` with a default of `0000-00-00`.

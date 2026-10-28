@@ -1,15 +1,15 @@
-# ADR 0014: Zkratka a úprava party, nadpis stránky
+# ADR 0014: Party short name and editing, page title
 
-Stav: přijato (2026-10-20)
+Status: accepted (2026-10-20)
 
-## Kontext
-Zkratka party v kulatém tlačítku hlavičky se jen odvozovala z názvu na frontendu a nešla změnit. Detail party říkal „Jsi správce/člen této party“, což je vidět i ze seznamu členů. Nadpisy stránek se nelišily od podnadpisů.
+## Context
+The party abbreviation in the round header button was merely derived from the name on the frontend and could not be changed. The party detail said "Jsi správce/člen této party" (You are an admin/member of this party), which is also visible from the member list. Page titles did not differ from subtitles.
 
-## Rozhodnutí
-- **Zkratka party** je povinný sloupec `party.short_name` (1–3 znaky; migrace `Version20261020000000` a `…21000000`, která stávajícím partám zkratku vygeneruje a sloupec zpřísní na NOT NULL). API vrací `shortName` u party i u detailu.
-- **Generování při založení** (`App\Domain\PartyShortName`, jediné místo; frontend zkratku neodvozuje): počáteční písmena prvních dvou slov, speciální znaky se vynechají a spojky/předložky (a, u, v, na, do, …) se přeskočí – „Viki + Marek“ i „Viki a Marek“ → `VM`; jedno slovo → první dvě písmena (`De`). Stejně se zkratka dosadí partám převzatým importem ze staré aplikace (existující zkratka se při opakovaném importu nepřepisuje).
-- **Úprava party:** `PATCH /api/parties/{id}` bere `{name, shortName}` (`UpdatePartyRequest`, obojí povinné, zkratka 1–3 znaky po ořezání mezer). Smí jen admin. Úprava je samostatná stránka `/parties/:id/edit` (`PartyEditPage`) s vlastní URL; vede na ni tlačítko „Upravit partu“ v detailu party (jen pro admina, běžného člena stránka přesměruje na detail) a po uložení i „Zrušit“ se vracíme na detail.
-- Název (u zakládání i úpravy) se validuje po ořezání mezer, takže jen z mezer se uložit nedá.
-- Text „Jsi admin/člen této party“ zmizel; role je vidět u členů. Tlačítko „Přepnout na tuto partu“ z detailu zmizelo (přepíná se v menu a ve správě part).
-- Nadpis detailu party má před názvem malý sekundární popisek „Parta“ (`PageTitle label`), na stránce úpravy „Upravit partu“; stejný vzor jako „Parta“ v menu.
-- **Nadpis stránky** (`PageTitle`, např. detail party, statistiky, správa part a her) je větší (1,5 rem) a podtržený modrou linkou (`--main`).
+## Decision
+- **Party short name** is a required column `party.short_name` (1–3 characters; migrations `Version20261020000000` and `…21000000`, which generates the short name for existing parties and tightens the column to NOT NULL). The API returns `shortName` for the party and for the detail.
+- **Generation on creation** (`App\Domain\PartyShortName`, the only place; the frontend does not derive the short name): initial letters of the first two words, special characters are omitted and conjunctions/prepositions (a, u, v, na, do, …) are skipped – "Viki + Marek" and "Viki a Marek" → `VM`; one word → first two letters (`De`). The short name is filled in the same way for parties taken over by the import from the old application (an existing short name is not overwritten on repeated import).
+- **Party editing:** `PATCH /api/parties/{id}` takes `{name, shortName}` (`UpdatePartyRequest`, both required, short name 1–3 characters after trimming). Admin only. Editing is a separate page `/parties/:id/edit` (`PartyEditPage`) with its own URL; it is reached by the "Upravit partu" (Edit party) button in the party detail (admin only, a regular member is redirected by the page to the detail), and after saving as well as "Zrušit" (Cancel) we return to the detail.
+- The name (both on creation and editing) is validated after trimming whitespace, so whitespace alone cannot be saved.
+- The text "Jsi admin/člen této party" (You are an admin/member of this party) is gone; the role is visible among the members. The button "Přepnout na tuto partu" (Switch to this party) disappeared from the detail (switching is done in the menu and in party management).
+- The party detail heading has a small secondary label "Parta" (Party) before the name (`PageTitle label`), and "Upravit partu" on the edit page; the same pattern as "Parta" in the menu.
+- **Page title** (`PageTitle`, e.g. party detail, statistics, party and game management) is larger (1.5 rem) and underlined with a blue line (`--main`).

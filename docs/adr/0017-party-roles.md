@@ -1,15 +1,15 @@
-# ADR 0017: Role v partě (člen, zapisovač, správce)
+# ADR 0017: Party roles (member, writer, admin)
 
-Stav: přijato (2026-10-23)
+Status: accepted (2026-10-23)
 
-## Kontext
-Do té doby byla role jen admin / člen a zapisovat mohl každý člen. Potřeba je rozlišit členy, kteří výsledky jen čtou.
+## Context
+Until then the role was only admin / member and every member could write plays. We need to distinguish members who only read the results.
 
-## Rozhodnutí
-- **Role:** `admin` = **Správce** (spravuje partu a může vše; v UI „Správce“, v kódu a API zůstává `admin`), `writer` = **Zapisovač** (přidává, upravuje a maže zápisy her) a `member` = **Člen** (zápisy jen čte). Hry, hosty, statistiky a čtení vidí všichni členové jako dřív.
-- **Backend:** `PartyRole::Writer`, oprávnění `PartyVoter::WRITE` (admin nebo zapisovač) vyžaduje vytvoření, úprava a smazání zápisu i `GET /parties/{id}/plays/defaults` (předvyplnění nového zápisu); čtení zápisu zůstává `VIEW`. Správa party (`ADMIN`) se nemění. Parta musí mít vždy admina: změna posledního admina na jakoukoli jinou roli se odmítne.
-- **Migrace** `Version20261023000000`: dosavadní členové (`member`) se mění na zapisovače, protože zapisovat mohli všichni a jinak by o to přišli. Nově přidaní členy (pozvánkou) jsou `member`, admin je povyšuje. Import ze staré aplikace mapuje vlastníky na adminy a ostatní na obyčejné členy (zapisovatele určuje admin v nové aplikaci); existující role jen povyšuje na admina, nepřepisuje role změněné v nové aplikaci.
-- **Frontend:** v seznamu členů admin mění roli popupem (`SelectPopup` bez hledání: Člen / Zapisovač / Správce), ostatní vidí roli jako text. Člen nemá na detailu hry tlačítko „Nový zápis“ ani „Upravit“ u zápisu a stránky nového/upraveného zápisu mu místo formuláře ukážou vysvětlení (`canWrite` v `lib/roles.ts`).
+## Decision
+- **Roles:** `admin` = **Správce** (Admin) (manages the party and can do everything; "Správce" in the UI, `admin` remains in code and API), `writer` = **Zapisovač** (Writer) (adds, edits and deletes game plays) and `member` = **Člen** (Member) (only reads plays). Games, guests, statistics and reading are visible to all members as before.
+- **Backend:** `PartyRole::Writer`, the permission `PartyVoter::WRITE` (admin or writer) is required for creating, editing and deleting a play and for `GET /parties/{id}/plays/defaults` (pre-filling a new play); reading a play stays `VIEW`. Party management (`ADMIN`) does not change. A party must always have an admin: changing the last admin to any other role is rejected.
+- **Migration** `Version20261023000000`: existing members (`member`) become writers, because everyone could write and they would otherwise lose that. Newly added members (by invitation) are `member`, the admin promotes them. The import from the old application maps owners to admins and others to ordinary members (the admin decides writers in the new application); existing roles are only promoted to admin, roles changed in the new application are not overwritten.
+- **Frontend:** in the member list the admin changes the role via a popup (`SelectPopup` without search: Člen / Zapisovač / Správce), others see the role as text. A member has no "Nový zápis" (New play) button on the game detail nor "Upravit" (Edit) on a play, and the new/edited play pages show them an explanation instead of the form (`canWrite` in `lib/roles.ts`).
 
-## Důsledky
-- ~~Správa hostů zůstává otevřená každému členu~~ (2026-10-22): přidání, přejmenování, skrytí a smazání hosta vyžaduje `PARTY_WRITE` (zapisovač a správce); obyčejný člen hosty jen vidí ve výběru hráčů, záložka Hosté se mu nenabízí. Stejně tak správa her party (ADR 0023).
+## Consequences
+- ~~Guest management stays open to every member~~ (2026-10-22): adding, renaming, hiding and deleting a guest requires `PARTY_WRITE` (writer and admin); an ordinary member only sees guests in the player picker, and the Guests tab is not offered to them. The same applies to party game management (ADR 0023).

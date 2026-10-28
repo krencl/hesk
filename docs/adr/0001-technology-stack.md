@@ -1,19 +1,19 @@
-# 0001 – Volba technologií
+# 0001 – Technology Choices
 
-Stav: přijato (2026-10-02)
+Status: accepted (2026-10-02)
 
-## Kontext
-Nová verze HESK (zápisy z deskových her). Zadání: React + TypeScript frontend, REST API v PHP (preferovaný Symfony), relační data v MySQL, unit testy na obou stranách.
+## Context
+New version of HESK (records of board game plays). Assignment: React + TypeScript frontend, REST API in PHP (Symfony preferred), relational data in MySQL, unit tests on both sides.
 
-## Rozhodnutí
+## Decision
 - **Backend: Symfony 7.4 LTS** (PHP ≥ 8.4), Doctrine ORM + Migrations, Symfony Security, Validator, Serializer (`#[MapRequestPayload]`), PHPUnit.
-  - Zvolena **LTS 7.4**, ne 8.1: 8.1 není LTS (podpora končí 01/2027), 7.4 je podporována do 11/2028.
-  - Alternativa Laravel/Slim zvážena; Symfony zůstává, protože ho zadavatel preferuje a prototyp (`hesk-dev-old`) už Symfony používal. Dibi z prototypu nahrazuje Doctrine (mapování, migrace, testovatelnost).
-- **Frontend: React 19 + TypeScript + Vite**, React Router, TanStack Query (server state), Vitest + Testing Library. Žádná globální state knihovna navíc.
-- **DB: MariaDB 11** (stávající dev/prod server; `backend/compose.yaml` pro lokální MySQL/MariaDB), schéma verzováno Doctrine migracemi.
-- **Struktura repa:** monorepo – `backend/`, `frontend/`, `docs/`. Frontend a backend se nasazují nezávisle, komunikují jen přes `/api`.
+  - **LTS 7.4** was chosen, not 8.1: 8.1 is not LTS (support ends 01/2027), 7.4 is supported until 11/2028.
+  - Laravel/Slim was considered as an alternative; Symfony stays because the client prefers it and the prototype (`hesk-dev-old`) already used Symfony. Doctrine replaces Dibi from the prototype (mapping, migrations, testability).
+- **Frontend: React 19 + TypeScript + Vite**, React Router, TanStack Query (server state), Vitest + Testing Library. No additional global state library.
+- **DB: MariaDB 11** (the existing dev/prod server; `backend/compose.yaml` for local MySQL/MariaDB), schema versioned by Doctrine migrations.
+- **Repo structure:** monorepo – `backend/`, `frontend/`, `docs/`. Frontend and backend are deployed independently and communicate only via `/api`.
 
-## Důsledky
-- Dva projekty, dva správce závislostí (composer, npm).
-- Entity používají jen přenosné typy Doctrine (kvůli testům na SQLite, viz ADR 0003).
-- Vývojové prostředí bez PHP lze zprovoznit statickým PHP binárem; není to součást projektu.
+## Consequences
+- Two projects, two dependency managers (composer, npm).
+- Entities use only portable Doctrine types (because of tests on SQLite, see ADR 0003).
+- A development environment without PHP can be set up with a static PHP binary; it is not part of the project.

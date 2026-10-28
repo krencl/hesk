@@ -1,24 +1,24 @@
-# 0004 – Doménový model a pravidla
+# 0004 – Domain Model and Rules
 
-Stav: přijato (2026-10-02)
+Status: accepted (2026-10-02)
 
-Vychází z `/hesk-dev-old/SPECIFICATION.md`; terminologie: v kódu *Play* = „game play entry“ (zápis), *GameSession* = seance, *Party* = parta.
+Based on `/hesk-dev-old/SPECIFICATION.md`; terminology: in code *Play* = "game play entry" (zápis), *GameSession* = session (seance), *Party* = party (parta).
 
-## Entity
+## Entities
 `User` · `Party` + `PartyMember(role)` + `PartyInvitation` · `Player` · `Game` + `GameAddon` · `PlayTag` · `GameSession` · `Play` + `PlayResult`.
 
-## Rozhodnutí
-- **Hry a tagy patří partě** (`party_id`), nejsou globální. Jednoduchá autorizace, žádné kolize mezi partami; cena: stejná hra se zakládá v každé partě zvlášť. (Původní produkční app měla globální katalog.)
-- **Parta musí mít alespoň jednoho admina** – vynuceno v `Party::removeMember/changeRole` (výjimka `DomainException` → HTTP 422). Zakladatel je admin automaticky.
-- **Pozvánky jsou odkazy s tokenem** (platnost 7 dní), ne e-maily – bez mailové infrastruktury. Kdokoli přihlášený s odkazem se připojí.
-- **Typy bodování** (`ScoreType`): `most_points`, `fewest_points`, `rank_order`, `winner_only`. `ResultCalculator` z hrubého vstupu spočítá pořadí a vítěze; remízy sdílí pořadí (1,1,3) a všichni s pořadím 1 jsou vítězové. Typ bodování nelze změnit u hry s odehranými zápisy.
-- **Seance**: zápis se přiřadí k seanci party, pokud je mezera mezi ním a hranicemi seance ≤ 24 h (`GameSession::accepts`), jinak vznikne nová; hranice se rozšiřují/přepočítávají při přidání, úpravě i smazání. Dělení seance po smazání zápisu uprostřed se neprovádí.
-- **Hráči zápisu** jsou `Player` z party (člen s účtem nebo host, viz ADR 0007; původní předpoklad „hráč = uživatel“ neplatí); rozšíření musí patřit k vybrané hře; tagy se zakládají podle názvu (find-or-create); místa zrušena v ADR 0013 (jsou tagy).
-- **Výsledek hráče** (`PlayResult`) ukládá `score` (nullable), `placement` (rank) a `winner`; statistiky se počítají DQL agregací.
-- **Časy** se ukládají jako UTC `DATETIME`; API používá ISO 8601 s offsetem, frontend převádí z/do lokálního času.
-- **Obrázek hry** je zatím jen URL (`imageUrl`), upload souborů později. **Cheatsheet** je HTML; frontend ho vždy sanitizuje (DOMPurify).
-- Smazání hry se zápisy je zakázáno (422).
+## Decision
+- **Games and tags belong to a party** (`party_id`), they are not global. Simple authorization, no collisions between parties; cost: the same game is created in each party separately. (The original production app had a global catalog.)
+- **A party must have at least one admin** – enforced in `Party::removeMember/changeRole` (`DomainException` → HTTP 422). The founder is an admin automatically.
+- **Invitations are links with a token** (valid for 7 days), not e-mails – no mail infrastructure. Anyone logged in with the link joins.
+- **Scoring types** (`ScoreType`): `most_points`, `fewest_points`, `rank_order`, `winner_only`. `ResultCalculator` computes the ranking and winners from raw input; ties share the rank (1,1,3) and everyone with rank 1 is a winner. The scoring type cannot be changed for a game with recorded plays.
+- **Session**: a play is assigned to a party's session if the gap between it and the session's boundaries is ≤ 24 h (`GameSession::accepts`), otherwise a new one is created; boundaries are extended/recomputed on add, edit and delete. Splitting a session after deleting a play in the middle is not done.
+- **Play players** are `Player`s from the party (a member with an account or a guest, see ADR 0007; the original assumption "player = user" no longer holds); an expansion must belong to the selected game; tags are created by name (find-or-create); locations were cancelled in ADR 0013 (they are tags).
+- **A player's result** (`PlayResult`) stores `score` (nullable), `placement` (rank) and `winner`; statistics are computed by DQL aggregation.
+- **Times** are stored as UTC `DATETIME`; the API uses ISO 8601 with an offset, the frontend converts from/to local time.
+- **Game image** is only a URL for now (`imageUrl`), file upload later. **Cheatsheet** is HTML; the frontend always sanitizes it (DOMPurify).
+- Deleting a game with plays is forbidden (422).
 
-## Otevřené
-- Editace existujícího zápisu ve UI (API `PUT /api/plays/{id}` existuje).
-- WYSIWYG editor cheatsheetu, upload obrázku, import dat z původní aplikace (RethinkDB).
+## Open
+- Editing an existing play in the UI (the API `PUT /api/plays/{id}` exists).
+- WYSIWYG cheatsheet editor, image upload, data import from the original application (RethinkDB).

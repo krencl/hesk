@@ -1,16 +1,16 @@
-# 0025 – Porovnávání jmen: `NameKey` podle kolace databáze
+# 0025 – Name comparison: `NameKey` following the database collation
 
-Stav: přijato (2026-10-23)
+Status: accepted (2026-10-23)
 
-## Kontext
-Jména hráčů party, tagů her a tagů zápisů mají v databázi unikátní klíč (`player`, `play_tag`: party + jméno, `game_tag`: jméno) a sloupce mají kolaci `utf8mb4_general_ci`, která nerozlišuje velikost písmen **ani diakritiku** („Čeněk“ = „cenek“). Kód ale jména porovnával jen bez ohledu na velikost písmen (`strcasecmp`, `mb_strtolower`), takže „Šimon“ vedle „Simon“ prošel doménovou kontrolou a teprve DB ho odmítla výjimkou – klient dostal HTTP 500.
+## Context
+Names of party players, game tags and play tags have a unique key in the database (`player`, `play_tag`: party + name, `game_tag`: name) and the columns have the collation `utf8mb4_general_ci`, which is insensitive to case **and to diacritics** ("Čeněk" = "cenek"). The code, however, compared names only case-insensitively (`strcasecmp`, `mb_strtolower`), so "Šimon" next to "Simon" passed the domain check and only the DB rejected it with an exception – the client got HTTP 500.
 
-## Rozhodnutí
-- `App\Domain\NameKey::of()` vrací klíč jména (bez okolních mezer, bez diakritiky, malými písmeny; `symfony/string`). **Každé** porovnání a slučování jmen (hráči party, hráči hry, rozšíření, postavy, tagy) jde přes něj.
-- `App\Domain\NamedItems` drží společný úklid seznamů pojmenovaných položek (`normalize`, `uniqueNames`) a párování existujících entit podle klíče (`resolve`); `Party::isPlayerNameTaken()` je jediná kontrola obsazenosti jména hráče.
-- Hledání/zakládání tagů je v `GameTagRepository::findOrCreate()` a `PlayTagRepository::findOrCreate()` (jeden dotaz `WHERE name IN (…)`, shoda podle klíče, výsledek bez duplicit).
-- Pojistka: `UniqueConstraintViolationException` pod `/api` vrací `ApiExceptionListener` jako HTTP 409 `{error: "Záznam se stejným názvem už existuje."}` místo 500 (kdyby kolace DB spojila i jména, která `NameKey` rozlišuje).
+## Decision
+- `App\Domain\NameKey::of()` returns the name key (trimmed, without diacritics, lowercase; `symfony/string`). **Every** comparison and merging of names (party players, game players, expansions, characters, tags) goes through it.
+- `App\Domain\NamedItems` holds the common cleanup of lists of named items (`normalize`, `uniqueNames`) and the matching of existing entities by key (`resolve`); `Party::isPlayerNameTaken()` is the single check of whether a player name is taken.
+- Looking up/creating tags is in `GameTagRepository::findOrCreate()` and `PlayTagRepository::findOrCreate()` (one query `WHERE name IN (…)`, match by key, result without duplicates).
+- Safety net: `UniqueConstraintViolationException` under `/api` is returned by `ApiExceptionListener` as HTTP 409 `{error: "Záznam se stejným názvem už existuje."}` ("A record with the same name already exists.") instead of 500 (in case the DB collation merged even names that `NameKey` distinguishes).
 
-## Důsledky
-- `NameKey` je striktnější než DB: transliteruje i jiná písma (např. „Иван“ = „ivan“) a „ß“ = „ss“, takže takové dvojice kód odmítne, i když by je DB snesla. Pro jména v partě to nevadí; opačný směr (DB spojí víc než `NameKey`) pokrývá 409.
-- Porovnání v PHP je O(počet hráčů party); u malých part (jednotky až desítky hráčů) zanedbatelné.
+## Consequences
+- `NameKey` is stricter than the DB: it also transliterates other scripts (e.g. "Иван" = "ivan") and "ß" = "ss", so the code rejects such pairs even though the DB would tolerate them. For names within a party this does not matter; the opposite direction (the DB merges more than `NameKey`) is covered by 409.
+- Comparison in PHP is O(number of party players); for small parties (units to tens of players) negligible.
