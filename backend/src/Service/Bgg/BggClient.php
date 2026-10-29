@@ -170,13 +170,22 @@ class BggClient
     {
         $id = (int) $node->getAttribute('id');
         $xpath = new \DOMXPath($node->ownerDocument);
+        // hledání vrací název, podle kterého se hra našla (u dotazu česky tedy klidně alternativní), detail vždy hlavní
         $name = $xpath->evaluate('string(name[@type="primary"]/@value)', $node);
+        if ('' === $name) {
+            $name = $xpath->evaluate('string(name[1]/@value)', $node);
+        }
         if ($id <= 0 || !\is_string($name) || '' === trim($name)) {
             return null;
         }
         $year = (int) $xpath->evaluate('string(yearpublished/@value)', $node);
         $image = trim((string) $xpath->evaluate('string(image)', $node));
 
-        return new BggItem($id, trim($name), $year > 0 ? $year : null, '' !== $image ? $image : null);
+        $alternates = [];
+        foreach ($xpath->query('name[@type="alternate"]/@value', $node) ?: [] as $attribute) {
+            $alternates[] = trim($attribute->nodeValue ?? '');
+        }
+
+        return new BggItem($id, trim($name), $year > 0 ? $year : null, '' !== $image ? $image : null, array_values(array_filter($alternates, static fn (string $n): bool => '' !== $n)));
     }
 }

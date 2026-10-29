@@ -1,4 +1,4 @@
-import { fireEvent, screen, waitFor } from '@testing-library/react';
+import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 vi.mock('react-easy-crop', () => ({
   // zjednodušený editor: hned ohlásí výřez, jako když ho uživatel nastaví
@@ -302,7 +302,7 @@ describe('game form (/games/:id/edit)', () => {
       const fetchMock = mockApi({
         ...routes,
         ...search('catan', { bgg: 'used', results: [{ source: 'bgg', name: 'Catan', year: 1995, bggId: 13, gameId: null, imageUrl: null }] }),
-        'POST /parties/3/bgg/import': { body: { bggId: 13, name: 'Catan', bggImageUrl: cdn } },
+        'POST /parties/3/bgg/import': { body: { bggId: 13, name: 'Catan', bggImageUrl: cdn, otherNames: [] } },
         'POST /parties/3/game-images': { status: 201, body: { url: '/uploads/covers/abc.webp' } },
         'POST /parties/3/games': { status: 201, body: FULL_GAME },
       });
@@ -334,12 +334,33 @@ describe('game form (/games/:id/edit)', () => {
       await waitFor(() => expect(sentBody(fetchMock, 'POST', '/parties/3/games')).toMatchObject({ name: 'Catan', bggId: 13, imageUrl: '/uploads/covers/abc.webp' }));
     });
 
+    it('prefills the Czech name from BGG and lets the user switch to another name of the game', async () => {
+      stubUrls();
+      const fetchMock = mockApi({
+        ...routes,
+        ...search('wing', { bgg: 'used', results: [{ source: 'bgg', name: 'Wingspan', year: 2019, bggId: 266192, gameId: null, imageUrl: null }] }),
+        'POST /parties/3/bgg/import': { body: { bggId: 266192, name: 'Na křídlech', bggImageUrl: null, otherNames: ['Wingspan'] } },
+        'POST /parties/3/games': { status: 201, body: FULL_GAME },
+      });
+      renderApp('/games/new');
+      await type('wing');
+      fireEvent.click(await screen.findByRole('button', { name: /Wingspan \(2019\)/ }));
+
+      await waitFor(() => expect(screen.getByLabelText('Název')).toHaveValue('Na křídlech'));
+      fireEvent.click(within(screen.getByRole('group', { name: 'Další názvy z BoardGameGeek' })).getByRole('button', { name: 'Wingspan' }));
+      expect(screen.getByLabelText('Název')).toHaveValue('Wingspan');
+      expect(within(screen.getByRole('group', { name: 'Další názvy z BoardGameGeek' })).getByRole('button', { name: 'Na křídlech' })).toBeInTheDocument();
+
+      fireEvent.click(screen.getByRole('button', { name: 'Uložit' }));
+      await waitFor(() => expect(sentBody(fetchMock, 'POST', '/parties/3/games')).toMatchObject({ name: 'Wingspan', bggId: 266192 }));
+    });
+
     it('saves a BGG game without a picture when the user never crops it', async () => {
       stubUrls();
       const fetchMock = mockApi({
         ...routes,
         ...search('catan', { bgg: 'used', results: [{ source: 'bgg', name: 'Catan', year: 1995, bggId: 13, gameId: null, imageUrl: null }] }),
-        'POST /parties/3/bgg/import': { body: { bggId: 13, name: 'Catan', bggImageUrl: 'https://cf.geekdo-images.com/catan.jpg' } },
+        'POST /parties/3/bgg/import': { body: { bggId: 13, name: 'Catan', bggImageUrl: 'https://cf.geekdo-images.com/catan.jpg', otherNames: [] } },
         'POST /parties/3/games': { status: 201, body: FULL_GAME },
       });
       renderApp('/games/new');

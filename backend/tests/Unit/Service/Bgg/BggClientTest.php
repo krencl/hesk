@@ -16,7 +16,7 @@ final class BggClientTest extends TestCase
         <?xml version="1.0" encoding="utf-8"?>
         <items total="4" termsofuse="https://boardgamegeek.com/xmlapi/termsofuse">
           <item type="boardgame" id="1"><name type="primary" value="Big Catan Party"/><yearpublished value="2001"/></item>
-          <item type="boardgame" id="2"><name type="alternate" value="Alt only"/></item>
+          <item type="boardgame" id="2"><name type="alternate" value="Osadníci"/></item>
           <item type="boardgame" id="13"><name type="primary" value="Catan"/><yearpublished value="1995"/></item>
           <item type="boardgame" id="3"><name type="primary" value="Catanish"/></item>
         </items>
@@ -34,23 +34,23 @@ final class BggClientTest extends TestCase
         return new BggClient($http, $token);
     }
 
-    public function testSearchParsesPrimaryNamesAndRanksExactThenPrefix(): void
+    public function testSearchParsesTheMatchedNameEvenWhenItIsAnAlternateAndRanksExactThenPrefix(): void
     {
         $requests = new \ArrayObject();
         $items = $this->client([new MockResponse(self::SEARCH)], requests: $requests)->search('catan');
 
-        self::assertSame(['Catan', 'Catanish', 'Big Catan Party'], array_map(static fn ($i) => $i->name, $items));
+        self::assertSame(['Catan', 'Catanish', 'Big Catan Party', 'Osadníci'], array_map(static fn ($i) => $i->name, $items), 'hra nalezená podle českého názvu se nezahodí');
         self::assertSame([13, 1995], [$items[0]->id, $items[0]->year]);
         self::assertNull($items[1]->year, 'rok je nepovinný');
         self::assertStringStartsWith('https://boardgamegeek.com/xmlapi2/search?query=catan&type=boardgame', $requests[0][0]);
         self::assertSame('Authorization: Bearer secret', $requests[0][1]);
     }
 
-    public function testThingReturnsImageOrNull(): void
+    public function testThingReturnsImageAndAlternateNamesOrNull(): void
     {
         $xml = '<items><item type="boardgame" id="13"><image>https://cf.geekdo-images.com/a/catan.jpg</image><name type="primary" value="Catan"/><name type="alternate" value="Siedler"/><yearpublished value="1995"/></item></items>';
         $item = $this->client([new MockResponse($xml), new MockResponse('<items/>')])->thing(13);
-        self::assertSame(['Catan', 'https://cf.geekdo-images.com/a/catan.jpg'], [$item->name, $item->imageUrl]);
+        self::assertSame(['Catan', 'https://cf.geekdo-images.com/a/catan.jpg', ['Siedler']], [$item->name, $item->imageUrl, $item->alternateNames]);
         self::assertNull($this->client([new MockResponse('<items/>')])->thing(99));
     }
 

@@ -46,7 +46,7 @@ function NewGame() {
   const party = useActiveParty();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const [start, setStart] = useState<{ form: FormState; bggImage: string | null } | null>(null);
+  const [start, setStart] = useState<{ form: FormState; bggImage: string | null; otherNames: string[] } | null>(null);
 
   /** Hra z katalogu je v partě: rovnou se otevře její detail, nic se nezakládá. */
   const linked = async (game: Game) => {
@@ -54,15 +54,15 @@ function NewGame() {
     navigate(`/games/${game.id}`);
   };
 
-  if (start) return <GameForm gameId={null} initial={start.form} initialBggImage={start.bggImage} />;
+  if (start) return <GameForm gameId={null} initial={start.form} initialBggImage={start.bggImage} otherNames={start.otherNames} />;
   return (
     <section className="page">
       <PageTitle>Přidat hru</PageTitle>
       <BggGameSearch
         partyId={party.id}
-        onPick={(game: BggPreparedGame) => setStart({ form: emptyFormState({ name: game.name, bggId: game.bggId }), bggImage: game.bggImageUrl })}
+        onPick={(game: BggPreparedGame) => setStart({ form: emptyFormState({ name: game.name, bggId: game.bggId }), bggImage: game.bggImageUrl, otherNames: game.otherNames })}
         onLinked={linked}
-        onCustom={(name) => setStart({ form: emptyFormState({ name }), bggImage: null })}
+        onCustom={(name) => setStart({ form: emptyFormState({ name }), bggImage: null, otherNames: [] })}
       />
     </section>
   );
@@ -74,11 +74,13 @@ interface FormProps {
   initial: FormState;
   /** Originál obrázku na BGG CDN: jen náhled, lokálně se uloží až výřez z ořezového editoru. */
   initialBggImage?: string | null;
+  /** Další názvy hry z BGG, které jde jedním klepnutím dosadit do pole Název. */
+  otherNames?: string[];
 }
 
 type Confirming = 'unlink' | 'delete';
 
-function GameForm({ gameId, initial, initialBggImage = null }: FormProps) {
+function GameForm({ gameId, initial, initialBggImage = null, otherNames = [] }: FormProps) {
   const party = useActiveParty();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -86,6 +88,8 @@ function GameForm({ gameId, initial, initialBggImage = null }: FormProps) {
   // Jen správce her upravuje sdílené údaje; ostatním jsou pole zamčená (hráči hry patří partě a jdou měnit vždy).
   const readOnly = gameId !== null && !canManageGames(me);
   const [form, setForm] = useState<FormState>(() => initial);
+  // název z BGG a jeho alternativy; po přepnutí na jiný se dá vrátit zpět
+  const nameOptions = useMemo(() => (otherNames.length ? [initial.name, ...otherNames] : []), [initial.name, otherNames]);
   // Vybraný soubor čeká v editoru na oříznutí (object URL; po zavření se uvolní). Hra z BGG otevře ořez hned
   // (zrušením zůstane náhled a tlačítko níž).
   const [cropSrc, setCropSrc] = useState<string | null>(() => (initialBggImage ? bggImageProxyUrl(initialBggImage) : null));
@@ -151,6 +155,14 @@ function GameForm({ gameId, initial, initialBggImage = null }: FormProps) {
         {readOnly && <p className="muted hint">Údaje hry jsou společné všem partám a upravuje je jen správce her. Tady můžeš změnit jen hráče hry své party.</p>}
         <fieldset className="plain" disabled={readOnly}>
         <label>Název<input value={form.name} onChange={(e) => set({ name: e.target.value })} maxLength={150} required /></label>
+        {nameOptions.some((n) => n !== form.name) && (
+          <div className="field" role="group" aria-label="Další názvy z BoardGameGeek">
+            <span className="muted hint">Další názvy z BoardGameGeek:</span>
+            <div className="field-actions wrap">
+              {nameOptions.filter((n) => n !== form.name).map((n) => <button key={n} type="button" className="btn small outline" onClick={() => set({ name: n })}>{n}</button>)}
+            </div>
+          </div>
+        )}
         <label>
           Zkrácený název
           <input value={form.shortName} onChange={(e) => set({ shortName: e.target.value })} maxLength={50} placeholder="např. Jungle (do statistik)" />

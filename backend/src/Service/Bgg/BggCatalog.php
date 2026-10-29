@@ -115,28 +115,25 @@ class BggCatalog
     }
 
     /**
-     * Připraví hru z BGG pro předvyplnění formuláře: jméno a adresa originálního obrázku na BGG CDN (ten se ukáže
-     * v náhledu a uživatel ho ořízne v prohlížeči; lokálně se uloží až výřez, ADR 0021). Je-li hra i s adresou obrázku
-     * v cache, BGG se nevolá vůbec.
+     * Připraví hru z BGG pro předvyplnění formuláře: český název (odhad z alternativních názvů, `CzechName`; jinak
+     * původní) a adresa originálního obrázku na BGG CDN (ten se ukáže v náhledu a uživatel ho ořízne v prohlížeči;
+     * lokálně se uloží až výřez, ADR 0021). `otherNames` jsou další názvy k výběru: původní a ostatní možné české.
+     * BGG se volá vždy, protože cache alternativní názvy nedrží; když není dostupné, zbyde jméno z cache.
      *
-     * @return array{bggId: int, name: string, bggImageUrl: string|null}
+     * @return array{bggId: int, name: string, bggImageUrl: string|null, otherNames: list<string>}
      */
     public function prepare(int $bggId): array
     {
-        $cached = $this->cache->findOneBy(['bggId' => $bggId]);
-        if (null !== $cached && null !== $cached->getImageUrl()) {
-            return ['bggId' => $bggId, 'name' => $cached->getName(), 'bggImageUrl' => $cached->getImageUrl()];
-        }
-
         try {
             $item = $this->client->thing($bggId);
         } catch (BggUnavailableException $e) {
-            if (null !== $cached) { // jméno máme, jen bez obrázku; formulář se dá vyplnit i tak
-                $this->logger->warning('BGG thing failed: '.$e->getMessage());
-
-                return ['bggId' => $bggId, 'name' => $cached->getName(), 'bggImageUrl' => null];
+            $cached = $this->cache->findOneBy(['bggId' => $bggId]);
+            if (null === $cached) {
+                throw $e;
             }
-            throw $e;
+            $this->logger->warning('BGG thing failed: '.$e->getMessage()); // jméno máme z cache; formulář se dá vyplnit i tak
+
+            return ['bggId' => $bggId, 'name' => $cached->getName(), 'bggImageUrl' => $cached->getImageUrl(), 'otherNames' => []];
         }
         if (null === $item) {
             throw new DomainException('Hra na BoardGameGeek neexistuje.');
@@ -146,7 +143,15 @@ class BggCatalog
         $entry->setImageUrl($item->imageUrl);
         $this->em->flush();
 
-        return ['bggId' => $bggId, 'name' => $entry->getName(), 'bggImageUrl' => $entry->getImageUrl()];
+        $name = CzechName::confident($item->name, $item->alternateNames)[0] ?? $item->name;
+        $candidates = CzechName::candidates($item->name, $item->alternateNames);
+
+        return [
+            'bggId' => $bggId,
+            'name' => $name,
+            'bggImageUrl' => $item->imageUrl,
+            'otherNames' => array_values(array_filter([$item->name, ...$candidates], static fn (string $n): bool => $n !== $name)),
+        ];
     }
 
     /**

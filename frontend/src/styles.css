@@ -396,6 +396,7 @@ fieldset.plain { display: contents; border: 0; margin: 0; padding: 0; min-width:
 .chip { transition: background-color 0.15s, color 0.15s, border-color 0.15s; }
 .chip[aria-pressed='true'] { color: #fff; background: var(--main); border-color: var(--main); }
 .field-actions { display: flex; align-items: center; gap: 0.75rem; margin-top: 0.25rem; }
+.field-actions.wrap { flex-wrap: wrap; gap: 0.5rem; }
 .guest-add { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 0.5rem; margin-top: 0.5rem; }
 
 /* Správa part a detail party */

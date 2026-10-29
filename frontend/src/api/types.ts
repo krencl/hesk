@@ -265,4 +265,6 @@ export interface BggPreparedGame {
   bggId: number;
   name: string;
   bggImageUrl: string | null;
+  /** Další názvy k výběru: původní a ostatní možné české (český název se z BGG jen odhaduje). */
+  otherNames: string[];
 }

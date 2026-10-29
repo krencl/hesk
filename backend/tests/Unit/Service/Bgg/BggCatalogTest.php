@@ -201,25 +201,36 @@ final class BggCatalogTest extends TestCase
         self::assertSame([['party', 'Catan']], self::brief($this->catalog()->search($this->party, 'catan')));
     }
 
-    public function testPrepareReturnsTheCdnImageAndThenServesItFromTheCache(): void
+    public function testPrepareReturnsTheCdnImage(): void
     {
         $cdn = 'https://cf.geekdo-images.com/catan.jpg';
         FakeBggClient::$games = [13 => new BggItem(13, 'Catan', 1995, $cdn)];
         $this->calls['persist'] = [];
 
-        $prepared = $this->catalog()->prepare(13);
-        self::assertSame(['bggId' => 13, 'name' => 'Catan', 'bggImageUrl' => $cdn], $prepared);
+        self::assertSame(['bggId' => 13, 'name' => 'Catan', 'bggImageUrl' => $cdn, 'otherNames' => []], $this->catalog()->prepare(13));
         self::assertSame([1, 0], [FakeBggClient::$thingCalls, FakeBggClient::$imageCalls], 'server obrázek nestahuje, ukáže se rovnou z CDN');
+    }
 
-        self::assertSame($prepared, $this->catalog()->prepare(13));
-        self::assertSame(1, FakeBggClient::$thingCalls, 'podruhé je adresa v cache a BGG se nevolá');
+    public function testPrepareUsesTheCzechNameAndOffersTheOthers(): void
+    {
+        FakeBggClient::$games = [
+            266192 => new BggItem(266192, 'Wingspan', 2019, null, ['Fesztáv', 'Na křídlech']),
+            13 => new BggItem(13, 'Catan', 1995, null, ['Los Colonos de Catán', 'Osadníci z Katanu', 'Catan: Základní hra']),
+        ];
+
+        $sure = $this->catalog()->prepare(266192);
+        self::assertSame(['Na křídlech', ['Wingspan']], [$sure['name'], $sure['otherNames']], 'jisté české jméno se předvyplní, původní zůstane k výběru');
+
+        $unsure = $this->catalog()->prepare(13);
+        self::assertSame('Catan', $unsure['name'], 'jen í/ý nestačí na automatický výběr');
+        self::assertSame(['Osadníci z Katanu', 'Catan: Základní hra'], $unsure['otherNames'], 'ale nabídne se');
     }
 
     public function testPrepareWithoutImageStillPrefillsTheName(): void
     {
         FakeBggClient::$games = [7 => new BggItem(7, 'Bez obrázku', 2001)];
 
-        self::assertSame(['bggId' => 7, 'name' => 'Bez obrázku', 'bggImageUrl' => null], $this->catalog()->prepare(7));
+        self::assertSame(['bggId' => 7, 'name' => 'Bez obrázku', 'bggImageUrl' => null, 'otherNames' => []], $this->catalog()->prepare(7));
     }
 
     public function testPrepareOfAnUnknownGameIsADomainError(): void
@@ -233,7 +244,7 @@ final class BggCatalogTest extends TestCase
         FakeBggClient::$down = true;
         $this->cached = [new BggGame(13, 'Catan', 1995)];
 
-        self::assertSame(['bggId' => 13, 'name' => 'Catan', 'bggImageUrl' => null], $this->catalog()->prepare(13));
+        self::assertSame(['bggId' => 13, 'name' => 'Catan', 'bggImageUrl' => null, 'otherNames' => []], $this->catalog()->prepare(13));
 
         $this->expectException(BggUnavailableException::class);
         $this->catalog()->prepare(14);
