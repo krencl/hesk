@@ -1,5 +1,6 @@
 import { del, get, patch, post, put } from './client';
-import type { MyStats, BggPreparedGame, BggSearch, Game, GameListQuery, GameWithStats, NamedItemInput, Player, GameInput, SessionInfo, Me, Party, PartyDetail, PartyRole, MovedPlay, MovePreview, Play, PlayDefaults, SessionLastPlay, PlayInput, Stats, StatsQuery } from './types';
+import type { ExportParams } from '../lib/partyExport';
+import type { MyStats, BggPreparedGame, BggSearch, Game, GameListQuery, GameWithStats, NamedItemInput, Player, GameInput, SessionInfo, Me, Party, PartyDetail, PartyExport, PartyRole, MovedPlay, MovePreview, Play, PlayDefaults, SessionLastPlay, PlayInput, Stats, StatsQuery } from './types';
 
 /** Sestaví `?a=1&b=2`; prázdné hodnoty (undefined, null, '') vynechá, pole jde jako `a[]=1&a[]=2`. */
 export function queryString(params: object): string {
@@ -25,6 +26,8 @@ export const api = {
   party: (id: number) => get<PartyDetail>(`/parties/${id}`),
   createParty: (name: string) => post<PartyDetail>('/parties', { name }),
   updateParty: (id: number, input: { name: string; shortName: string }) => patch<PartyDetail>(`/parties/${id}`, input),
+  /** Data party jako JSON (jen admin); `params` omezují zápisy na rozsah dat nebo sezení, viz `lib/partyExport`. */
+  exportParty: (id: number, params: ExportParams = {}) => get<PartyExport>(`/parties/${id}/export${queryString(params)}`),
   /** S `guestId` je pozvánka pro hosta: po přijetí se jeho zápisy převedou na účet pozvaného. */
   invite: (id: number, guestId?: number) => post<{ token: string; expiresAt: string }>(`/parties/${id}/invitations`, guestId === undefined ? undefined : { guestId }),
   /** Admin propojí hosta s členem: zápisy hosta přejdou na člena a host zmizí. */

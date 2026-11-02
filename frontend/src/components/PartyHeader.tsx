@@ -5,7 +5,7 @@ import { PageTitle } from './PageTitle';
 
 /**
  * Záhlaví stránek správy party: název party a přepínač sekcí. Každá sekce je samostatná stránka s vlastní adresou:
- * členové (`/parties/:id`), hosté (`/parties/:id/guests`, jen zapisovač a admin) a nastavení (`/parties/:id/edit`, jen admin).
+ * členové (`/parties/:id`), hosté (`/parties/:id/guests`, jen zapisovač a admin) nastavení (`/parties/:id/edit`, jen admin) a data (`/parties/:id/data`, export, jen admin).
  */
 export function PartyHeader({ party }: { party: { id: number; name: string; role: PartyRole } }) {
   return (
@@ -15,6 +15,7 @@ export function PartyHeader({ party }: { party: { id: number; name: string; role
         <NavLink to={`/parties/${party.id}`} end>Členové</NavLink>
         {canWrite(party.role) && <NavLink to={`/parties/${party.id}/guests`}>Hosté</NavLink>}
         {party.role === 'admin' && <NavLink to={`/parties/${party.id}/edit`}>Nastavení</NavLink>}
+        {party.role === 'admin' && <NavLink to={`/parties/${party.id}/data`}>Data</NavLink>}
       </nav>
     </>
   );

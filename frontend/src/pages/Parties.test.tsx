@@ -143,13 +143,13 @@ describe('party detail (/parties/:id)', () => {
     expect(screen.getByRole('link', { name: 'Zrušit' })).toHaveAttribute('href', '/');
   });
 
-  it('offers the sections as tabs with their own addresses; settings only for an admin', async () => {
+  it('offers the sections as tabs with their own addresses; settings and data only for an admin', async () => {
     mockApi({ ...base, '/parties/3': { body: detail(PARTY) }, '/parties/4': { body: detail(MEMBER_PARTY) } });
     const { unmount } = renderApp('/parties/3');
     await screen.findByRole('heading', { name: 'Parta Pátek' });
     const tabs = within(screen.getByRole('navigation', { name: 'Správa party' }));
     expect(tabs.getAllByRole('link').map((a) => [a.textContent, a.getAttribute('href')])).toEqual([
-      ['Členové', '/parties/3'], ['Hosté', '/parties/3/guests'], ['Nastavení', '/parties/3/edit'],
+      ['Členové', '/parties/3'], ['Hosté', '/parties/3/guests'], ['Nastavení', '/parties/3/edit'], ['Data', '/parties/3/data'],
     ]);
     expect(tabs.getByRole('link', { name: 'Členové' })).toHaveClass('active');
     expect(screen.queryByRole('link', { name: 'Upravit partu' })).not.toBeInTheDocument();

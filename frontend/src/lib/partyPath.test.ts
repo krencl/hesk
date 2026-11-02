@@ -8,6 +8,7 @@ describe('pathForSwitchedParty', () => {
     expect(pathForSwitchedParty('/parties/6/edit', 1)).toBe('/parties/1/edit');
     expect(pathForSwitchedParty('/parties/6/guests', 1)).toBe('/parties/1/guests');
     expect(pathForSwitchedParty('/parties/6/stats', 1)).toBe('/parties/1/stats');
+    expect(pathForSwitchedParty('/parties/6/data', 1)).toBe('/parties/1/data');
   });
 
   it('leaves other pages alone', () => {

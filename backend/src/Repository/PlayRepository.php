@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Repository;
 
+use App\Domain\PartyExportFilter;
 use App\Entity\Game;
 use App\Entity\GameSession;
 use App\Entity\Party;
@@ -11,6 +12,7 @@ use App\Entity\Play;
 use App\Entity\PlayResult;
 use App\Entity\Player;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
+use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Query;
 use Doctrine\Persistence\ManagerRegistry;
 
@@ -31,6 +33,38 @@ class PlayRepository extends ServiceEntityRepository
             ->setMaxResults($limit)->setFirstResult($offset);
         if (null !== $gameId) {
             $qb->andWhere('IDENTITY(p.game) = :game')->setParameter('game', $gameId);
+        }
+
+        /** @var list<Play> $plays */
+        $plays = $qb->getQuery()->getResult();
+        $this->preloadDetails($plays);
+
+        return $plays;
+    }
+
+    /**
+     * Plays of the party selected by the export filter, oldest first, with everything the export reads preloaded.
+     *
+     * @return list<Play>
+     */
+    public function findForExport(Party $party, PartyExportFilter $filter): array
+    {
+        $qb = $this->createQueryBuilder('p')->addSelect('s', 'g')->join('p.session', 's')->join('p.game', 'g')
+            ->andWhere('p.party = :party')->setParameter('party', $party)
+            ->orderBy('p.startedAt', 'ASC')->addOrderBy('p.id', 'ASC');
+        // times are compared in the application time zone, in which plays are loaded from the database
+        $zone = new \DateTimeZone(date_default_timezone_get());
+        if (null !== $filter->from) {
+            $qb->andWhere('p.startedAt >= :from')->setParameter('from', $filter->from->setTimezone($zone), Types::DATETIME_IMMUTABLE);
+        }
+        if (null !== $filter->to) {
+            $qb->andWhere('p.startedAt < :to')->setParameter('to', $filter->to->setTimezone($zone), Types::DATETIME_IMMUTABLE);
+        }
+        if (null !== $filter->fromSession) {
+            $qb->andWhere('s.number >= :fromSession')->setParameter('fromSession', $filter->fromSession);
+        }
+        if (null !== $filter->toSession) {
+            $qb->andWhere('s.number <= :toSession')->setParameter('toSession', $filter->toSession);
         }
 
         /** @var list<Play> $plays */

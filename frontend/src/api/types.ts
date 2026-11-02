@@ -34,6 +34,9 @@ export interface PartyDetail extends Party {
   linkedGuest?: string | null;
 }
 
+/** Export dat party (ADR 0033): entity pod vlastními klíči, odkazy jen přes ID; frontend ho jen ukládá do souboru. */
+export type PartyExport = Record<string, unknown>;
+
 export interface Addon {
   id: number;
   name: string;
