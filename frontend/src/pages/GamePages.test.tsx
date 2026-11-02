@@ -1,5 +1,5 @@
 import { act, fireEvent, screen, waitFor } from '@testing-library/react';
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { BASE_ROUTES, GAME, PLAY, games, mockApi, renderApp, requestedUrls, sentBody } from '../test/helpers';
 import { toLocalInput } from '../lib/datetime';
 
@@ -273,6 +273,43 @@ describe('new play', () => {
     expect(screen.getByRole('button', { name: 'Odebrat tag liga' })).toBeInTheDocument();
   });
 
+  describe('end time follows the clock', () => {
+    afterEach(() => vi.useRealTimers());
+    const T0 = new Date('2026-03-01T20:00:00');
+    const clock = (minutes: number) => toLocalInput(new Date(T0.getTime() + minutes * 60_000));
+    const openForm = async () => {
+      vi.useFakeTimers({ toFake: ['Date'] }); // only the clock; timers stay real so the queries keep working
+      vi.setSystemTime(T0);
+      mockApi(routes);
+      renderApp('/games/1/new-play');
+      await screen.findByRole('heading', { name: 'Nový zápis' });
+      expect(screen.getByLabelText('Konec')).toHaveValue(clock(0));
+    };
+    const letClockTick = () => act(() => new Promise((resolve) => setTimeout(resolve, 1200)));
+
+    it('moves the end to the current time until the end field gets focus', async () => {
+      await openForm();
+      vi.setSystemTime(new Date(T0.getTime() + 5 * 60_000));
+      await waitFor(() => expect(screen.getByLabelText('Konec')).toHaveValue(clock(5)), { timeout: 3000 });
+      expect(screen.getByLabelText('Začátek')).toHaveValue(clock(0));
+
+      fireEvent.focus(screen.getByLabelText('Konec'));
+      vi.setSystemTime(new Date(T0.getTime() + 9 * 60_000));
+      await letClockTick();
+      expect(screen.getByLabelText('Konec')).toHaveValue(clock(5));
+    });
+
+    it('stops following the clock once the user changes the start', async () => {
+      await openForm();
+      fireEvent.change(screen.getByLabelText('Začátek'), { target: { value: '2026-02-27T10:00' } });
+      expect(screen.getByLabelText('Konec')).toHaveValue('2026-02-27T10:00');
+
+      vi.setSystemTime(new Date(T0.getTime() + 5 * 60_000));
+      await letClockTick();
+      expect(screen.getByLabelText('Konec')).toHaveValue('2026-02-27T10:00');
+    });
+  });
+
   it('orders the fields: session number, start and end side by side, players, add-ons', async () => {
     mockApi(routes);
     renderApp('/games/1/new-play');
@@ -398,10 +435,10 @@ describe('new play', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Vítěz Anna' }));
     expect(screen.getByRole('button', { name: 'Vítěz Anna' })).toHaveAttribute('aria-pressed', 'false');
     expect(screen.getByRole('button', { name: 'Vítěz Petr' })).toHaveAttribute('aria-pressed', 'true');
-    fireEvent.click(screen.getByRole('button', { name: 'Začíná Anna' }));
-    fireEvent.click(screen.getByRole('button', { name: 'Začíná Petr' }));
-    expect(screen.getByRole('button', { name: 'Začíná Anna' })).toHaveAttribute('aria-pressed', 'false');
-    expect(screen.getByRole('button', { name: 'Začíná Petr' })).toHaveAttribute('aria-pressed', 'true');
+    fireEvent.click(screen.getByRole('button', { name: 'Začínající Anna' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Začínající Petr' }));
+    expect(screen.getByRole('button', { name: 'Začínající Anna' })).toHaveAttribute('aria-pressed', 'false');
+    expect(screen.getByRole('button', { name: 'Začínající Petr' })).toHaveAttribute('aria-pressed', 'true');
 
     fireEvent.click(screen.getByRole('button', { name: 'Uložit zápis' }));
     await waitFor(() => expect(sentBody(fetchMock, 'POST', '/parties/3/plays')).toBeDefined());

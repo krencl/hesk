@@ -42,8 +42,8 @@ export function PlayerRow({ member, game, player, isGamePlayer, scored, winner, 
               <Icon name="workspace_premium" /> Vítěz
             </button>
           )}
-          <button type="button" className="chip" aria-pressed={player.starting} aria-label={`Začíná ${member.name}`} onClick={onToggleStarting}>
-            <Icon name="looks_one" /> Začíná
+          <button type="button" className="chip" aria-pressed={player.starting} aria-label={`Začínající ${member.name}`} onClick={onToggleStarting}>
+            <Icon name="looks_one" /> Začínající
           </button>
         </div>
       )}

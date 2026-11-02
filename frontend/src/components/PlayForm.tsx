@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom';
 import { useActiveParty } from '../AppContext';
 import { api } from '../api';
 import type { Game, PlayInput } from '../api/types';
-import { fromLocalInput } from '../lib/datetime';
+import { fromLocalInput, toLocalInput } from '../lib/datetime';
 import { applySessionLastPlay, endAfterStart, isScored, parseSessionNumber, isWinner, newPlayerDraft, type PlayDraft, toPlayInput, validateDraft } from '../lib/playForm';
 import { Actions } from './Actions';
 import { ErrorMessage } from './ErrorMessage';
@@ -27,6 +27,8 @@ interface Props {
   cancelTo: string;
   /** U nového zápisu se číslo sezení předvyplňuje podle času zápisu, dokud ho uživatel sám nezmění. */
   suggestSessionNumber?: boolean;
+  /** U nového zápisu konec sleduje aktuální čas, dokud uživatel nedá focus do pole Konec nebo sám nezmění začátek či číslo sezení. */
+  liveEnd?: boolean;
   onSubmit: (input: PlayInput) => void;
   /** Doplňkové prvky pod tlačítky (např. smazání zápisu). */
   children?: ReactNode;
@@ -38,7 +40,7 @@ function validIso(local: string): string | null {
 }
 
 /** Formulář zápisu hry – sdílený mezi založením a úpravou zápisu. */
-export function PlayForm({ game, initial, heading, submitLabel, saving, error, cancelTo, suggestSessionNumber = false, onSubmit, children }: Props) {
+export function PlayForm({ game, initial, heading, submitLabel, saving, error, cancelTo, suggestSessionNumber = false, liveEnd = false, onSubmit, children }: Props) {
   const party = useActiveParty();
   const queryClient = useQueryClient();
   const players = useQuery({ queryKey: qk.players(party.id), queryFn: () => api.players(party.id) });
@@ -80,12 +82,26 @@ export function PlayForm({ game, initial, heading, submitLabel, saving, error, c
       clearTimeout(timer);
     };
   }, [typedSession, party.id, queryClient, game]);
+  // Konec se posouvá s hodinami, dokud se ho uživatel nedotkne; ruční změna začátku nebo čísla sezení (čas podle jeho posledního zápisu) ho převezme do ruky.
+  const [endTouched, setEndTouched] = useState(false);
+  const endFollowsClock = liveEnd && !endTouched && !draft.sessionNumberTouched;
+  useEffect(() => {
+    if (!endFollowsClock) return;
+    const timer = setInterval(() => {
+      const now = toLocalInput(new Date());
+      setDraft((d) => (d.endedAt === now ? d : { ...d, endedAt: now }));
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [endFollowsClock]);
   const [showGuests, setShowGuests] = useState(false);
   const [guestName, setGuestName] = useState('');
 
   const scored = isScored(game.scoreType);
   const patch = (changes: Partial<PlayDraft>) => setDraft((d) => ({ ...d, ...changes }));
-  const changeStart = (startedAt: string) => setDraft((d) => ({ ...d, startedAt, endedAt: endAfterStart(startedAt, d.endedAt) }));
+  const changeStart = (startedAt: string) => {
+    setEndTouched(true);
+    setDraft((d) => ({ ...d, startedAt, endedAt: endAfterStart(startedAt, d.endedAt) }));
+  };
   const togglePlayer = (playerId: number) =>
     setDraft((d) => ({
       ...d,
@@ -145,7 +161,7 @@ export function PlayForm({ game, initial, heading, submitLabel, saving, error, c
 
         <div className="row">
           <label>Začátek<input type="datetime-local" value={draft.startedAt} onChange={(e) => changeStart(e.target.value)} required /></label>
-          <label>Konec<input type="datetime-local" value={draft.endedAt} onChange={(e) => patch({ endedAt: e.target.value })} required /></label>
+          <label>Konec<input type="datetime-local" value={draft.endedAt} onFocus={() => setEndTouched(true)} onChange={(e) => patch({ endedAt: e.target.value })} required /></label>
         </div>
 
         <div className="field">

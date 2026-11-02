@@ -14,7 +14,7 @@ The UI was created piece by piece and did not fit together: different heading si
 
 **Play form** (`PlayForm`, shared for a new play and editing)
 - No borders around fields. Players: at the top the **main players** (members with an account), guests only after "Přidat hosty" (Add guests) (selected guests are always visible).
-- For each selected player the toggles **Vítěz** (Winner; besides the rank) and **Začíná** (Starts; at most one player).
+- For each selected player the toggles **Vítěz** (Winner; besides the rank) and **Začínající** (Starting; at most one player; originally labelled "Začíná").
 - **Winner in games with a score:** the default is automatic (best score, in case of a tie everyone tied). A manual override sends the winner explicitly (`winner` on players) and the backend respects it even for a tie or irregularities; "Vítěze určit podle skóre" (Determine the winner by score) returns to automatic. The rank (`rank`) is still computed from the score.
 - Backend: `play_result.is_starting` (the column carries `is_` because of the reserved word `STARTING`), `PlayerRequest.starting`/`winner`, validation "at most one starting player". The migration takes over starting players from `legacy_round_player` (144 plays), matched by the result's position in the play.
 

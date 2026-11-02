@@ -26,3 +26,4 @@ The new play form was empty: the session number could be neither entered nor see
 ## Consequences
 - When editing a play, the session number is shown from the stored play and the suggestion is not recomputed; changing the time within the session does not change it, moving outside it shifts the play automatically (the number is not sent).
 - After a play is saved, the tag list and the defaults are invalidated (`refreshAfterPlayChange`).
+- On a new play the end time follows the clock (checked every second, minute precision) until the user focuses the End field, changes the start or types a session number; after that it is the user's value. The edit form never moves it.

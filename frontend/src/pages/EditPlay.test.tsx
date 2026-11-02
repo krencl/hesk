@@ -25,7 +25,7 @@ describe('edit play (/plays/:id/edit)', () => {
     expect(screen.getByLabelText('Anna')).toBeChecked();
     expect(screen.getByLabelText('Petr')).toBeChecked();
     expect(screen.queryByLabelText('Eva')).not.toBeInTheDocument(); // nevybraný host je schovaný
-    expect(screen.getByRole('button', { name: 'Začíná Anna' })).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByRole('button', { name: 'Začínající Anna' })).toHaveAttribute('aria-pressed', 'true');
     expect(screen.getByRole('button', { name: 'Vítěz Anna' })).toHaveAttribute('aria-pressed', 'true');
     expect(screen.getByRole('button', { name: 'Vítěz Petr' })).toHaveAttribute('aria-pressed', 'false');
     expect(screen.getByLabelText('Skóre Anna')).toHaveValue('90');
